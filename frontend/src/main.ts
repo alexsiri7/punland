@@ -1,4 +1,6 @@
+import './fonts';
 import './style.css';
+import { loadFonts } from './fonts';
 import { startGame } from './game';
 import { LocalSaveStore } from './save';
 import { initTitleScreen } from './title';
@@ -9,8 +11,9 @@ if (!container) throw new Error('#game container missing');
 
 void initTitleScreen(document, {
   store,
-  start: (room) => {
+  start: async (room) => {
     container.hidden = false;
+    await loadFonts(); // Phaser draws text on a canvas, which does not load web fonts by itself
     startGame(container, { room });
   },
 });

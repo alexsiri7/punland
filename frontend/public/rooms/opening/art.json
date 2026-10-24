@@ -1,0 +1,30 @@
+{
+  "room": "opening",
+  "width": 1280,
+  "height": 640,
+  "scale": 2,
+  "layers": [
+    {
+      "key": "opening-background",
+      "file": "background.jpg",
+      "x": 0,
+      "y": 0,
+      "depth": 0
+    },
+    {
+      "key": "opening-cat",
+      "file": "cat.png",
+      "x": 491,
+      "y": 324,
+      "depth": 10,
+      "actor": "cat"
+    },
+    {
+      "key": "opening-fore",
+      "file": "fore.png",
+      "x": 1116,
+      "y": 24,
+      "depth": 100
+    }
+  ]
+}

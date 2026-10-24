@@ -2,6 +2,16 @@
 
 Monkey Island-style point-and-click adventure in the browser. A teenage cat from Literal Village comes to Punland to make it as a musician. Working title **Tune Story**. Specs live in `openspec/specs/` (punland, scenes, inventory, dialogue, worlds, progress); work items are GitHub issues created from Lachesis.
 
+## Look and feel: read docs/design/STYLE.md first
+
+Every new scene, character, prop or piece of UI follows [`docs/design/STYLE.md`](docs/design/STYLE.md). It is the owner's "Tune Story" design canvas, and the source boards are in `docs/design/canvas/`. In short:
+
+- Indie dusk palette. Two tones per material, light from the upper left, hard flat shadows, no outlines on characters, and a grain overlay.
+- Bebas Neue for in-world signs and titles, Inter for the UI. Both are self-hosted, never Google Fonts, because of the CSP.
+- Each room is one layered 1280 × 640 SVG in `frontend/art/<room>/scene.svg`, rendered with `node scripts/render-art.mjs` to `public/rooms/<room>/`. The UI bar is 160 px under it.
+
+Take colours from `src/theme.ts` and the CSS variables, not new hex values. The opening pub is **The Three Crows**. The protagonist has no name yet, so don't invent one.
+
 ## Stack
 
 | Part | Tech | Hosted |
@@ -46,7 +56,11 @@ frontend/
   src/title.ts          title screen logic (Continue only when a save exists)
   src/save.ts           SaveStore interface + LocalSaveStore (localStorage); #10 swaps in the backend store
   src/game.ts           Phaser game factory; mirrors the current scene key on #game[data-scene]
-  src/scenes/           Phaser scenes; OpeningScene is a placeholder until the room engine (#4)
+  src/scenes/           Phaser scenes; OpeningScene draws the opening room's art layers until the room engine (#4)
+  src/theme.ts          design tokens (palette, fonts, scene/UI-bar sizes) from docs/design/STYLE.md
+  src/fonts.ts          self-hosted Bebas Neue + Inter, and loadFonts() for canvas text
+  art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
+  public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
   src/api.ts            backend base URL + fetch helpers
   public/_headers       production CSP and security headers (Cloudflare Pages)
   tests/unit/           vitest (jsdom)
@@ -57,6 +71,7 @@ backend/
   src/punland_api/config.py  settings from env vars
   tests/                     pytest
 openspec/specs/         the specs (source of truth for behaviour)
+docs/design/            STYLE.md (the look) + canvas/ (the owner's design boards)
 ```
 
 ## Acceptance tests

@@ -1,0 +1,52 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Character.dc.html": {
+      "h": 1160,
+      "title": "2 · Protagonist — character sheet",
+      "w": 1800,
+      "x": 1520,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 2926,
+      "title": "1 · Style guide",
+      "w": 1419,
+      "x": 0,
+      "y": 0
+    },
+    "Pub.dc.html": {
+      "h": 800,
+      "title": "3 · Scene — outside The Three Crows",
+      "w": 1280,
+      "x": 3400,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-24T14:40:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t1": {
+      "kind": "title1",
+      "maxW": 4680,
+      "text": "Tune Story — look & protagonist",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Character.dc.html",
+    "Pub.dc.html"
+  ],
+  "pages": [],
+  "title": "Tune Story"
+}

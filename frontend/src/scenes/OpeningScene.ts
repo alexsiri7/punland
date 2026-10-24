@@ -1,9 +1,24 @@
 import Phaser from 'phaser';
+import { fonts, hex, palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
+
+/** public/rooms/<room>/art.json, written by scripts/render-art.mjs from art/<room>/scene.svg. */
+interface RoomArt {
+  room: string;
+  width: number;
+  height: number;
+  scale: number;
+  layers: { key: string; file: string; x: number; y: number; depth: number; actor?: string }[];
+}
+
+const ROOM = 'opening';
+const ART_KEY = `${ROOM}-art`;
+const ROOM_BASE = `rooms/${ROOM}/`;
 
 /**
- * Placeholder for the opening scene: outside the pub (The Root Note) where the
- * bus has dropped the cat off. Drawn with shapes only; issue #4 replaces it with
- * the content-driven room engine (art files, walking, hotspots, exits).
+ * The opening scene: Punland high street at dusk, outside The Three Crows, where the bus
+ * has dropped the cat off. Art comes from the room's layer files (background, actors,
+ * foreground), so replacing the art never touches this code. Issue #4 replaces this
+ * scene with the content-driven room engine (walking, hotspots, exits).
  */
 export class OpeningScene extends Phaser.Scene {
   static readonly KEY = 'opening';
@@ -12,44 +27,69 @@ export class OpeningScene extends Phaser.Scene {
     super(OpeningScene.KEY);
   }
 
+  preload(): void {
+    this.load.json(ART_KEY, `${ROOM_BASE}art.json`);
+    this.load.once(`filecomplete-json-${ART_KEY}`, (_key: string, _type: string, art: RoomArt) => {
+      for (const layer of art.layers) this.load.image(layer.key, `${ROOM_BASE}${layer.file}`);
+    });
+  }
+
   create(): void {
-    const { width, height } = this.scale;
-    const floorY = height * 0.72;
-
-    // Sky and street.
-    this.add.rectangle(0, 0, width, floorY, 0x2b1b3d).setOrigin(0);
-    this.add.rectangle(0, floorY, width, height - floorY, 0x3d3a4b).setOrigin(0);
-
-    // The Root Note pub.
-    this.add.rectangle(width * 0.55, floorY, 340, 260, 0x6b3e26).setOrigin(0, 1);
-    this.add.rectangle(width * 0.55 + 140, floorY, 60, 110, 0x2a160c).setOrigin(0, 1);
-    this.add
-      .text(width * 0.55 + 170, floorY - 225, 'THE ROOT NOTE', {
-        fontFamily: 'Georgia, serif',
-        fontSize: '28px',
-        color: '#f2c14e',
-      })
-      .setOrigin(0.5);
-
-    // Bus stop.
-    this.add.rectangle(width * 0.15, floorY, 8, 150, 0xb8b8c8).setOrigin(0.5, 1);
-    this.add.rectangle(width * 0.15, floorY - 150, 60, 40, 0x4e9fd1).setOrigin(0.5, 1);
-    this.add
-      .text(width * 0.15, floorY - 170, 'BUS', { fontFamily: 'sans-serif', fontSize: '16px', color: '#ffffff' })
-      .setOrigin(0.5);
-
-    // The cat (placeholder).
-    this.add.ellipse(width * 0.3, floorY + 20, 50, 70, 0xe8a24a);
-
-    this.add
-      .text(width / 2, height - 24, 'Outside The Root Note', {
-        fontFamily: 'Georgia, serif',
-        fontSize: '20px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
+    const art = this.cache.json.get(ART_KEY) as RoomArt;
+    for (const layer of art.layers) {
+      this.add
+        .image(layer.x, layer.y, layer.key)
+        .setOrigin(0)
+        .setScale(1 / art.scale)
+        .setDepth(layer.depth);
+    }
+    this.drawUiBar();
 
     const container = this.game.canvas.parentElement;
     if (container) container.dataset.scene = OpeningScene.KEY;
+  }
+
+  /** The UI bar under the scene (STYLE.md, UI bar). Inventory slots arrive with #5/#8. */
+  private drawUiBar(): void {
+    const top = SCENE_HEIGHT;
+    this.add.rectangle(0, top, SCENE_WIDTH, UI_BAR_HEIGHT, hex(palette.uiGround)).setOrigin(0).setDepth(200);
+    this.add.rectangle(0, top, SCENE_WIDTH, 1, hex(palette.divider)).setOrigin(0).setDepth(201);
+
+    const left = 32;
+    this.add
+      .text(left, top + 40, 'PUNLAND · HIGH STREET', {
+        fontFamily: fonts.ui,
+        fontSize: '12px',
+        color: palette.labelText,
+        letterSpacing: 2,
+        resolution: 2,
+      })
+      .setDepth(201);
+    const verb = this.add
+      .text(left, top + 62, 'Outside', {
+        fontFamily: fonts.ui,
+        fontStyle: '500',
+        fontSize: '22px',
+        color: palette.mutedText,
+        resolution: 2,
+      })
+      .setDepth(201);
+    this.add
+      .text(left + verb.width + 7, top + 62, 'The Three Crows', {
+        fontFamily: fonts.ui,
+        fontStyle: '500',
+        fontSize: '22px',
+        color: palette.signGold,
+        resolution: 2,
+      })
+      .setDepth(201);
+    this.add
+      .text(left, top + 98, 'The bus is gone. Live music below.', {
+        fontFamily: fonts.ui,
+        fontSize: '13px',
+        color: palette.labelText,
+        resolution: 2,
+      })
+      .setDepth(201);
   }
 }
