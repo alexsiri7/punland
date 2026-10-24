@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tune Story</title>
+    <meta name="description" content="Tune Story: a point-and-click adventure about a young cat trying to make it as a musician in Punland." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <main id="app">
+      <section id="title-screen" class="title-screen" aria-labelledby="game-title">
+        <h1 id="game-title">Tune Story</h1>
+        <p class="tagline">A young cat. A city of puns. One shot at the late slot.</p>
+        <nav class="menu" aria-label="Main menu">
+          <button type="button" id="continue" hidden>Continue</button>
+          <button type="button" id="new-game">New game</button>
+        </nav>
+      </section>
+      <div id="game" class="game" hidden></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
