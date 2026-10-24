@@ -17,7 +17,11 @@
       "x": 491,
       "y": 324,
       "depth": 10,
-      "actor": "cat"
+      "actor": "cat",
+      "foot": {
+        "x": 560,
+        "y": 590
+      }
     },
     {
       "key": "opening-fore",

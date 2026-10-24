@@ -87,7 +87,7 @@ Every room is **one 1280 × 640 SVG** (`frontend/art/<room>/scene.svg`) with one
 3. `layer-mid`: buildings.
 4. `layer-ground`: the walkable path.
 5. `layer-props`: posters, bins.
-6. `layer-actors`: characters, one `<g id="…">` each. They become separate swappable sprites.
+6. `layer-actors`: characters, one `<g id="…">` each. They become separate swappable sprites. Each actor's `<g>` has its origin at its feet (`transform="translate(x y)"`), which the game uses to stand it on the floor.
 7. `layer-fore`: vines and lamp posts, drawn in front of the actors.
 8. Hotspots: invisible and named. These come from room content data (#4), not from the art.
 
@@ -103,7 +103,7 @@ To get from SVG to game files, run `cd frontend && node scripts/render-art.mjs [
 | `<actor>.png` | Each actor, cropped. |
 | `fore.png` | The foreground layer. |
 | `poster.jpg` | Everything composited, used as the title screen backdrop. |
-| `art.json` | Each layer's position and depth. |
+| `art.json` | Each layer's position and depth, and each actor's feet. |
 
 Output is 2× scale. Commit the SVG and the rendered files together, and never hand-edit the PNG or JPG files. Swapping art means editing the SVG and re-rendering, with no code change. That keeps to the "art is a swappable placeholder file per room" invariant.
 
