@@ -1,0 +1,25 @@
+{
+  "name": "punland-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tune Story (Punland): browser point-and-click adventure, Phaser + Vite",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "npm run build && node tests/serve.mjs 4173",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "jsdom": "^30.1.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

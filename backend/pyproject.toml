@@ -1,0 +1,42 @@
+[project]
+name = "punland-api"
+version = "0.1.0"
+description = "Tune Story (Punland) backend: health, and later AI dialogue, turn limits and autosave"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "httpx",
+  "ruff",
+]
+
+[project.scripts]
+punland-api = "punland_api.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/punland_api"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+xfail_strict = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["S104"]  # binding 0.0.0.0 is intended inside the container
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
