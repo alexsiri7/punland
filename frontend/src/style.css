@@ -205,3 +205,49 @@ body {
   outline: 2px dashed var(--sign-gold);
   outline-offset: 2px;
 }
+
+/* World switcher along the top of the UI bar (src/room/worlds.ts): small wide slots, gold for the world showing. */
+.worlds {
+  position: absolute;
+  height: calc(48px * var(--s, 1));
+  padding: 0 calc(32px * var(--s, 1));
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: calc(8px * var(--s, 1));
+  pointer-events: none;
+}
+
+.worlds button {
+  height: calc(28px * var(--s, 1));
+  padding: 0 calc(14px * var(--s, 1));
+  border: 1px solid var(--slot-edge);
+  border-radius: calc(6px * var(--s, 1));
+  background: var(--slot);
+  color: var(--muted-text);
+  font: 500 calc(12px * var(--s, 1)) / 1 var(--font-ui);
+  letter-spacing: calc(2px * var(--s, 1));
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.worlds button:hover,
+.worlds button:focus-visible,
+.worlds button[aria-current='true'] {
+  border-color: var(--sign-gold);
+  color: var(--sign-gold);
+}
+
+.worlds button:focus-visible {
+  outline: 2px dashed var(--sign-gold);
+  outline-offset: 2px;
+}
+
+.worlds button:disabled {
+  border-style: dashed;
+  border-color: var(--slot-edge);
+  background: transparent;
+  color: var(--label-text);
+  cursor: not-allowed;
+}

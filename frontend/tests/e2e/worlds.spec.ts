@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { content, game, hotspot, newGame, worlds } from './play';
+import { content, game, hotspot, inventoryItem, newGame, worlds } from './play';
 
 // Acceptance tests for openspec/specs/worlds/spec.md.
 
@@ -17,7 +17,6 @@ async function unlockedOtherWorlds(page: Page): Promise<Locator[]> {
 }
 
 test('Switching', async ({ page }) => {
-  test.fail(true, 'needs #9');
   // Requirement: Switching worlds. The player can switch to any unlocked world.
   await newGame(page);
   await expect(worlds(page).getByRole('button', { name: 'Street' })).toBeVisible();
@@ -33,7 +32,6 @@ test('Switching', async ({ page }) => {
 });
 
 test('Locked world', async ({ page }) => {
-  test.fail(true, 'needs #9');
   // Requirement: Switching worlds. A locked world is shown as locked and cannot be entered.
   await newGame(page);
   const locked = worlds(page).getByRole('button', { disabled: true });
@@ -45,11 +43,12 @@ test('Locked world', async ({ page }) => {
 });
 
 test('Something done in the street turns up in the dream', async ({ page }) => {
-  test.fail(true, 'needs #9');
   // Requirement: Things cross worlds. In the Act 1 placeholder content, picking up the Open
   // Mic flyer is dream material.
   await newGame(page);
   await hotspot(page, content.flyer).click();
+  // The cat walks to the flyer first; switching worlds on the way would call the pickup off.
+  await expect(inventoryItem(page, content.flyer)).toBeVisible();
   await worlds(page).getByRole('button', { name: 'Dream' }).click();
   await expect(game(page)).toHaveAttribute('data-world', 'dream');
   await hotspot(page, content.flyer).click();
@@ -57,7 +56,6 @@ test('Something done in the street turns up in the dream', async ({ page }) => {
 });
 
 test('Visiting a placeholder world', async ({ page }) => {
-  test.fail(true, 'needs #9');
   // Requirement: Placeholder worlds. The online and dream worlds each have a placeholder room.
   await newGame(page);
   const unlocked = await unlockedOtherWorlds(page);

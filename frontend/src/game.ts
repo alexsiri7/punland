@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { START_ITEMS } from './content/items';
 import { START_ROOM } from './content/rooms';
 import { Inventory } from './inventory';
+import { Journey } from './journey';
 import { type RoomData, RoomScene } from './scenes/RoomScene';
 import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from './theme';
 
@@ -33,7 +34,8 @@ export function startGame(parent: HTMLElement, options: StartOptions = {}): Phas
   game.events.once(Phaser.Core.Events.READY, () => {
     game.scene.add(RoomScene.KEY, RoomScene, false);
     const inventory = new Inventory(START_ITEMS);
-    game.scene.start(RoomScene.KEY, { room: options.room ?? START_ROOM, inventory } satisfies RoomData);
+    const journey = new Journey();
+    game.scene.start(RoomScene.KEY, { room: options.room ?? START_ROOM, inventory, journey } satisfies RoomData);
   });
   return game;
 }

@@ -1,0 +1,34 @@
+{
+  "room": "feed",
+  "width": 1280,
+  "height": 640,
+  "scale": 2,
+  "layers": [
+    {
+      "key": "feed-background",
+      "file": "background.jpg",
+      "x": 0,
+      "y": 0,
+      "depth": 0
+    },
+    {
+      "key": "feed-cat",
+      "file": "cat.png",
+      "x": 231,
+      "y": 319,
+      "depth": 10,
+      "actor": "cat",
+      "foot": {
+        "x": 300,
+        "y": 585
+      }
+    },
+    {
+      "key": "feed-fore",
+      "file": "fore.png",
+      "x": 0,
+      "y": 0,
+      "depth": 100
+    }
+  ]
+}
