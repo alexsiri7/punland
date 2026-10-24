@@ -25,7 +25,6 @@ export interface SaveGame {
 }
 
 export interface SaveStore {
-  hasSave(): Promise<boolean>;
   load(): Promise<SaveGame | null>;
   save(game: SaveGame): Promise<void>;
   clear(): Promise<void>;
@@ -70,10 +69,6 @@ export function isSaveGame(value: unknown): value is SaveGame {
 /** Browser-local save. Unreadable or malformed data counts as "no save". */
 export class LocalSaveStore implements SaveStore {
   constructor(private readonly storage: Storage | null = safeLocalStorage()) {}
-
-  async hasSave(): Promise<boolean> {
-    return (await this.load()) !== null;
-  }
 
   async load(): Promise<SaveGame | null> {
     try {
@@ -130,10 +125,6 @@ export class BackendSaveStore implements SaveStore {
       fetch: options.fetch ?? globalThis.fetch.bind(globalThis),
       timeoutMs: options.timeoutMs ?? 3000,
     };
-  }
-
-  async hasSave(): Promise<boolean> {
-    return (await this.load()) !== null;
   }
 
   async load(): Promise<SaveGame | null> {

@@ -4,9 +4,6 @@ import { initTitleScreen } from '../../src/title';
 
 class MemoryStore implements SaveStore {
   constructor(public game: SaveGame | null = null) {}
-  async hasSave() {
-    return this.game !== null;
-  }
   async load() {
     return this.game;
   }
@@ -48,6 +45,17 @@ describe('title screen', () => {
     await flush();
     expect(start).toHaveBeenCalledWith(save);
     expect(document.querySelector<HTMLElement>('#title-screen')!.hidden).toBe(true);
+  });
+
+  it('Continue resumes the save it showed, even when the store can no longer read it', async () => {
+    const start = vi.fn();
+    const save: SaveGame = { version: 1, room: 'pub-interior', savedAt: 'x' };
+    const store = new MemoryStore(save);
+    await initTitleScreen(document, { store, start });
+    store.load = async () => null;
+    btn('continue').click();
+    await flush();
+    expect(start).toHaveBeenCalledWith(save);
   });
 
   it('New game starts from the opening scene', async () => {

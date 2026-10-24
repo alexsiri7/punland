@@ -7,34 +7,33 @@ describe('LocalSaveStore', () => {
   beforeEach(() => localStorage.clear());
 
   it('has no save in a fresh browser', async () => {
-    expect(await new LocalSaveStore().hasSave()).toBe(false);
+    expect(await new LocalSaveStore().load()).toBeNull();
   });
 
   it('round-trips a save', async () => {
     const store = new LocalSaveStore();
     await store.save(game);
-    expect(await store.hasSave()).toBe(true);
     expect(await store.load()).toEqual(game);
   });
 
   it('treats malformed data as no save', async () => {
     localStorage.setItem(SAVE_KEY, '{not json');
-    expect(await new LocalSaveStore().hasSave()).toBe(false);
+    expect(await new LocalSaveStore().load()).toBeNull();
     localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 99 }));
-    expect(await new LocalSaveStore().hasSave()).toBe(false);
+    expect(await new LocalSaveStore().load()).toBeNull();
   });
 
   it('clears the save', async () => {
     const store = new LocalSaveStore();
     await store.save(game);
     await store.clear();
-    expect(await store.hasSave()).toBe(false);
+    expect(await store.load()).toBeNull();
   });
 
   it('works without storage (blocked localStorage)', async () => {
     const store = new LocalSaveStore(null);
     await store.save(game);
-    expect(await store.hasSave()).toBe(false);
+    expect(await store.load()).toBeNull();
   });
 });
 
@@ -109,7 +108,7 @@ describe('BackendSaveStore', () => {
     expect(await store(older, () => Promise.reject(new TypeError('offline'))).store.load()).toEqual(older);
     expect(await store(older, json({ status: 'ok' })).store.load()).toEqual(older);
     localStorage.clear();
-    expect(await store(null, noSave).store.hasSave()).toBe(false);
+    expect(await store(null, noSave).store.load()).toBeNull();
   });
 
   it('does not write this browser\'s copy when loading', async () => {
