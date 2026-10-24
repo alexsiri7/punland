@@ -1,18 +1,18 @@
 [project]
 name = "punland-api"
 version = "0.1.0"
-description = "Tune Story (Punland) backend: health, and later AI dialogue, turn limits and autosave"
+description = "Tune Story (Punland) backend: health and AI dialogue, later turn limits and autosave"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi",
+  "httpx",
   "uvicorn[standard]",
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest",
-  "httpx",
   "ruff",
 ]
 

@@ -5,9 +5,8 @@ The game talks to POST /dialogue/turn with the player's anonymous id in X-Player
 {"line", "options": [{"text", "reaches_goal"}], "goal_reached", "ended"}.
 
 The model is replaced by a fake that records the chat messages it is sent and answers in
-the JSON the dialogue prompt asks for. #6 settles that answer's shape and how the app is
-given a model; change `FakeModel` and `dialogue_client` to match in the PR that removes
-the markers.
+the JSON the dialogue prompt asks for, {"line", "options": [three strings], "goal_reached"};
+the app is given it as create_app(settings, model=<async callable: messages -> str>).
 """
 
 import json
@@ -48,7 +47,6 @@ def turn(client: TestClient, character: str, reply: str | None = None) -> dict:
     return res.json()
 
 
-@pytest.mark.xfail(reason="needs #6")
 def test_escalating_options() -> None:
     # Requirement: Conversation goals. Suggested replies lean further towards the goal the
     # more the player tries: none at first, later at least one.
@@ -65,7 +63,6 @@ def test_escalating_options() -> None:
     assert any(option["reaches_goal"] for option in latest["options"])
 
 
-@pytest.mark.xfail(reason="needs #6")
 def test_coming_back() -> None:
     # Requirement: Characters remember. A character remembers earlier conversations in the
     # same game.
@@ -79,7 +76,6 @@ def test_coming_back() -> None:
     assert any("kazoo" in message["content"] for message in model.calls[0])
 
 
-@pytest.mark.xfail(reason="needs #6")
 def test_ai_unavailable() -> None:
     # Requirement: Leaving and failure. If the AI is unavailable the character says so in
     # character and the conversation ends, without an error the game would have to handle.
