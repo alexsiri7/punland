@@ -10,7 +10,7 @@ Every new scene, character, prop or piece of UI follows [`docs/design/STYLE.md`]
 - Bebas Neue for in-world signs and titles, Inter for the UI. Both are self-hosted, never Google Fonts, because of the CSP.
 - Each room is one layered 1280 × 640 SVG in `frontend/art/<room>/scene.svg`, rendered with `node scripts/render-art.mjs` to `public/rooms/<room>/`. The UI bar is 160 px under it.
 
-Take colours from `src/theme.ts` and the CSS variables, not new hex values. The opening pub is **The Three Crows**. The protagonist has no name yet, so don't invent one.
+Take colours from `src/theme.ts` and the CSS variables, not new hex values. The opening pub is **The Three Crows**. The protagonist is **Paws Anka**, a placeholder name chosen 2026-10-24 that may change: it lives only in `frontend/src/content/protagonist.ts`, so read it from there and don't build anything that depends on the exact name.
 
 ## Stack
 
@@ -57,6 +57,7 @@ frontend/
   src/save.ts           SaveStore interface + LocalSaveStore (localStorage); #10 swaps in the backend store
   src/game.ts           Phaser game factory; mirrors the current scene key on #game[data-scene]
   src/scenes/           Phaser scenes; OpeningScene draws the opening room's art layers until the room engine (#4)
+  src/content/protagonist.ts  the protagonist's (placeholder) name, the one place it lives in code
   src/theme.ts          design tokens (palette, fonts, scene/UI-bar sizes) from docs/design/STYLE.md
   src/fonts.ts          self-hosted Bebas Neue + Inter, and loadFonts() for canvas text
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
