@@ -132,3 +132,58 @@ def test_character_content_loads() -> None:
     assert {"bartender", "bouncer"} <= characters.keys()
     assert characters["bartender"].goal is None
     assert characters["bouncer"].goal == GOAL
+
+
+def test_answer_matches_the_frontend_wire_shape() -> None:
+    # frontend/tests/e2e/play.ts declares the same answer as DialogueTurn; keep them in step.
+    client = TestClient(create_app(Settings(), model=ScriptedModel(answer())))
+    result = turn(client, "bouncer")
+    assert result.keys() == {"line", "options", "goal_reached", "ended"}
+    assert [o.keys() for o in result["options"]] == [{"text", "reaches_goal"}] * 3
+
+
+def test_players_have_their_own_conversations() -> None:
+    model = ScriptedModel(answer())
+    client = TestClient(create_app(Settings(), model=model))
+    turn(client, "bouncer")
+    for _ in range(3):
+        turn(client, "bouncer", "I play the kazoo.")
+
+    model.calls.clear()
+    other = client.post(
+        "/dialogue/turn", headers={"X-Player-Id": "other-player"}, json={"character": "bouncer"}
+    ).json()
+    assert reaching(other) == []
+    assert not any("kazoo" in m["content"] for m in model.calls[0])
+
+
+class SlowModel(ScriptedModel):
+    async def __call__(self, messages: list[dict[str, str]]) -> str:
+        await asyncio.sleep(0.05)
+        return await super().__call__(messages)
+
+
+def test_overlapping_turns_are_both_remembered() -> None:
+    model = SlowModel(answer())
+    app = create_app(Settings(), model=model)
+
+    async def overlap() -> dict:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+
+            async def send(reply: str | None) -> dict:
+                res = await client.post(
+                    "/dialogue/turn", headers=PLAYER, json={"character": "bouncer", "reply": reply}
+                )
+                assert res.status_code == 200
+                return res.json()
+
+            await send(None)
+            await asyncio.gather(send("I play the kazoo."), send("I play the tuba."))
+            model.calls.clear()
+            return await send("Hello?")
+
+    third = asyncio.run(overlap())
+    assert len(reaching(third)) == 1
+    said = [m["content"] for m in model.calls[0]]
+    assert "I play the kazoo." in said and "I play the tuba." in said

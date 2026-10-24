@@ -5,6 +5,7 @@ none at first, one after ONE_OPTION_FROM replies, all three after ALL_OPTIONS_FR
 model is told which of its replies those are, and picking one reaches the goal.
 """
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
@@ -63,6 +64,11 @@ class DialogueStore:
 
     def __init__(self) -> None:
         self._conversations: dict[tuple[str, str], Conversation] = {}
+        self._locks: dict[tuple[str, str], asyncio.Lock] = {}
+
+    def lock(self, player: str, character: str) -> asyncio.Lock:
+        """Held from get to put, so overlapping turns in one conversation can't lose one."""
+        return self._locks.setdefault((player, character), asyncio.Lock())
 
     def get(self, player: str, character: str) -> Conversation:
         conv = self._conversations.get((player, character))
@@ -152,44 +158,45 @@ def router(model: Model, characters: dict[str, Character], store: DialogueStore)
         if character is None:
             raise HTTPException(status_code=404, detail="unknown character")
 
-        conv = store.get(player, character.id)
-        goal_open = character.goal is not None and not conv.goal_reached
-        reply = body.reply.strip() if body.reply is not None else None
-        picked = next((o for o in conv.offered if o.text == reply), None)
-        conceding = goal_open and picked is not None and picked.reaches_goal
-        if reply is not None and goal_open:
-            conv.attempts += 1
-        n = goal_options(conv.attempts) if goal_open and not conceding else 0
+        async with store.lock(player, character.id):
+            conv = store.get(player, character.id)
+            goal_open = character.goal is not None and not conv.goal_reached
+            reply = body.reply.strip() if body.reply is not None else None
+            picked = next((o for o in conv.offered if o.text == reply), None)
+            conceding = goal_open and picked is not None and picked.reaches_goal
+            if reply is not None and goal_open:
+                conv.attempts += 1
+            n = goal_options(conv.attempts) if goal_open and not conceding else 0
 
-        try:
-            answer = parse_answer(
-                await model(build_messages(character, conv, reply, goal_open, n, conceding))
+            try:
+                answer = parse_answer(
+                    await model(build_messages(character, conv, reply, goal_open, n, conceding))
+                )
+            except Exception as exc:
+                log.warning("dialogue model failed: %s", type(exc).__name__)
+                answer = None
+            if answer is None:
+                return TurnAnswer(line=character.canned, options=[], goal_reached=False, ended=True)
+            line, texts, model_says_reached = answer
+
+            goal_reached = conceding or (
+                goal_open and reply is not None and picked is None and model_says_reached
             )
-        except Exception as exc:
-            log.warning("dialogue model failed: %s", type(exc).__name__)
-            answer = None
-        if answer is None:
-            return TurnAnswer(line=character.canned, options=[], goal_reached=False, ended=True)
-        line, texts, model_says_reached = answer
+            if reply is not None:
+                conv.history.append({"speaker": "cat", "text": reply})
+            conv.history.append({"speaker": "character", "text": line})
+            conv.history = conv.history[-HISTORY_LIMIT:]
 
-        goal_reached = conceding or (
-            goal_open and reply is not None and picked is None and model_says_reached
-        )
-        if reply is not None:
-            conv.history.append({"speaker": "cat", "text": reply})
-        conv.history.append({"speaker": "character", "text": line})
-        conv.history = conv.history[-HISTORY_LIMIT:]
-
-        if goal_reached:
-            conv.goal_reached = True
-            conv.offered = []
-        else:
-            conv.offered = [
-                Option(text=text, reaches_goal=i >= 3 - n) for i, text in enumerate(texts)
-            ]
-        store.put(player, character.id, conv)
-        return TurnAnswer(
-            line=line, options=conv.offered, goal_reached=goal_reached, ended=goal_reached
-        )
+            if goal_reached:
+                conv.goal_reached = True
+                conv.offered = []
+            else:
+                conv.offered = [
+                    Option(text=text, reaches_goal=i >= 3 - n) for i, text in enumerate(texts)
+                ]
+            store.put(player, character.id, conv)
+            return TurnAnswer(
+                line=line, options=conv.offered, goal_reached=goal_reached, ended=goal_reached
+            )
 
     return api
