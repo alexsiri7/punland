@@ -1,0 +1,122 @@
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures';
+import {
+  content,
+  continueGame,
+  conversation,
+  enterPub,
+  game,
+  hotspot,
+  newGame,
+  type Save,
+  seedSave,
+  stats,
+  stubDialogue,
+  stubSaves,
+  useItemOn,
+} from './play';
+
+// Acceptance tests for openspec/specs/progress/spec.md.
+
+test.use({ actionTimeout: 5_000 });
+
+const STATS = { followers: 0, musicians: 0, practice: 0, instruments: 1 };
+
+/** Talks to the bartender, whose conversation reaches the current act's last open goal. */
+async function reachBartenderGoal(page: Page): Promise<void> {
+  await stubDialogue(page, (body) => ({
+    line: body.reply ? 'Fine, you win.' : 'Evening.',
+    options: [{ text: 'Go on.', reaches_goal: true }],
+    goal_reached: body.reply !== null,
+    ended: body.reply !== null,
+  }));
+  await hotspot(page, content.bartender).click();
+  await conversation(page).getByRole('button', { name: 'Go on.' }).click();
+}
+
+async function statValues(page: Page): Promise<string[]> {
+  return stats(page).getByRole('listitem').allTextContents();
+}
+
+test('Closing and coming back', async ({ page, context }) => {
+  test.fail(true, 'needs #10');
+  // Requirement: Autosave. Progress is saved automatically, without signing up.
+  const saves = new Map<string, string>();
+  await stubSaves(page, saves);
+  await newGame(page);
+  await enterPub(page);
+  await expect.poll(() => [...saves.values()].some((save) => save.length > 0)).toBe(true);
+  await page.close();
+
+  const again = await context.newPage();
+  await again.route('https://punland-api.interstellarai.net/**', (route) => route.fulfill({ json: { status: 'ok' } }));
+  await stubSaves(again, saves);
+  await continueGame(again);
+  await expect(game(again)).toHaveAttribute('data-scene', content.pubInterior);
+});
+
+test('A stat changes', async ({ page }) => {
+  test.fail(true, 'needs #11');
+  // Requirement: Career stats. Followers, musicians, practice and instruments are tracked and
+  // shown. In the Act 1 placeholder story, getting the job at the pub changes a stat.
+  await seedSave(page, { room: 'pub', act: '1', goals: content.act1Goals.slice(0, 1), stats: STATS });
+  await continueGame(page);
+  for (const name of [/followers/i, /musicians/i, /practice/i, /instruments/i]) {
+    await expect(stats(page).getByRole('listitem').filter({ hasText: name })).toBeVisible();
+  }
+  const before = await statValues(page);
+  await reachBartenderGoal(page);
+  await expect.poll(() => statValues(page)).not.toEqual(before);
+  const after = await statValues(page);
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect.poll(() => statValues(page)).toEqual(after);
+});
+
+test('Finishing an act', async ({ page }) => {
+  test.fail(true, 'needs #11');
+  // Requirement: Acts. Completing an act's goals starts the next act.
+  await seedSave(page, { room: 'pub', act: '1', goals: content.act1Goals.slice(0, -1), stats: STATS });
+  await continueGame(page);
+  await expect(game(page)).toHaveAttribute('data-act', '1');
+  await reachBartenderGoal(page);
+  await expect(game(page)).toHaveAttribute('data-act', '2');
+});
+
+test('Reaching the last act', async ({ page }) => {
+  test.fail(true, 'needs #11');
+  // Requirement: Acts. The last act is chosen from the player's decisions and stats.
+  const lastActFor = async (stats: Save['stats']): Promise<string | null> => {
+    await seedSave(page, { room: 'pub', act: '3', goals: content.act3Goals.slice(0, -1), stats });
+    await continueGame(page);
+    await reachBartenderGoal(page);
+    await expect(game(page)).not.toHaveAttribute('data-act', '3');
+    return game(page).getAttribute('data-act');
+  };
+  const famous = await lastActFor({ followers: 5000, musicians: 0, practice: 0, instruments: 1 });
+  const bandmates = await lastActFor({ followers: 0, musicians: 4, practice: 80, instruments: 5 });
+  expect(famous).toMatch(/^4/);
+  expect(bandmates).toMatch(/^4/);
+  expect(famous).not.toEqual(bandmates);
+});
+
+test('Adding a puzzle', async ({ page }) => {
+  test.fail(true, 'needs #11');
+  // Requirement: Story as content. A puzzle added to the content data is playable without
+  // code changes. The test adds one to the opening room as the game loads it: a busker's hat
+  // that takes the broken guitar.
+  await page.route('**/content/rooms/opening.json', async (route) => {
+    const room = await (await route.fetch()).json();
+    room.hotspots.push({
+      id: 'test-hat',
+      name: 'Busker hat',
+      at: { x: 300, y: 590 },
+      uses: [{ item: 'broken-guitar', say: 'Someone will fix it for a coin.', removes: 'broken-guitar' }],
+    });
+    await route.fulfill({ json: room });
+  });
+  await newGame(page);
+  await useItemOn(page, content.brokenGuitar, 'Busker hat');
+  await expect(game(page)).toHaveAttribute('data-say', 'Someone will fix it for a coin.');
+});
