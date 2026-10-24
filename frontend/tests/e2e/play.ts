@@ -159,16 +159,26 @@ export interface Save {
   stats: { followers: number; musicians: number; practice: number; instruments: number };
 }
 
+let seeds = 0;
+
 /**
  * Puts a saved game where Continue finds it: in this browser and behind the backend's saves.
- * It is seeded once; whatever the game saves afterwards is what a reload finds.
+ * Each call seeds once, on the next page load; whatever the game saves afterwards is what a
+ * reload finds, until the next call.
  */
 export async function seedSave(page: Page, save: Save): Promise<void> {
   const game = JSON.stringify({ version: 1, savedAt: new Date().toISOString(), ...save });
-  // Init scripts rerun on every navigation, so only seed a browser that has no save yet.
-  await page.addInitScript((value) => {
-    if (localStorage.getItem('punland.save.v1') === null) localStorage.setItem('punland.save.v1', value);
-  }, game);
+  // Init scripts rerun, in order, on every navigation. The tab's sessionStorage remembers
+  // which seeds were already written, so a reload doesn't overwrite what the game saved.
+  const seed = `punland.e2e.seed.${++seeds}`;
+  await page.addInitScript(
+    ([value, seed]) => {
+      if (sessionStorage.getItem(seed) !== null) return;
+      localStorage.setItem('punland.save.v1', value);
+      sessionStorage.setItem(seed, 'written');
+    },
+    [game, seed] as const,
+  );
   let latest: string | null = game;
   await page.route(apiPath('/saves'), async (route: Route) => {
     const method = route.request().method();
