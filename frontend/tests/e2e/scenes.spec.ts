@@ -47,6 +47,10 @@ test('Entering the pub', async ({ page }) => {
   // Requirement: Exits. Clicking the pub door in the opening scene enters the pub interior.
   await newGame(page);
   await enterPub(page);
+  await expect.poll(() => playerPosition(page)).toEqual(content.pubEntrance);
+  await hotspot(page, content.pubDoor).click();
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  await expect.poll(() => playerPosition(page)).toEqual(content.outsidePub);
 });
 
 test('Swapping art', async ({ page }) => {

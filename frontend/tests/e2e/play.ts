@@ -46,6 +46,10 @@ export const content = {
   act3Goals: ['act3-first', 'act3-last'],
   /** A walkable spot on the pavement outside the pub, in scene pixels. */
   pavement: { x: 900, y: 585 },
+  /** Where the player stands on coming into the pub, just inside its street door. */
+  pubEntrance: { x: 250, y: 585 },
+  /** Where the player stands on coming out of the pub, in front of its door. */
+  outsidePub: { x: 705, y: 590 },
 };
 
 export const game = (page: Page): Locator => page.locator('#game');

@@ -7,7 +7,8 @@ import { SCENE_HEIGHT, SCENE_WIDTH } from '../../src/theme';
 // Rooms are content data: adding one must not need a code change, so this checks that every
 // room file holds together (progress spec, "Story as content").
 
-const art = import.meta.glob<{ layers: { actor?: string }[] }>('../../public/rooms/*/art.json', {
+// The layer fields RoomScene reads; scripts/render-art.mjs writes them.
+const art = import.meta.glob<{ layers: { actor?: string; foot?: Point }[] }>('../../public/rooms/*/art.json', {
   eager: true,
   import: 'default',
 });
@@ -48,6 +49,13 @@ describe('room content', () => {
       }
     });
 
+    it('has hotspot actions the room engine knows', () => {
+      for (const h of room.hotspots) {
+        expect(['say', 'exit'], h.id).toContain(h.action.type);
+        if (h.action.type === 'say') expect(h.action.line, h.id).toMatch(/\S/);
+      }
+    });
+
     it('has exits that lead onto the floor of an existing room', () => {
       for (const h of room.hotspots) {
         if (h.action.type !== 'exit') continue;
@@ -57,9 +65,11 @@ describe('room content', () => {
       }
     });
 
-    it('has art with the player in it', () => {
+    it('has art with the player in it, standing on their feet', () => {
       const layers = art[`../../public/rooms/${id}/art.json`]?.layers ?? [];
-      expect(layers.some((layer) => layer.actor === PROTAGONIST.actor)).toBe(true);
+      const player = layers.find((layer) => layer.actor === PROTAGONIST.actor);
+      expect(player).toBeDefined();
+      expect(player?.foot).toEqual({ x: expect.any(Number), y: expect.any(Number) });
     });
   });
 });
