@@ -22,7 +22,6 @@ class Settings:
     cors_origin_regex: str = DEFAULT_ORIGIN_REGEX
     # Unset means no AI: every character answers with its canned line.
     requesty_api_key: str | None = field(default=None, repr=False)
-    requesty_base_url: str = "https://router.requesty.ai/v1"
     dialogue_model: str = DEFAULT_DIALOGUE_MODEL
 
     @classmethod

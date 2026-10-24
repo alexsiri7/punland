@@ -6,6 +6,8 @@ import httpx
 
 from .config import Settings
 
+REQUESTY_BASE_URL = "https://router.requesty.ai/v1"
+
 Model = Callable[[list[dict[str, str]]], Awaitable[str]]
 
 
@@ -16,7 +18,7 @@ class RequestyModel:
         self,
         api_key: str,
         model: str,
-        base_url: str,
+        base_url: str = REQUESTY_BASE_URL,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._api_key = api_key
@@ -48,6 +50,4 @@ class NoModel:
 def model_from_settings(settings: Settings) -> Model:
     if not settings.requesty_api_key:
         return NoModel()
-    return RequestyModel(
-        settings.requesty_api_key, settings.dialogue_model, settings.requesty_base_url
-    )
+    return RequestyModel(settings.requesty_api_key, settings.dialogue_model)
