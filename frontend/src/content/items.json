@@ -1,0 +1,7 @@
+{
+  "start": ["broken-guitar"],
+  "items": {
+    "broken-guitar": { "name": "Broken guitar", "noUse": "My guitar's in enough pieces already." },
+    "flyer": { "name": "Open mic flyer", "noUse": "Waving a flyer at it won't help." }
+  }
+}
