@@ -22,6 +22,9 @@ export type HotspotAction =
   /** `at`: where the player stands in the other room; that room's `start` when left out. */
   | { type: 'exit'; room: string; at?: Point };
 
+/** Every action type, typed so it can't drift from HotspotAction; content is checked against it. */
+export const ACTION_TYPES: Record<HotspotAction['type'], true> = { say: true, exit: true };
+
 export interface Hotspot {
   id: string;
   /** Accessible name, shown on hover. */

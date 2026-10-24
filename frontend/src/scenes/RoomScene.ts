@@ -178,6 +178,8 @@ export class RoomScene extends Phaser.Scene {
       case 'exit':
         this.scene.restart({ room: action.room, at: action.at } satisfies RoomData);
         break;
+      default:
+        action satisfies never;
     }
   }
 

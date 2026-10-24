@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PROTAGONIST } from '../../src/content/protagonist';
-import { type Point, rooms, START_ROOM } from '../../src/content/rooms';
+import { ACTION_TYPES, type Point, rooms, START_ROOM } from '../../src/content/rooms';
 import { insidePolygon } from '../../src/room/walk';
 import { SCENE_HEIGHT, SCENE_WIDTH } from '../../src/theme';
 
@@ -51,7 +51,7 @@ describe('room content', () => {
 
     it('has hotspot actions the room engine knows', () => {
       for (const h of room.hotspots) {
-        expect(['say', 'exit'], h.id).toContain(h.action.type);
+        expect(Object.keys(ACTION_TYPES), h.id).toContain(h.action.type);
         if (h.action.type === 'say') expect(h.action.line, h.id).toMatch(/\S/);
       }
     });
