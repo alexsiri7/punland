@@ -128,7 +128,29 @@ body {
 }
 
 .game {
+  position: relative;
   width: 100%;
   height: 100%;
   background: var(--ui-ground);
+}
+
+/* Hotspots: invisible buttons over the room (src/room/hotspots.ts); other clicks reach the canvas. */
+.hotspots {
+  position: absolute;
+  pointer-events: none;
+}
+
+.hotspots button {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hotspots button:focus-visible {
+  outline: 2px dashed var(--sign-gold);
+  outline-offset: 2px;
 }

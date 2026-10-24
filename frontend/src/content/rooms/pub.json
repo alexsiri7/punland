@@ -1,0 +1,30 @@
+{
+  "label": "PUNLAND · THE THREE CROWS",
+  "place": { "verb": "Inside", "name": "The Three Crows" },
+  "hint": "Warm, loud, and the bartender is watching you.",
+  "start": { "x": 250, "y": 585 },
+  "walkable": [
+    { "x": 60, "y": 530 },
+    { "x": 1240, "y": 530 },
+    { "x": 1240, "y": 615 },
+    { "x": 40, "y": 615 }
+  ],
+  "hotspots": [
+    {
+      "id": "door",
+      "name": "Street door",
+      "verb": "Go out",
+      "rect": { "x": 60, "y": 138, "width": 162, "height": 332 },
+      "walkTo": { "x": 150, "y": 550 },
+      "action": { "type": "exit", "room": "opening", "at": { "x": 705, "y": 590 } }
+    },
+    {
+      "id": "bartender",
+      "name": "Bartender",
+      "verb": "Look at",
+      "rect": { "x": 940, "y": 164, "width": 140, "height": 192 },
+      "walkTo": { "x": 880, "y": 560 },
+      "action": { "type": "say", "line": "A crow in an apron, polishing a glass that is already clean." }
+    }
+  ]
+}
