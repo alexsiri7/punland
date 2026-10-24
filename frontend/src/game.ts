@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { OpeningScene } from './scenes/OpeningScene';
+import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from './theme';
 
-export const GAME_WIDTH = 960;
-export const GAME_HEIGHT = 540;
+/** 1280 x 640 scene plus the 160 px UI bar under it (docs/design/STYLE.md). */
+export const GAME_WIDTH = SCENE_WIDTH;
+export const GAME_HEIGHT = SCENE_HEIGHT + UI_BAR_HEIGHT;
 
 export interface StartOptions {
   /** Room id to start in; defaults to the opening scene. */
@@ -21,7 +23,7 @@ export function startGame(parent: HTMLElement, options: StartOptions = {}): Phas
     parent,
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
-    backgroundColor: '#1a1026',
+    backgroundColor: palette.uiGround,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     // Rooms are registered here; issue #4 replaces this with rooms loaded from content data.
     scene: [],

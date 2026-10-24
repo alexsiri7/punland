@@ -11,7 +11,7 @@ The game SHALL show one room at a time, with the player character in it.
 
 #### Scenario: Opening scene
 - WHEN a new game starts
-- THEN the player is outside the pub (The Root Note) where the bus has dropped them off
+- THEN the player is outside the pub (The Three Crows) where the bus has dropped them off
 
 ### Requirement: Click to walk
 The player character MUST walk to the point the player clicks on the floor of the room.

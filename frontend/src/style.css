@@ -1,8 +1,16 @@
+/* Tune Story UI. Tokens and rules: docs/design/STYLE.md (palette "Ink & UI", type, UI bar). */
 :root {
-  --bg: #1a1026;
-  --panel: #2b1b3d;
-  --accent: #f2c14e;
-  --text: #f4ecff;
+  --ui-ground: #1c1d22;
+  --slot: #26272e;
+  --slot-edge: #3a3c46;
+  --divider: #34363f;
+  --ui-text: #e8e4dc;
+  --muted-text: #a9a6b2;
+  --label-text: #8e8b98;
+  --sign-gold: #e3c58a;
+  --sign-gold-hover: #f2ddb0;
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-sign: 'Bebas Neue', Impact, sans-serif;
   color-scheme: dark;
 }
 
@@ -14,59 +22,105 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: Georgia, 'Times New Roman', serif;
+  background: var(--ui-ground);
+  color: var(--ui-text);
+  font-family: var(--font-ui);
+  font-weight: 400;
 }
 
 #app {
   height: 100%;
-  display: grid;
-  place-items: center;
 }
 
+/* Title screen: the opening room as a full-bleed poster, the menu on a UI-ground panel. */
 .title-screen {
-  text-align: center;
-  padding: 2rem;
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  background: var(--ui-ground) url('/rooms/opening/poster.jpg') 62% 100% / cover no-repeat;
+}
+
+.title-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  width: min(30rem, 100%);
+  padding: 3rem 3rem 3rem 4rem;
+  background: rgb(28 29 34 / 0.92);
+  border-right: 1px solid var(--divider);
+}
+
+.kicker {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--label-text);
 }
 
 .title-screen h1 {
-  font-size: clamp(3rem, 9vw, 6rem);
-  margin: 0 0 0.5rem;
-  color: var(--accent);
-  letter-spacing: 0.05em;
+  margin: 0;
+  font-family: var(--font-sign);
+  font-weight: 400;
+  font-size: clamp(4rem, 9vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sign-gold);
 }
 
 .tagline {
-  margin: 0 0 2.5rem;
-  opacity: 0.85;
-  font-style: italic;
+  margin: 1rem 0 2.5rem;
+  font-size: 1.125rem;
+  line-height: 1.45;
+  color: var(--muted-text);
 }
 
 .menu {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  align-items: center;
+  gap: 0.75rem;
+  align-items: stretch;
+  max-width: 18rem;
 }
 
+/* Buttons are inventory slots grown wide: slot fill, slot edge, gold edge when active. */
 .menu button {
   font: inherit;
-  font-size: 1.4rem;
-  min-width: 14rem;
-  padding: 0.7rem 1.5rem;
-  border: 2px solid var(--accent);
-  border-radius: 0.5rem;
-  background: var(--panel);
-  color: var(--text);
+  font-size: 1.125rem;
+  font-weight: 500;
+  text-align: left;
+  padding: 0.85rem 1.25rem;
+  border: 1px solid var(--slot-edge);
+  border-radius: 10px;
+  background: var(--slot);
+  color: var(--ui-text);
   cursor: pointer;
 }
 
 .menu button:hover,
 .menu button:focus-visible {
-  background: var(--accent);
-  color: var(--bg);
+  border-color: var(--sign-gold);
+  color: var(--sign-gold);
   outline: none;
+}
+
+@media (max-width: 720px) {
+  .title-screen {
+    align-items: flex-end;
+    background-position: 45% 0;
+    background-size: auto 60%;
+  }
+
+  .title-panel {
+    width: 100%;
+    padding: 2rem 1.25rem;
+    border-right: 0;
+    border-top: 1px solid var(--divider);
+    background: var(--ui-ground);
+  }
 }
 
 [hidden] {
@@ -76,4 +130,5 @@ body {
 .game {
   width: 100%;
   height: 100%;
+  background: var(--ui-ground);
 }
