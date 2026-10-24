@@ -7,6 +7,7 @@ import {
   enterPub,
   game,
   hotspot,
+  inventory,
   inventoryItem,
   newGame,
   type Save,
@@ -15,6 +16,7 @@ import {
   stubDialogue,
   stubSaves,
   useItemOn,
+  worlds,
 } from './play';
 
 // Acceptance tests for openspec/specs/progress/spec.md.
@@ -73,6 +75,26 @@ test('Continue keeps the inventory', async ({ page, context }) => {
   await expect(game(again)).toHaveAttribute('data-scene', content.opening);
   await expect(inventoryItem(again, content.flyer)).toBeVisible();
   await expect(hotspot(again, content.flyer)).toHaveCount(0);
+});
+
+test('Continue drops what the content no longer has', async ({ page }) => {
+  // Requirement: Story as content. A save from before a content change can name an item or a
+  // room that is gone; Continue still resumes it, without them.
+  const save = {
+    version: 1,
+    room: content.opening,
+    savedAt: new Date().toISOString(),
+    inventory: { items: ['broken-guitar', 'gone-item'], pickedUp: [] },
+    journey: { left: { dream: { room: 'gone-room' } }, gathered: [] },
+  };
+  await stubSaves(page, new Map());
+  await page.addInitScript((value) => localStorage.setItem('punland.save.v1', value), JSON.stringify(save));
+  await continueGame(page);
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  await expect(inventoryItem(page, content.brokenGuitar)).toBeVisible();
+  await expect(inventory(page).getByRole('button')).toHaveCount(1);
+  await worlds(page).getByRole('button', { name: 'Dream' }).click();
+  await expect(game(page)).toHaveAttribute('data-scene', 'dream');
 });
 
 test('A stat changes', async ({ page }) => {
