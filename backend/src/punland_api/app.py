@@ -4,6 +4,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import sqlalchemy as sa
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,16 +19,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        # A database that is missing, down or fails to migrate disables saves (503), never the
-        # API: the game keeps its saves in the browser meanwhile.
+        # A database that is missing, misconfigured, down or fails to migrate disables saves
+        # (503), never the API: the game keeps its saves in the browser meanwhile.
         app.state.saves_engine = None
-        engine = saves.connect(settings.database_url) if settings.database_url else None
-        if engine is not None:
+        engine: sa.Engine | None = None
+        if settings.database_url:
             try:
+                engine = saves.connect(settings.database_url)
                 saves.migrate(engine)
                 app.state.saves_engine = engine
             except Exception:
-                logger.exception("autosave disabled: database unavailable or migration failed")
+                logger.exception("autosave disabled: database unusable or migration failed")
         yield
         if engine is not None:
             engine.dispose()

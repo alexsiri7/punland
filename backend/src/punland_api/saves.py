@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 MAX_SAVE_BYTES = 64 * 1024
 
-# Mirrors migrations/versions; unqualified, so it lives in the schema the role's search path
-# names (punland / punland_staging).
+# Must match what migrations/versions build (tests/test_progress.py checks it). Unqualified, so
+# it lives in the schema the role's search path names (punland / punland_staging).
 metadata = sa.MetaData()
 saves = sa.Table(
     "saves",

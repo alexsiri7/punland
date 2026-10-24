@@ -9,8 +9,10 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 from fastapi.testclient import TestClient
 
+from punland_api import saves
 from punland_api.app import create_app
 from punland_api.config import Settings
 from punland_api.saves import MAX_SAVE_BYTES
@@ -96,3 +98,23 @@ def test_unreachable_database_degrades(tmp_path: Path) -> None:
     with TestClient(create_app(unreachable)) as client:
         assert client.put("/saves", headers=PLAYER, json=SAVE).status_code == 503
         assert client.get("/health").status_code == 200
+
+
+def test_malformed_database_url_degrades() -> None:
+    with TestClient(create_app(Settings(database_url="not-a-database-url"))) as client:
+        assert client.get("/saves", headers=PLAYER).status_code == 503
+        assert client.get("/health").status_code == 200
+
+
+def test_migrations_build_the_table_the_app_queries(database: Settings) -> None:
+    # The migrations and saves.saves declare the table separately; a column changed in only
+    # one of them would turn every /saves call into a 503.
+    assert database.database_url
+    engine = saves.connect(database.database_url)
+    saves.migrate(engine)
+    ddl = engine.dialect.type_compiler_instance.process
+    built = {
+        c["name"]: (ddl(c["type"]), c["nullable"]) for c in sa.inspect(engine).get_columns("saves")
+    }
+    engine.dispose()
+    assert built == {c.name: (ddl(c.type), c.nullable) for c in saves.saves.c}

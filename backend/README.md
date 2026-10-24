@@ -11,10 +11,11 @@ when there is none.
 - `DATABASE_URL` is the Postgres URL, authenticating as the app's own role (`punland`, or
   `punland_staging` on staging) through the session pooler on port 5432. Don't add
   `options=-c search_path=...`: the role's own search path picks its schema.
-- Without `DATABASE_URL`, or when the database is down or a migration fails at startup, `/saves`
-  answers 503 and the rest of the API keeps running. The game falls back to the save in the
-  browser.
+- Without `DATABASE_URL`, or when it is malformed, the database is down or a migration fails at
+  startup, `/saves` answers 503 and the rest of the API keeps running. The game falls back to the
+  save in the browser.
 - Migrations (Alembic) live in `src/punland_api/migrations/versions/` and run at startup. To add
-  one, copy `0001_saves.py` and chain `revision`/`down_revision`. Use unqualified table names and
-  plain `import a.b as c` lines: the unsafe-change check reads every added line under
+  one, copy `0001_saves.py`, chain `revision`/`down_revision`, and change the `saves` table in
+  `saves.py` to match (a test checks the migrated table against it). Use unqualified table names
+  and plain `import a.b as c` lines: the unsafe-change check reads every added line under
   `migrations/` as SQL.
