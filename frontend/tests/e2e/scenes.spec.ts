@@ -8,7 +8,6 @@ import { clickScene, content, enterPub, game, hotspot, newGame, playerPosition }
 test.use({ actionTimeout: 5_000 });
 
 test('Opening scene', async ({ page }) => {
-  test.fail(true, 'needs #4');
   // Requirement: Rooms. The game shows one room at a time, with the player character in it.
   await newGame(page);
   await expect.poll(() => playerPosition(page)).not.toBeNull();
@@ -16,7 +15,6 @@ test('Opening scene', async ({ page }) => {
 });
 
 test('Walking', async ({ page }) => {
-  test.fail(true, 'needs #4');
   // Requirement: Click to walk. The player character walks to the point clicked on the floor.
   await newGame(page);
   await clickScene(page, content.pavement);
@@ -29,7 +27,6 @@ test('Walking', async ({ page }) => {
 });
 
 test('Hovering a hotspot', async ({ page }) => {
-  test.fail(true, 'needs #4');
   // Requirement: Hotspots. Hotspots show their name on hover.
   await newGame(page);
   const door = hotspot(page, content.pubDoor);
@@ -38,7 +35,6 @@ test('Hovering a hotspot', async ({ page }) => {
 });
 
 test('Clicking a hotspot', async ({ page }) => {
-  test.fail(true, 'needs #4');
   // Requirement: Hotspots. Clicking one walks the character to it and its action happens.
   await newGame(page);
   const start = await playerPosition(page);
@@ -48,14 +44,16 @@ test('Clicking a hotspot', async ({ page }) => {
 });
 
 test('Entering the pub', async ({ page }) => {
-  test.fail(true, 'needs #4');
   // Requirement: Exits. Clicking the pub door in the opening scene enters the pub interior.
   await newGame(page);
   await enterPub(page);
+  await expect.poll(() => playerPosition(page)).toEqual(content.pubEntrance);
+  await hotspot(page, content.pubDoor).click();
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  await expect.poll(() => playerPosition(page)).toEqual(content.outsidePub);
 });
 
 test('Swapping art', async ({ page }) => {
-  test.fail(true, 'needs #4');
   // Requirement: Placeholder art. Replacing a room's art file needs no change to game logic.
   const magenta = [
     '<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1280">',

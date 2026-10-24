@@ -55,9 +55,11 @@ frontend/
   src/main.ts           boot: title screen -> startGame()
   src/title.ts          title screen logic (Continue only when a save exists)
   src/save.ts           SaveStore interface + LocalSaveStore (localStorage); #10 swaps in the backend store
-  src/game.ts           Phaser game factory; mirrors the current scene key on #game[data-scene]
-  src/scenes/           Phaser scenes; OpeningScene draws the opening room's art layers until the room engine (#4)
-  src/content/protagonist.ts  the protagonist's (placeholder) name, the one place it lives in code
+  src/game.ts           Phaser game factory; starts RoomScene in the opening (or saved) room
+  src/scenes/RoomScene.ts  the room engine: any room from its content + art; mirrors data-scene/-player/-hover/-say on #game
+  src/room/             walking (convex floor) and the hotspot buttons over the canvas
+  src/content/rooms/<room>.json  room content: floor, start point, hotspots and their actions (say, exit)
+  src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
   src/theme.ts          design tokens (palette, fonts, scene/UI-bar sizes) from docs/design/STYLE.md
   src/fonts.ts          self-hosted Bebas Neue + Inter, and loadFonts() for canvas text
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/

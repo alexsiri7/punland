@@ -17,9 +17,10 @@ import { expect } from './fixtures';
  * conversation panel are DOM with roles and names, so a player with a keyboard or a screen
  * reader can play too.
  *
- * Apart from data-scene, none of this is built yet. The issue that builds a piece may settle
- * on a different selector or content name: change it here, in one place, in the PR that
- * removes the test's expected-to-fail marker.
+ * The room attributes (data-scene, data-player, data-hover, data-say) and the Hotspots group
+ * are built (#4); the rest is not yet. The issue that builds a piece may settle on a different
+ * selector or content name: change it here, in one place, in the PR that removes the test's
+ * expected-to-fail marker.
  */
 
 /** Content the tests rely on: the skeleton's opening rooms and Act 1 placeholders (#4, #5, #11). */
@@ -45,6 +46,10 @@ export const content = {
   act3Goals: ['act3-first', 'act3-last'],
   /** A walkable spot on the pavement outside the pub, in scene pixels. */
   pavement: { x: 900, y: 585 },
+  /** Where the player stands on coming into the pub, just inside its street door. */
+  pubEntrance: { x: 250, y: 585 },
+  /** Where the player stands on coming out of the pub, in front of its door. */
+  outsidePub: { x: 705, y: 590 },
 };
 
 export const game = (page: Page): Locator => page.locator('#game');

@@ -9,7 +9,8 @@
 //
 // Output per room (positions are in scene pixels, 1280 x 640):
 //   background.jpg  layers sky, far, mid, ground, props + the grain overlay (full frame)
-//   <actor>.png     each direct child <g> of layer-actors with an id, cropped
+//   <actor>.png     each direct child <g> of layer-actors with an id, cropped; art.json records
+//                   the actor's feet as `foot`: by convention the origin of the actor's <g>
 //   fore.png        layer-fore, cropped
 //   poster.jpg      every layer composited (title screen backdrop; not listed in art.json)
 // The actor layer is split out so characters stay swappable sprites (STYLE.md, Scene build).
@@ -101,8 +102,12 @@ async function renderRoom(browser, room) {
       [...document.querySelectorAll('#layer-actors > g')].forEach((g, j) => (g.style.display = j === n ? '' : 'none'));
     }, i);
     const clip = await bbox(`#layer-actors > g:nth-of-type(${i + 1})`);
+    const foot = await page.evaluate((n) => {
+      const m = document.querySelectorAll('#layer-actors > g')[n].getCTM();
+      return { x: Math.round(m.e), y: Math.round(m.f) };
+    }, i);
     await shot(`${id}.png`, () => {}, clip);
-    layers.push({ key: `${room}-${id}`, file: `${id}.png`, x: clip.x, y: clip.y, depth: 10 + i, actor: id });
+    layers.push({ key: `${room}-${id}`, file: `${id}.png`, x: clip.x, y: clip.y, depth: 10 + i, actor: id, foot });
   }
 
   await isolate('layer-fore');

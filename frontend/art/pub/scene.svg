@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Pub interior art: inside The Three Crows. Placeholder, drawn to docs/design/STYLE.md; the cat is board 2's, as in art/opening/scene.svg.
+     Layers follow docs/design/STYLE.md "Scene build": one <g id="layer-*"> per layer, back to front.
+     Rendered to PNG by frontend/scripts/render-art.mjs; do not hand-edit the PNGs. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Inside The Three Crows at dusk: a brick-walled pub lit by low hanging lamps; the street door on the left shows the blue evening outside; a crow bartender in an apron leans on a long wooden bar, bottles on the shelves behind; an open mic poster on the wall; the ginger cat in his blue hoodie has just walked in">
+<style>
+.p-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p-sign{font-family:'Bebas Neue',sans-serif;text-anchor:middle}
+.p-small{font-family:'Inter',sans-serif;font-weight:500;text-anchor:middle}
+</style>
+<defs>
+<filter id="p-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0 0.09  0 0 0 0.16 0"></feColorMatrix></filter>
+<path id="p-crow" d="M-12 -6 L-7 -8 Q-6 -12 -2 -12 Q3 -12 5 -8 Q9 -6 15 -2 L7 -2 Q3 1 -2 0 Q-6 -1 -7 -5 Z M-1 0 L-2 3 M3 0 L3 3"></path>
+</defs>
+
+<g id="layer-sky">
+<rect x="0" y="0" width="1280" height="470" fill="#6E4038"></rect>
+<polygon points="1180,0 1280,0 1280,470 1180,470" fill="#5A332D"></polygon>
+<path d="M0 64 H1280 M0 88 H1280 M0 112 H1280 M0 136 H1280 M0 160 H1280 M0 184 H1280 M0 208 H1280 M0 232 H1280 M0 256 H1280 M0 280 H1280 M0 304 H1280 M0 328 H1280 M0 352 H1280 M0 376 H1280" class="p-line" stroke="#5A332D" style="stroke-width:2" opacity="0.7"></path>
+<g fill="#5A332D" opacity="0.8">
+<rect x="250" y="66" width="44" height="20"></rect><rect x="520" y="114" width="44" height="20"></rect><rect x="640" y="186" width="44" height="20"></rect><rect x="226" y="258" width="44" height="20"></rect><rect x="700" y="306" width="44" height="20"></rect><rect x="300" y="354" width="44" height="20"></rect><rect x="760" y="90" width="44" height="20"></rect>
+</g>
+<rect x="0" y="0" width="1280" height="40" fill="#2F2D35"></rect>
+<g fill="#2A1C1A"><rect x="0" y="36" width="1280" height="8"></rect><rect x="150" y="0" width="16" height="44"></rect><rect x="470" y="0" width="16" height="44"></rect><rect x="790" y="0" width="16" height="44"></rect><rect x="1110" y="0" width="16" height="44"></rect></g>
+</g>
+
+<g id="layer-far">
+<rect x="330" y="116" width="124" height="156" fill="#2E3A52"></rect>
+<g fill="#4A4A5E"><rect x="336" y="200" width="22" height="72"></rect><rect x="362" y="176" width="30" height="96"></rect><rect x="398" y="214" width="18" height="58"></rect><rect x="420" y="190" width="28" height="82"></rect></g>
+<g fill="#E8B566" opacity="0.5"><rect x="370" y="190" width="4" height="5"></rect><rect x="380" y="214" width="4" height="5"></rect><rect x="428" y="204" width="4" height="5"></rect><rect x="342" y="222" width="4" height="5"></rect></g>
+<polygon points="348,262 390,126 404,126 362,262" fill="#FFFFFF" opacity="0.08"></polygon>
+<path d="M330 116 H454 V272 H330 Z M392 116 V272 M330 194 H454" class="p-line" stroke="#2A1C1A" style="stroke-width:5"></path>
+<polygon points="320,272 464,272 468,284 316,284" fill="#6E4628"></polygon>
+
+<rect x="860" y="62" width="330" height="62" fill="#1A2822"></rect>
+<rect x="866" y="68" width="318" height="50" fill="none" stroke="#E3C58A" style="stroke-width:1.2"></rect>
+<text x="1025" y="106" class="p-sign" fill="#E3C58A" style="font-size:30px;letter-spacing:6px">THE THREE CROWS</text>
+<path d="M860 62 H1190 V124 H860 Z" class="p-line" stroke="#2A1C1A" style="stroke-width:4"></path>
+
+<polygon points="800,180 1260,180 1260,192 800,192" fill="#8A5A34"></polygon>
+<polygon points="800,192 1260,192 1260,198 800,198" fill="#4A3A30"></polygon>
+<polygon points="800,270 1260,270 1260,282 800,282" fill="#8A5A34"></polygon>
+<polygon points="800,282 1260,282 1260,288 800,288" fill="#4A3A30"></polygon>
+<g>
+<rect x="816" y="138" width="14" height="42" fill="#3E5E44"></rect><rect x="824" y="138" width="6" height="42" fill="#2F4A36"></rect><rect x="820" y="126" width="6" height="12" fill="#2F4A36"></rect>
+<rect x="842" y="146" width="16" height="34" fill="#C99A54"></rect><rect x="852" y="146" width="6" height="34" fill="#8A5A34"></rect><rect x="846" y="136" width="8" height="10" fill="#8A5A34"></rect>
+<rect x="870" y="132" width="12" height="48" fill="#8A7FA8"></rect><rect x="877" y="132" width="5" height="48" fill="#6E6478"></rect><rect x="873" y="120" width="6" height="12" fill="#6E6478"></rect>
+<rect x="1110" y="140" width="14" height="40" fill="#C8483B"></rect><rect x="1118" y="140" width="6" height="40" fill="#8A3A30"></rect><rect x="1114" y="128" width="6" height="12" fill="#8A3A30"></rect>
+<rect x="1136" y="134" width="14" height="46" fill="#3E5E44"></rect><rect x="1144" y="134" width="6" height="46" fill="#2F4A36"></rect><rect x="1140" y="122" width="6" height="12" fill="#2F4A36"></rect>
+<rect x="1164" y="148" width="18" height="32" fill="#C99A54"></rect><rect x="1175" y="148" width="7" height="32" fill="#8A5A34"></rect><rect x="1168" y="138" width="8" height="10" fill="#8A5A34"></rect>
+<rect x="1196" y="138" width="12" height="42" fill="#5FA39A"></rect><rect x="1203" y="138" width="5" height="42" fill="#3E7A72"></rect><rect x="1199" y="126" width="6" height="12" fill="#3E7A72"></rect>
+<rect x="1224" y="144" width="14" height="36" fill="#8A7FA8"></rect><rect x="1232" y="144" width="6" height="36" fill="#6E6478"></rect><rect x="1228" y="134" width="6" height="10" fill="#6E6478"></rect>
+<rect x="818" y="230" width="16" height="40" fill="#C99A54"></rect><rect x="828" y="230" width="6" height="40" fill="#8A5A34"></rect><rect x="822" y="218" width="8" height="12" fill="#8A5A34"></rect>
+<rect x="846" y="224" width="12" height="46" fill="#C8483B"></rect><rect x="853" y="224" width="5" height="46" fill="#8A3A30"></rect><rect x="849" y="212" width="6" height="12" fill="#8A3A30"></rect>
+<rect x="872" y="236" width="14" height="34" fill="#3E5E44"></rect><rect x="880" y="236" width="6" height="34" fill="#2F4A36"></rect>
+<rect x="1120" y="226" width="14" height="44" fill="#5FA39A"></rect><rect x="1128" y="226" width="6" height="44" fill="#3E7A72"></rect><rect x="1124" y="214" width="6" height="12" fill="#3E7A72"></rect>
+<rect x="1150" y="234" width="16" height="36" fill="#C99A54"></rect><rect x="1160" y="234" width="6" height="36" fill="#8A5A34"></rect>
+<rect x="1182" y="228" width="12" height="42" fill="#8A7FA8"></rect><rect x="1189" y="228" width="5" height="42" fill="#6E6478"></rect><rect x="1185" y="216" width="6" height="12" fill="#6E6478"></rect>
+<rect x="1210" y="232" width="14" height="38" fill="#C8483B"></rect><rect x="1218" y="232" width="6" height="38" fill="#8A3A30"></rect>
+</g>
+<g fill="#FFE3A0" opacity="0.25"><rect x="818" y="140" width="2" height="36"></rect><rect x="844" y="148" width="2" height="30"></rect><rect x="1112" y="142" width="2" height="34"></rect><rect x="1166" y="150" width="2" height="28"></rect><rect x="820" y="232" width="2" height="34"></rect><rect x="1122" y="228" width="2" height="38"></rect></g>
+</g>
+
+<g id="layer-mid">
+<rect x="0" y="384" width="1280" height="86" fill="#4A3A30"></rect>
+<rect x="0" y="378" width="1280" height="10" fill="#6E4628"></rect>
+<path d="M240 400 H480 V456 H240 Z M500 400 H740 V456 H500 Z" class="p-line" stroke="#3A2E26" style="stroke-width:2"></path>
+
+<polygon points="60,138 222,138 222,470 60,470" fill="#2A1C1A"></polygon>
+<polygon points="74,152 208,152 208,470 74,470" fill="#1A2822"></polygon>
+<polygon points="176,152 208,152 208,470 176,470" fill="#142019"></polygon>
+<polygon points="88,166 194,166 194,290 88,290" fill="#2E3A52"></polygon>
+<g fill="#4A4A5E"><rect x="88" y="240" width="20" height="50"></rect><rect x="112" y="222" width="26" height="68"></rect><rect x="160" y="250" width="34" height="40"></rect></g>
+<path d="M88 200 Q140 220 194 196" class="p-line" stroke="#1A1820" style="stroke-width:1"></path>
+<g fill="#FFE3A0"><circle cx="104" cy="206" r="2.6"></circle><circle cx="130" cy="212" r="2.6"></circle><circle cx="156" cy="211" r="2.6"></circle><circle cx="182" cy="202" r="2.6"></circle></g>
+<path d="M88 166 H194 V290 H88 Z M141 166 V290" class="p-line" stroke="#142019" style="stroke-width:4"></path>
+<path d="M92 320 H190 V452 H92 Z" class="p-line" stroke="#23382F" style="stroke-width:2"></path>
+<rect x="182" y="330" width="6" height="30" fill="#C9A86A"></rect>
+<path d="M60 138 H222 V470 H60 Z" class="p-line" stroke="#2A1C1A" style="stroke-width:5"></path>
+
+<polygon points="740,356 1280,356 1280,374 732,374" fill="#8A5A34"></polygon>
+<polygon points="732,374 1280,374 1280,382 732,382" fill="#6E4628"></polygon>
+<polygon points="748,382 1280,382 1280,512 748,512" fill="#6E4628"></polygon>
+<polygon points="748,382 772,382 772,512 748,512" fill="#8A5A34"></polygon>
+<path d="M792 398 H932 V496 H792 Z M952 398 H1092 V496 H952 Z M1112 398 H1252 V496 H1112 Z" class="p-line" stroke="#4A3A30" style="stroke-width:3"></path>
+<path d="M760 492 H1280" class="p-line" stroke="#C99A54" style="stroke-width:4"></path>
+<path d="M732 356 H1280 V512 H748 V382 H732 Z" class="p-line" stroke="#2A1C1A" style="stroke-width:4"></path>
+</g>
+
+<g id="layer-ground">
+<rect x="0" y="470" width="1280" height="170" fill="#4A3A30"></rect>
+<polygon points="0,470 1280,470 1280,478 0,478" fill="#3A2E26"></polygon>
+<path d="M0 506 H1280 M0 548 H1280 M0 596 H1280 M120 478 L100 506 M420 478 L410 506 M700 506 L694 548 M260 506 L240 548 M980 548 L972 596 M520 548 L506 596 M160 596 L140 640 M840 596 L830 640" class="p-line" stroke="#3A2E26" style="stroke-width:2"></path>
+<polygon points="748,512 1280,512 1280,528 764,528" fill="#141218" opacity="0.45"></polygon>
+<polygon points="200,486 420,486 520,600 120,600" fill="#FFE3A0" opacity="0.1"></polygon>
+<polygon points="540,486 760,486 860,600 460,600" fill="#FFE3A0" opacity="0.1"></polygon>
+<polygon points="74,470 208,470 260,520 60,520" fill="#2E3A52" opacity="0.25"></polygon>
+</g>
+
+<g id="layer-props">
+<polygon points="70,470 214,470 226,492 58,492" fill="#5E5A62"></polygon>
+<polygon points="70,470 214,470 216,476 68,476" fill="#4A464E"></polygon>
+
+<g transform="rotate(-2 560 262)">
+<rect x="512" y="196" width="96" height="132" fill="#D9CDB4"></rect>
+<polygon points="590,196 608,196 608,328 590,328" fill="#C9C0AE"></polygon>
+<text x="560" y="232" class="p-sign" fill="#2A1C1A" style="font-size:20px;letter-spacing:4px">TONIGHT</text>
+<text x="560" y="270" class="p-sign" fill="#C8483B" style="font-size:24px;letter-spacing:2px">OPEN MIC</text>
+<text x="560" y="300" class="p-sign" fill="#2A1C1A" style="font-size:13px;letter-spacing:1px">DOWNSTAIRS 9PM</text>
+<path d="M536 312 H584" class="p-line" stroke="#2A1C1A" style="stroke-width:1.5"></path>
+</g>
+<polygon points="608,200 622,204 622,334 608,328" fill="#141218" opacity="0.45"></polygon>
+
+<rect x="788" y="318" width="8" height="38" fill="#C99A54"></rect><rect x="792" y="318" width="4" height="38" fill="#8A5A34"></rect>
+<rect x="808" y="318" width="8" height="38" fill="#C99A54"></rect><rect x="812" y="318" width="4" height="38" fill="#8A5A34"></rect>
+<rect x="782" y="314" width="40" height="8" fill="#8A5A34"></rect>
+<rect x="786" y="300" width="12" height="16" rx="2" fill="#2F2D35"></rect><rect x="806" y="300" width="12" height="16" rx="2" fill="#C8483B"></rect>
+<rect x="1148" y="328" width="22" height="28" fill="#E8B566" opacity="0.85"></rect><rect x="1162" y="328" width="8" height="28" fill="#C99A54"></rect>
+<rect x="1148" y="322" width="22" height="7" fill="#F4EFE6"></rect>
+<polygon points="1170,342 1182,356 1170,356" fill="#141218" opacity="0.45"></polygon>
+
+<g fill="#2F2D35">
+<rect x="836" y="456" width="56" height="10" rx="3"></rect><rect x="840" y="466" width="6" height="58"></rect><rect x="882" y="466" width="6" height="58"></rect>
+<rect x="996" y="456" width="56" height="10" rx="3"></rect><rect x="1000" y="466" width="6" height="58"></rect><rect x="1042" y="466" width="6" height="58"></rect>
+<rect x="1156" y="456" width="56" height="10" rx="3"></rect><rect x="1160" y="466" width="6" height="58"></rect><rect x="1202" y="466" width="6" height="58"></rect>
+</g>
+<g fill="#C8483B"><rect x="836" y="450" width="56" height="8" rx="3"></rect><rect x="996" y="450" width="56" height="8" rx="3"></rect><rect x="1156" y="450" width="56" height="8" rx="3"></rect></g>
+<g fill="#8A3A30"><rect x="874" y="450" width="18" height="8" rx="3"></rect><rect x="1034" y="450" width="18" height="8" rx="3"></rect><rect x="1194" y="450" width="18" height="8" rx="3"></rect></g>
+<g fill="#141218" opacity="0.45"><polygon points="840,524 888,524 920,536 868,536"></polygon><polygon points="1000,524 1048,524 1080,536 1028,536"></polygon><polygon points="1160,524 1208,524 1240,536 1188,536"></polygon></g>
+</g>
+
+<g id="layer-actors">
+<g id="bartender" transform="translate(1010 356)">
+<polygon points="-46,0 -40,-82 -22,-104 22,-104 40,-82 48,0" fill="#2F2D35"></polygon>
+<polygon points="14,-104 22,-104 40,-82 48,0 20,0" fill="#1E1E24"></polygon>
+<polygon points="-30,0 -24,-78 24,-78 30,0" fill="#D9CDB4"></polygon>
+<polygon points="10,-78 24,-78 30,0 14,0" fill="#C9C0AE"></polygon>
+<path d="M-24 -78 L-14 -100 M24 -78 L14 -100" class="p-line" stroke="#C9C0AE" style="stroke-width:2"></path>
+<polygon points="-40,-82 -70,-30 -60,-4 -46,-6 -48,-30" fill="#2F2D35"></polygon>
+<polygon points="40,-82 62,-40 52,-2 38,-6 44,-40" fill="#1E1E24"></polygon>
+<rect x="-82" y="-8" width="40" height="8" rx="2" fill="#F4EFE6"></rect>
+<polygon points="-18,-104 -26,-140 -10,-170 18,-172 30,-150 24,-112 14,-104" fill="#2F2D35"></polygon>
+<polygon points="12,-170 18,-172 30,-150 24,-112 14,-104 8,-104" fill="#1E1E24"></polygon>
+<polygon points="-10,-170 -4,-190 4,-174" fill="#2F2D35"></polygon>
+<polygon points="2,-176 10,-192 14,-172" fill="#1E1E24"></polygon>
+<polygon points="-22,-150 -62,-140 -22,-134" fill="#E3C58A"></polygon>
+<polygon points="-22,-140 -62,-140 -22,-134" fill="#C99A54"></polygon>
+<ellipse cx="-8" cy="-152" rx="6" ry="6.5" fill="#F4EFE6"></ellipse>
+<circle cx="-10" cy="-151" r="3" fill="#16161A"></circle>
+<path d="M-18 -162 Q-10 -166 -1 -161" class="p-line" stroke="#16161A" style="stroke-width:2"></path>
+</g>
+<g id="cat" transform="translate(250 585)">
+<polygon points="-30,0 30,0 100,20 34,22" fill="#141218" opacity="0.45"></polygon>
+<ellipse cx="0" cy="0" rx="34" ry="4" fill="#141218" opacity="0.6"></ellipse>
+<g transform="rotate(25 0 -150)">
+<rect x="-3" y="-228" width="6" height="64" fill="#4A3A30"></rect>
+<polygon points="-3,-228 -1.5,-232 0,-228.5 1.5,-231 3,-228" fill="#4A3A30"></polygon>
+<rect x="-4" y="-214" width="8" height="6" fill="#9A968C"></rect>
+</g>
+<g transform="rotate(-8 33 -218)">
+<rect x="29" y="-218" width="9" height="18" rx="2" fill="#3A2E26"></rect>
+<circle cx="28" cy="-212" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="28" cy="-205" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="39" cy="-212" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="39" cy="-205" r="1.6" fill="#B9B2A4"></circle>
+</g>
+<path d="M31 -221 Q41 -228 35 -217" class="p-line" stroke="#CFC9BE" style="stroke-width:0.9"></path>
+<path d="M10 -112 C34 -100 42 -70 32 -48 C27 -37 33 -29 40 -33" class="p-line" stroke="#B86A34" style="stroke-width:8"></path>
+<rect x="-19" y="-114" width="14" height="102" rx="5" fill="#26262C"></rect>
+<rect x="-11" y="-114" width="6" height="102" fill="#1C1C21"></rect>
+<rect x="5" y="-114" width="14" height="102" rx="5" fill="#26262C"></rect>
+<rect x="13" y="-114" width="6" height="102" fill="#1C1C21"></rect>
+<rect x="-21" y="-24" width="16" height="10" rx="3" fill="#E2DDD2"></rect>
+<rect x="5" y="-24" width="16" height="10" rx="3" fill="#C9C3B6"></rect>
+<rect x="-29" y="-16" width="26" height="15" rx="6" fill="#E2DDD2"></rect>
+<path d="M-12 -16 H-9 Q-3 -16 -3 -10 V-3 H-12 Z" fill="#C9C3B6"></path>
+<rect x="3" y="-16" width="26" height="15" rx="6" fill="#C9C3B6"></rect>
+<path d="M20 -16 H23 Q29 -16 29 -10 V-3 H20 Z" fill="#ADA799"></path>
+<rect x="-31" y="-3" width="30" height="4" rx="2" fill="#2A2A30"></rect>
+<rect x="1" y="-3" width="30" height="4" rx="2" fill="#2A2A30"></rect>
+<path d="M-19 -20 H-7 M-19 -16 H-7 M7 -20 H19 M7 -16 H19" class="p-line" stroke="#8A8478" style="stroke-width:1.3"></path>
+<path d="M-22 -194 Q0 -200 22 -194 L28 -120 Q27 -108 20 -108 H-20 Q-27 -108 -28 -120 Z" fill="#4F6A8A"></path>
+<path d="M10 -197 Q17 -196 22 -194 L28 -120 Q27 -108 20 -108 H14 Z" fill="#3E5572"></path>
+<path d="M-27 -116 H27 L28 -112 Q27 -108 20 -108 H-20 Q-27 -108 -28 -112 Z" fill="#46607E"></path>
+<path d="M-15 -146 H15 L18 -122 H-18 Z" fill="#46607E"></path>
+<circle cx="-12" cy="-178" r="4" fill="#E3C58A"></circle>
+<path d="M-21 -188 Q-38 -198 -42 -228" class="p-line" stroke="#4F6A8A" style="stroke-width:13"></path>
+<circle cx="-42" cy="-235" r="6.5" fill="#D88A4A"></circle>
+<path d="M-46 -240 L-48 -246 M-42 -242 L-42 -248 M-38 -240 L-36 -246" class="p-line" stroke="#D88A4A" style="stroke-width:3"></path>
+<path d="M-56 -244 Q-60 -236 -56 -228 M-62 -248 Q-68 -236 -62 -224" class="p-line" stroke="#E8E4DC" style="stroke-width:1.5" opacity="0.6"></path>
+<path d="M21 -188 Q33 -150 31 -108" class="p-line" stroke="#3E5572" style="stroke-width:13"></path>
+<circle cx="31" cy="-102" r="6" fill="#B86A34"></circle>
+<path d="M16 -194 L-22 -118" class="p-line" stroke="#18181C" style="stroke-width:5"></path>
+<rect x="-6" y="-200" width="12" height="8" fill="#B86A34"></rect>
+<path d="M-20 -196 Q-24 -206 -14 -208 Q0 -202 14 -208 Q24 -206 20 -196 Q0 -188 -20 -196 Z" fill="#3E5572"></path>
+<path d="M-5 -194 L-6 -168 M5 -194 L6 -164" class="p-line" stroke="#CFC9BE" style="stroke-width:1.4"></path>
+<polygon points="-21,-226 -19,-262 -5,-237" fill="#D88A4A"></polygon>
+<polygon points="-17,-233 -16,-253 -9,-238" fill="#B97A6E"></polygon>
+<polygon points="5,-237 19,-262 21,-226" fill="#B86A34"></polygon>
+<polygon points="9,-238 16,-253 17,-233" fill="#9E6458"></polygon>
+<circle cx="0" cy="-216" r="24" fill="#D88A4A"></circle>
+<path d="M-2 -240 A24 24 0 0 1 2 -192 A34 34 0 0 0 -2 -240 Z" fill="#B86A34"></path>
+<path d="M-13 -235 Q-2 -247 13 -236 Q7 -237 3 -229 Q-1 -237 -6 -233 Q-9 -236 -13 -235 Z" fill="#B86A34"></path>
+<ellipse cx="0" cy="-203" rx="12" ry="8" fill="#EBC9A4"></ellipse>
+<path d="M6 -210 Q14 -206 10 -198 Q6 -196 2 -195.4 Q10 -201 6 -210 Z" fill="#D6B08A"></path>
+<path d="M-3 -208 H3 L0 -204.5 Z" fill="#9E5A5A"></path>
+<path d="M-10 -204 L-26 -207 M-10 -201 L-25 -199 M10 -204 L26 -207 M10 -201 L25 -199" class="p-line" stroke="#5A3020" style="stroke-width:0.9" opacity="0.6"></path>
+<ellipse cx="-9" cy="-215" rx="4.6" ry="5.4" fill="#F4EFE6"></ellipse>
+<ellipse cx="9" cy="-215" rx="4.6" ry="5.4" fill="#F4EFE6"></ellipse>
+<circle cx="-8.5" cy="-214.5" r="2.6" fill="#16161A"></circle>
+<circle cx="9.5" cy="-214.5" r="2.6" fill="#16161A"></circle>
+<path d="M-13.5 -218 Q-9 -221.5 -4.5 -218 M4.5 -218 Q9 -221.5 13.5 -218" class="p-line" stroke="#3A2418" style="stroke-width:1.6"></path>
+<path d="M-15 -225 Q-10 -227.5 -4 -225.5 M4 -225.5 Q10 -227.5 15 -225" class="p-line" stroke="#7A4524" style="stroke-width:1.8"></path>
+<path d="M-5 -199 Q0.5 -199.5 6 -199 Q3 -193.5 0.5 -193.5 Q-2.5 -193.5 -5 -199 Z" fill="#3A1E1E"></path>
+<path d="M-3 -198.8 H4 L3.4 -197.4 H-2.4 Z" fill="#F4EFE6"></path>
+</g>
+</g>
+
+<g id="layer-fore">
+<path d="M300 0 V78 M640 0 V78" class="p-line" stroke="#16161A" style="stroke-width:2"></path>
+<polygon points="276,78 324,78 340,104 260,104" fill="#2F4A36"></polygon>
+<polygon points="304,78 324,78 340,104 312,104" fill="#1A2822"></polygon>
+<polygon points="616,78 664,78 680,104 600,104" fill="#2F4A36"></polygon>
+<polygon points="644,78 664,78 680,104 652,104" fill="#1A2822"></polygon>
+<ellipse cx="300" cy="106" rx="14" ry="6" fill="#FFE3A0"></ellipse>
+<ellipse cx="640" cy="106" rx="14" ry="6" fill="#FFE3A0"></ellipse>
+<g fill="#FFE3A0" opacity="0.18"><ellipse cx="300" cy="108" rx="34" ry="12"></ellipse><ellipse cx="640" cy="108" rx="34" ry="12"></ellipse></g>
+</g>
+
+<rect x="0" y="0" width="1280" height="640" filter="url(#p-grain)"></rect>
+</svg>
