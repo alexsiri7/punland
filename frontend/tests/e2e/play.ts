@@ -94,6 +94,14 @@ export async function useItemOn(page: Page, item: string | RegExp, target: strin
 }
 
 /**
+ * Matches backend requests by path, whatever origin the build's apiBase() (src/api.ts)
+ * resolves to: the production API, or another one when the build sets VITE_API_BASE.
+ */
+function apiPath(prefix: string): (url: URL) => boolean {
+  return (url) => url.pathname.startsWith(prefix);
+}
+
+/**
  * Stands in for the backend's dialogue endpoint (#6): `turn` gets the request body
  * ({ character, reply }; reply is null when the conversation starts) and returns the
  * response the game should see.
@@ -109,7 +117,7 @@ export async function stubDialogue(
   page: Page,
   turn: (body: { character: string; reply: string | null }) => DialogueTurn,
 ): Promise<void> {
-  await page.route('https://punland-api.interstellarai.net/dialogue/**', (route: Route) =>
+  await page.route(apiPath('/dialogue/'), (route: Route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -124,7 +132,7 @@ export async function stubDialogue(
  * closed browser tab.
  */
 export async function stubSaves(page: Page, store: Map<string, string>): Promise<void> {
-  await page.route('https://punland-api.interstellarai.net/saves**', async (route: Route) => {
+  await page.route(apiPath('/saves'), async (route: Route) => {
     const path = new URL(route.request().url()).pathname;
     if (route.request().method() === 'GET') {
       const saved = store.get(path);
@@ -151,15 +159,27 @@ export interface Save {
   stats: { followers: number; musicians: number; practice: number; instruments: number };
 }
 
-/** Puts a saved game where Continue finds it: in this browser and behind the backend's saves. */
+/**
+ * Puts a saved game where Continue finds it: in this browser and behind the backend's saves.
+ * It is seeded once; whatever the game saves afterwards is what a reload finds.
+ */
 export async function seedSave(page: Page, save: Save): Promise<void> {
   const game = JSON.stringify({ version: 1, savedAt: new Date().toISOString(), ...save });
-  await page.addInitScript((value) => localStorage.setItem('punland.save.v1', value), game);
-  await page.route('https://punland-api.interstellarai.net/saves**', (route: Route) =>
-    route.request().method() === 'GET'
-      ? route.fulfill({ status: 200, contentType: 'application/json', body: game })
-      : route.fulfill({ status: 204, body: '' }),
-  );
+  // Init scripts rerun on every navigation, so only seed a browser that has no save yet.
+  await page.addInitScript((value) => {
+    if (localStorage.getItem('punland.save.v1') === null) localStorage.setItem('punland.save.v1', value);
+  }, game);
+  let latest: string | null = game;
+  await page.route(apiPath('/saves'), async (route: Route) => {
+    const method = route.request().method();
+    if (method === 'GET') {
+      if (latest) await route.fulfill({ status: 200, contentType: 'application/json', body: latest });
+      else await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    latest = method === 'DELETE' ? null : (route.request().postData() ?? '');
+    await route.fulfill({ status: 204, body: '' });
+  });
 }
 
 export async function continueGame(page: Page): Promise<void> {
