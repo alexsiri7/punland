@@ -1,7 +1,5 @@
-import { inflateSync } from 'node:zlib';
-import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { clickScene, content, enterPub, game, hotspot, newGame, playerPosition } from './play';
+import { clickScene, content, enterPub, game, hotspot, newGame, playerPosition, scenePixel } from './play';
 
 // Acceptance tests for openspec/specs/scenes/spec.md.
 
@@ -68,24 +66,3 @@ test('Swapping art', async ({ page }) => {
   await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
   await enterPub(page);
 });
-
-/** The colour the canvas shows at scene pixels, read from a 1 x 1 screenshot. */
-async function scenePixel(page: Page, at: { x: number; y: number }): Promise<number[]> {
-  const box = await page.locator('#game canvas').boundingBox();
-  if (!box) throw new Error('no game canvas');
-  const scale = box.width / 1280;
-  const clip = { x: box.x + at.x * scale, y: box.y + at.y * scale, width: 1, height: 1 };
-  const png = await page.screenshot({ clip });
-  return [...firstPixel(png)];
-}
-
-// A one-pixel PNG has a single scanline, and every PNG filter leaves its first pixel as is.
-function firstPixel(png: Buffer): Buffer {
-  const idat: Buffer[] = [];
-  for (let at = 8; at < png.length; ) {
-    const length = png.readUInt32BE(at);
-    if (png.toString('ascii', at + 4, at + 8) === 'IDAT') idat.push(png.subarray(at + 8, at + 8 + length));
-    at += length + 12;
-  }
-  return inflateSync(Buffer.concat(idat)).subarray(1, 4);
-}

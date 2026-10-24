@@ -58,8 +58,13 @@ describe('room content', () => {
     });
 
     it('has pickups and item uses that name real items', () => {
+      const actors = (art[`../../public/rooms/${id}/art.json`]?.layers ?? []).map((layer) => layer.actor);
       for (const h of room.hotspots) {
-        if (h.action.type === 'pickup') expect(Object.keys(items), h.id).toContain(h.action.item);
+        if (h.action.type === 'pickup') {
+          expect(Object.keys(items), h.id).toContain(h.action.item);
+          // The room engine hides a picked-up item by its art actor of the same id.
+          expect(actors, h.id).toContain(h.action.item);
+        }
         for (const use of h.uses ?? []) {
           expect(Object.keys(items), h.id).toContain(use.item);
           if (use.removes) expect(Object.keys(items), h.id).toContain(use.removes);

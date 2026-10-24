@@ -1,3 +1,4 @@
+import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
 import { expect } from './fixtures';
 
@@ -32,6 +33,8 @@ export const content = {
   board: /tonight|board/i,
   /** The Open Mic flyer on the pub door: something in the opening scene the cat can pick up. */
   flyer: /flyer/i,
+  /** A point on the flyer, in scene pixels, clear of the player when they stand on the pavement. */
+  flyerSprite: { x: 730, y: 410 },
   brokenGuitar: /broken guitar/i,
   /** A character in the pub interior with a conversation goal (getting a job at the pub). */
   bartender: /bartender/i,
@@ -83,6 +86,27 @@ export async function clickScene(page: Page, at: { x: number; y: number }): Prom
   if (!box) throw new Error('no game canvas');
   const scale = box.width / 1280;
   await canvas.click({ position: { x: at.x * scale, y: at.y * scale } });
+}
+
+/** The colour the canvas shows at scene pixels, read from a 1 x 1 screenshot. */
+export async function scenePixel(page: Page, at: { x: number; y: number }): Promise<number[]> {
+  const box = await page.locator('#game canvas').boundingBox();
+  if (!box) throw new Error('no game canvas');
+  const scale = box.width / 1280;
+  const clip = { x: box.x + at.x * scale, y: box.y + at.y * scale, width: 1, height: 1 };
+  const png = await page.screenshot({ clip });
+  return [...firstPixel(png)];
+}
+
+// A one-pixel PNG has a single scanline, and every PNG filter leaves its first pixel as is.
+function firstPixel(png: Buffer): Buffer {
+  const idat: Buffer[] = [];
+  for (let at = 8; at < png.length; ) {
+    const length = png.readUInt32BE(at);
+    if (png.toString('ascii', at + 4, at + 8) === 'IDAT') idat.push(png.subarray(at + 8, at + 8 + length));
+    at += length + 12;
+  }
+  return inflateSync(Buffer.concat(idat)).subarray(1, 4);
 }
 
 export async function playerPosition(page: Page): Promise<{ x: number; y: number } | null> {
