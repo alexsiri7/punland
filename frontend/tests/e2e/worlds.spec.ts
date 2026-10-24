@@ -46,6 +46,11 @@ test('Something done in the street turns up in the dream', async ({ page }) => {
   // Requirement: Things cross worlds. In the Act 1 placeholder content, picking up the Open
   // Mic flyer is dream material.
   await newGame(page);
+  await worlds(page).getByRole('button', { name: 'Dream' }).click();
+  await expect(game(page)).toHaveAttribute('data-world', 'dream');
+  await expect(hotspot(page, content.flyer)).toHaveCount(0);
+  await worlds(page).getByRole('button', { name: 'Street' }).click();
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
   await hotspot(page, content.flyer).click();
   // The cat walks to the flyer first; switching worlds on the way would call the pickup off.
   await expect(inventoryItem(page, content.flyer)).toBeVisible();
