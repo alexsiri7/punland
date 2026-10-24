@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Monkey Island-style point-and-click adventure game played in the browser. A teenage cat from Literal Village arrives in Punland, a city of animals and plants, to make it as a musician. AI-improvised dialogue, puzzles across three worlds (street, online, songwriting dream), four acts with the last act branching into different endings. Working title: Tune Story.
+Monkey Island-style point-and-click adventure game played in the browser. A teenage cat from Literal Village, Paws Anka (a placeholder name chosen 2026-10-24 that may change), arrives in Punland, a city of animals and plants, to make it as a musician. AI-improvised dialogue, puzzles across three worlds (street, online, songwriting dream), four acts with the last act branching into different endings. Working title: Tune Story.
 
 ## Requirements
 

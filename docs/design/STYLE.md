@@ -109,7 +109,7 @@ Output is 2× scale. Commit the SVG and the rendered files together, and never h
 
 ## The protagonist (board 2)
 
-- **Name: not decided yet.** The canvas says `[PROTAGONIST NAME]`. Don't invent one. The owner names him.
+- **Name: Paws Anka (placeholder).** A pun on Paul Anka, chosen by the owner on 2026-10-24 as a working name. It may change, so treat it as a placeholder: don't build puns, puzzles or dialogue that only work with this exact name, and don't invent a different one. In code the name lives only in `frontend/src/content/protagonist.ts`; read it from there, never hard-code it. The canvas still says `[PROTAGONIST NAME]`.
 - **Who he is.** A lanky teenage ginger cat from Literal Village. He wears a hoodie and worn high-tops, and carries a guitar that has seen better days. Friendly, eager, a bit mischievous: more hapless hero than bad boy.
 - **Proportions.** About 5.5 heads tall with ears, and 256 px tall in a 1280 × 640 scene. Narrow shoulders, long arms (hands past the hem), a slight forward slouch.
 - **Colours, base / shade:**
@@ -135,5 +135,6 @@ Other characters are animals and plants of Punland. Draw them in the same angula
   - Board 1's type and UI-bar samples still say "The Root Note" and "PUNLAND · BUS STOP". They predate the rename. Use The Three Crows.
   - The scaffold and the scenes spec used "The Root Note" until 2026-10-24.
 - **The Holding Pen.** The live-music venue down the stairs beside the pub ("Live music below").
+- **Paws Anka.** The protagonist's placeholder name (2026-10-24). See board 2 above.
 - **Literal Village.** Where the cat comes from.
 - **Poster text.** The A-board in the opening scene reads "TONIGHT / OPEN MIC / DOWNSTAIRS 9PM". The canvas has a `[BAND NAME]` placeholder there. "OPEN MIC" is a stand-in, not a canon band name.
