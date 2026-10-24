@@ -12,11 +12,23 @@
       "depth": 0
     },
     {
+      "key": "opening-flyer",
+      "file": "flyer.png",
+      "x": 714,
+      "y": 391,
+      "depth": 10,
+      "actor": "flyer",
+      "foot": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
       "key": "opening-cat",
       "file": "cat.png",
       "x": 491,
       "y": 324,
-      "depth": 10,
+      "depth": 11,
       "actor": "cat",
       "foot": {
         "x": 560,

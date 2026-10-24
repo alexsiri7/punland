@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { items } from '../../src/content/items';
 import { PROTAGONIST } from '../../src/content/protagonist';
 import { ACTION_TYPES, type Point, rooms, START_ROOM } from '../../src/content/rooms';
 import { insidePolygon } from '../../src/room/walk';
@@ -53,6 +54,17 @@ describe('room content', () => {
       for (const h of room.hotspots) {
         expect(Object.keys(ACTION_TYPES), h.id).toContain(h.action.type);
         if (h.action.type === 'say') expect(h.action.line, h.id).toMatch(/\S/);
+      }
+    });
+
+    it('has pickups and item uses that name real items', () => {
+      for (const h of room.hotspots) {
+        if (h.action.type === 'pickup') expect(Object.keys(items), h.id).toContain(h.action.item);
+        for (const use of h.uses ?? []) {
+          expect(Object.keys(items), h.id).toContain(use.item);
+          if (use.removes) expect(Object.keys(items), h.id).toContain(use.removes);
+          expect(use.say, h.id).toMatch(/\S/);
+        }
       }
     });
 

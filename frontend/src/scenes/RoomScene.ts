@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
+import { items } from '../content/items';
 import { PROTAGONIST } from '../content/protagonist';
-import { type Hotspot, type HotspotAction, type Point, type Room, rooms, START_ROOM } from '../content/rooms';
-import { createHotspotLayer } from '../room/hotspots';
+import { type Hotspot, type Point, type Room, rooms, START_ROOM } from '../content/rooms';
+import type { Inventory } from '../inventory';
+import { createHotspotLayer, type HotspotLayer } from '../room/hotspots';
+import { createInventoryBar, type InventoryBar } from '../room/inventory';
 import { nearestWalkable } from '../room/walk';
 import { fonts, hex, palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
 
@@ -18,6 +21,8 @@ export interface RoomData {
   room: string;
   /** Where the player stands; the room's start when left out. */
   at?: Point;
+  /** Carried from room to room. */
+  inventory: Inventory;
 }
 
 const WALK_SPEED = 320; // scene px per second
@@ -26,9 +31,10 @@ const UI_DEPTH = 200;
 
 /**
  * Shows one room at a time, from its content (src/content/rooms/<room>.json: floor,
- * hotspots, exits) and its art (public/rooms/<room>/: swappable layer files). Nothing here
- * is specific to a room. What the canvas shows is mirrored on the #game container for tests
- * and the DOM: data-scene (room id), data-player ("x,y"), data-hover, data-say.
+ * hotspots, exits, items) and its art (public/rooms/<room>/: swappable layer files). Nothing
+ * here is specific to a room. Hotspots and inventory slots are DOM buttons over the canvas.
+ * What the canvas shows is mirrored on the #game container for tests and the DOM:
+ * data-scene (room id), data-player ("x,y"), data-hover, data-say.
  */
 export class RoomScene extends Phaser.Scene {
   static readonly KEY = 'room';
@@ -37,8 +43,14 @@ export class RoomScene extends Phaser.Scene {
   private room!: Room;
   private at!: Point;
   private target: Point | null = null;
-  private pending: HotspotAction | null = null;
+  /** What happens once the walk ends. */
+  private pending: (() => void) | null = null;
   private player: Phaser.GameObjects.Image | null = null;
+  private inventory!: Inventory;
+  private hotspots: HotspotLayer | null = null;
+  private bar: InventoryBar | null = null;
+  /** Room sprites of items that can be picked up, by item id. */
+  private itemSprites = new Map<string, Phaser.GameObjects.Image>();
   private speech!: Phaser.GameObjects.Text;
   private speechTimer: Phaser.Time.TimerEvent | null = null;
   private actionVerb!: Phaser.GameObjects.Text;
@@ -56,6 +68,11 @@ export class RoomScene extends Phaser.Scene {
     this.pending = null;
     this.player = null;
     this.speechTimer = null;
+    this.inventory = data.inventory;
+    this.inventory.select(null);
+    this.hotspots = null;
+    this.bar = null;
+    this.itemSprites = new Map();
   }
 
   preload(): void {
@@ -77,6 +94,7 @@ export class RoomScene extends Phaser.Scene {
   create(): void {
     const art = this.cache.json.get(this.artKey()) as RoomArt;
     for (const layer of art.layers) {
+      if (layer.actor && this.inventory.wasPickedUp(layer.actor)) continue;
       const image = this.add
         .image(layer.x, layer.y, layer.key)
         .setOrigin(0)
@@ -89,6 +107,8 @@ export class RoomScene extends Phaser.Scene {
           image.setOrigin(0.5, 1);
         }
         this.player = image;
+      } else if (layer.actor) {
+        this.itemSprites.set(layer.actor, image);
       }
     }
     this.drawUiBar();
@@ -111,16 +131,33 @@ export class RoomScene extends Phaser.Scene {
     const canvas = this.game.canvas;
     const container = canvas.parentElement;
     if (container) {
-      const hotspots = createHotspotLayer(container, this.room.hotspots, {
+      const present = this.room.hotspots.filter(
+        (h) => !(h.action.type === 'pickup' && this.inventory.wasPickedUp(h.action.item)),
+      );
+      const hotspots = createHotspotLayer(container, present, {
         hover: (h) => this.hover(h),
         activate: (h) => this.activate(h),
       });
-      const layout = () => hotspots.layout(canvas);
+      const bar = createInventoryBar(container, {
+        hover: (id) => this.hoverItem(id),
+        select: (id) => {
+          this.select(this.inventory.selected === id ? null : id);
+          this.hoverItem(id);
+        },
+      });
+      this.hotspots = hotspots;
+      this.bar = bar;
+      this.renderInventory();
+      const layout = () => {
+        hotspots.layout(canvas);
+        bar.layout(canvas);
+      };
       layout();
       this.scale.on(Phaser.Scale.Events.RESIZE, layout);
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
         this.scale.off(Phaser.Scale.Events.RESIZE, layout);
         hotspots.destroy();
+        bar.destroy();
       });
       container.dataset.scene = this.id;
       container.dataset.hover = '';
@@ -130,6 +167,8 @@ export class RoomScene extends Phaser.Scene {
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       if (pointer.worldY >= SCENE_HEIGHT) return;
+      this.select(null);
+      this.hover(null);
       this.walkTo(nearestWalkable({ x: pointer.worldX, y: pointer.worldY }, this.room.walkable), null);
     });
   }
@@ -150,9 +189,9 @@ export class RoomScene extends Phaser.Scene {
     }
     this.placePlayer();
     if (!this.target && this.pending) {
-      const action = this.pending;
+      const then = this.pending;
       this.pending = null;
-      this.run(action);
+      then();
     }
   }
 
@@ -160,27 +199,63 @@ export class RoomScene extends Phaser.Scene {
     return `${this.id}-art`;
   }
 
-  private walkTo(target: Point, then: HotspotAction | null): void {
+  private walkTo(target: Point, then: (() => void) | null): void {
     this.say(null);
     this.target = { ...target };
     this.pending = then;
   }
 
   private activate(h: Hotspot): void {
-    this.walkTo(h.walkTo, h.action);
+    const item = this.inventory.selected;
+    if (item === null) {
+      this.walkTo(h.walkTo, () => this.run(h));
+      return;
+    }
+    this.select(null);
+    this.hover(h);
+    this.walkTo(h.walkTo, () => this.use(item, h));
   }
 
-  private run(action: HotspotAction): void {
+  private run(h: Hotspot): void {
+    const action = h.action;
     switch (action.type) {
       case 'say':
         this.say(action.line);
         break;
       case 'exit':
-        this.scene.restart({ room: action.room, at: action.at } satisfies RoomData);
+        this.scene.restart({ room: action.room, at: action.at, inventory: this.inventory } satisfies RoomData);
+        break;
+      case 'pickup':
+        this.inventory.pickUp(action.item);
+        this.hotspots?.remove(h.id);
+        this.itemSprites.get(action.item)?.destroy();
+        this.itemSprites.delete(action.item);
+        this.renderInventory();
         break;
       default:
         action satisfies never;
     }
+  }
+
+  /** Uses an inventory item on a hotspot: its puzzle step if it accepts the item, else the item's refusal. */
+  private use(item: string, h: Hotspot): void {
+    const use = h.uses?.find((u) => u.item === item);
+    if (!use) {
+      this.say(items[item].noUse);
+      return;
+    }
+    this.say(use.say);
+    if (use.removes) this.inventory.remove(use.removes);
+    this.renderInventory();
+  }
+
+  private select(id: string | null): void {
+    this.inventory.select(id);
+    this.renderInventory();
+  }
+
+  private renderInventory(): void {
+    this.bar?.render(this.inventory.items, this.inventory.selected);
   }
 
   private placePlayer(): void {
@@ -209,7 +284,18 @@ export class RoomScene extends Phaser.Scene {
 
   private hover(h: Hotspot | null): void {
     this.setData('hover', h?.name ?? '');
-    this.setActionLine(h ? h.verb : this.room.place.verb, h ? h.name : this.room.place.name);
+    const selected = this.inventory.selected;
+    if (selected !== null) {
+      const item = items[selected].name;
+      this.setActionLine(h ? `Use ${item} on` : 'Use', h ? h.name : item);
+    } else {
+      this.setActionLine(h ? h.verb : this.room.place.verb, h ? h.name : this.room.place.name);
+    }
+  }
+
+  private hoverItem(id: string | null): void {
+    if (id === null) this.hover(null);
+    else this.setActionLine('Use', items[id].name);
   }
 
   private setData(key: 'player' | 'hover' | 'say', value: string): void {
@@ -217,7 +303,7 @@ export class RoomScene extends Phaser.Scene {
     if (container) container.dataset[key] = value;
   }
 
-  /** The UI bar under the scene (STYLE.md, UI bar). Inventory slots arrive with #5/#8. */
+  /** The UI bar under the scene (STYLE.md, UI bar). Its inventory slots are DOM (src/room/inventory.ts). */
   private drawUiBar(): void {
     const top = SCENE_HEIGHT;
     this.add.rectangle(0, top, SCENE_WIDTH, UI_BAR_HEIGHT, hex(palette.uiGround)).setOrigin(0).setDepth(UI_DEPTH);

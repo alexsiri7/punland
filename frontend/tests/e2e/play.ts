@@ -31,7 +31,7 @@ export const content = {
   /** The "Tonight: open mic" board on the pavement: a thing to look at in the opening scene. */
   board: /tonight|board/i,
   /** The Open Mic flyer on the pub door: something in the opening scene the cat can pick up. */
-  flyer: /flyer|open mic/i,
+  flyer: /flyer/i,
   brokenGuitar: /broken guitar/i,
   /** A character in the pub interior with a conversation goal (getting a job at the pub). */
   bartender: /bartender/i,
