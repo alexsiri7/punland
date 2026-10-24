@@ -38,14 +38,15 @@ describe('title screen', () => {
     expect(btn('new-game').hidden).toBe(false);
   });
 
-  it('shows Continue when a save exists and resumes its room', async () => {
+  it('shows Continue when a save exists and resumes it', async () => {
     const start = vi.fn();
-    const store = new MemoryStore({ version: 1, room: 'pub-interior', savedAt: 'x' });
+    const save: SaveGame = { version: 1, room: 'pub-interior', savedAt: 'x' };
+    const store = new MemoryStore(save);
     await initTitleScreen(document, { store, start });
     expect(btn('continue').hidden).toBe(false);
     btn('continue').click();
     await flush();
-    expect(start).toHaveBeenCalledWith('pub-interior');
+    expect(start).toHaveBeenCalledWith(save);
     expect(document.querySelector<HTMLElement>('#title-screen')!.hidden).toBe(true);
   });
 

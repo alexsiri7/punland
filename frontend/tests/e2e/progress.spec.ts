@@ -7,6 +7,7 @@ import {
   enterPub,
   game,
   hotspot,
+  inventoryItem,
   newGame,
   type Save,
   seedSave,
@@ -39,7 +40,6 @@ async function statValues(page: Page): Promise<string[]> {
 }
 
 test('Closing and coming back', async ({ page, context }) => {
-  test.fail(true, 'needs #10');
   // Requirement: Autosave. Progress is saved automatically, without signing up.
   const saves = new Map<string, string>();
   await stubSaves(page, saves);
@@ -53,6 +53,26 @@ test('Closing and coming back', async ({ page, context }) => {
   await stubSaves(again, saves);
   await continueGame(again);
   await expect(game(again)).toHaveAttribute('data-scene', content.pubInterior);
+});
+
+test('Continue keeps the inventory', async ({ page, context }) => {
+  // Requirement: Autosave (inventory, #10). What the cat picked up is still carried, and
+  // gone from its room, after closing the browser and coming back.
+  const saves = new Map<string, string>();
+  await stubSaves(page, saves);
+  await newGame(page);
+  await hotspot(page, content.flyer).click();
+  await expect(inventoryItem(page, content.flyer)).toBeVisible();
+  await expect.poll(() => [...saves.values()].some((save) => save.includes('flyer'))).toBe(true);
+  await page.close();
+
+  const again = await context.newPage();
+  await stubSaves(again, saves);
+  await again.addInitScript(() => localStorage.removeItem('punland.save.v1'));
+  await continueGame(again);
+  await expect(game(again)).toHaveAttribute('data-scene', content.opening);
+  await expect(inventoryItem(again, content.flyer)).toBeVisible();
+  await expect(hotspot(again, content.flyer)).toHaveCount(0);
 });
 
 test('A stat changes', async ({ page }) => {

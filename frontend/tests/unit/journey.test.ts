@@ -18,4 +18,15 @@ describe('Journey', () => {
     expect(journey.enter(dream)).toEqual({ room: 'dream' });
     expect(journey.enter(street)).toEqual({ room: 'pub', at: { x: 10, y: 20 } });
   });
+
+  it('restores what it saved', () => {
+    const journey = new Journey();
+    journey.leave('street', { room: 'pub', at: { x: 10, y: 20 } });
+    journey.leave('dream', { room: 'dream' });
+    journey.gather('rain');
+    const restored = Journey.restore(JSON.parse(JSON.stringify(journey.snapshot())));
+    expect(restored.enter(street)).toEqual({ room: 'pub', at: { x: 10, y: 20 } });
+    expect(restored.enter(dream)).toEqual({ room: 'dream' });
+    expect(restored.hasGathered('rain')).toBe(true);
+  });
 });

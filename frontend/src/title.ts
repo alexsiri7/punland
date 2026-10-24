@@ -1,14 +1,14 @@
-import type { SaveStore } from './save';
+import type { SaveGame, SaveStore } from './save';
 
 export interface TitleScreenDeps {
   store: SaveStore;
-  /** Starts the game; `room` is set when continuing a save. */
-  start: (room?: string) => void;
+  /** Starts the game; `save` is set when continuing one. */
+  start: (save?: SaveGame) => void;
 }
 
 /**
- * Wires the DOM title screen: New game always, Continue only when this browser
- * has a saved game.
+ * Wires the DOM title screen: New game always, Continue only when a saved game
+ * exists, in this browser or behind the backend.
  */
 export async function initTitleScreen(root: ParentNode, deps: TitleScreenDeps): Promise<void> {
   const titleScreen = root.querySelector<HTMLElement>('#title-screen');
@@ -31,6 +31,6 @@ export async function initTitleScreen(root: ParentNode, deps: TitleScreenDeps): 
   cont.addEventListener('click', async () => {
     const save = await deps.store.load();
     hideTitle();
-    deps.start(save?.room);
+    deps.start(save ?? undefined);
   });
 }
