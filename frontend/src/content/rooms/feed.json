@@ -1,0 +1,31 @@
+{
+  "world": "online",
+  "label": "TUNE STORY · THE BAND'S PAGE",
+  "place": { "verb": "Scrolling", "name": "The band's page" },
+  "hint": "No name, no posts, no followers. Yet.",
+  "start": { "x": 300, "y": 585 },
+  "walkable": [
+    { "x": 145, "y": 566 },
+    { "x": 1140, "y": 566 },
+    { "x": 1160, "y": 606 },
+    { "x": 120, "y": 606 }
+  ],
+  "hotspots": [
+    {
+      "id": "page",
+      "name": "Band page",
+      "verb": "Look at",
+      "rect": { "x": 400, "y": 40, "width": 480, "height": 460 },
+      "walkTo": { "x": 640, "y": 585 },
+      "action": { "type": "say", "line": "Our page. It'll need a band name before anyone follows it." }
+    },
+    {
+      "id": "likes",
+      "name": "Likes",
+      "verb": "Look at",
+      "rect": { "x": 960, "y": 430, "width": 80, "height": 90 },
+      "walkTo": { "x": 1000, "y": 585 },
+      "action": { "type": "say", "line": "Zero likes. Even my mum hasn't found us yet." }
+    }
+  ]
+}

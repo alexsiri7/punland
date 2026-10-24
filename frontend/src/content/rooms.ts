@@ -3,8 +3,8 @@
  * ./rooms/, named after the room id. Adding a room is adding a file here plus its art in
  * art/<room>/scene.svg, rendered to public/rooms/<room>/; no code change.
  * Positions are scene pixels (1280 x 640).
- * An item that can be picked up is drawn as the art actor with the item's id, so it leaves
- * the room with the hotspot.
+ * A hotspot that comes and goes (a pickup, or dream material) is drawn as the art actor with
+ * the hotspot's id, so the room shows it only while the hotspot is there.
  */
 export interface Point {
   x: number;
@@ -49,9 +49,15 @@ export interface Hotspot {
   action: HotspotAction;
   /** Items this hotspot accepts; using any other item on it gets that item's `noUse` line. */
   uses?: ItemUse[];
+  /** Doing this hotspot's action gives the dream this material (worlds spec, "Things cross worlds"). */
+  dreamMaterial?: string;
+  /** A dream hotspot that is only there once some street hotspot has given its `dreamMaterial`. */
+  shownWith?: string;
 }
 
 export interface Room {
+  /** The world the room is in, an id from ./worlds.json. */
+  world: string;
   /** UI bar location label, e.g. "PUNLAND · HIGH STREET". */
   label: string;
   /** UI bar action line when nothing is hovered. */

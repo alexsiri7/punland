@@ -62,9 +62,10 @@ describe('room content', () => {
       for (const h of room.hotspots) {
         if (h.action.type === 'pickup') {
           expect(Object.keys(items), h.id).toContain(h.action.item);
-          // The room engine hides a picked-up item by its art actor of the same id.
-          expect(actors, h.id).toContain(h.action.item);
+          // The room engine hides a hotspot that comes and goes by its art actor of the same id.
+          expect(actors, h.id).toContain(h.id);
         }
+        if (h.shownWith !== undefined) expect(actors, h.id).toContain(h.id);
         for (const use of h.uses ?? []) {
           expect(Object.keys(items), h.id).toContain(use.item);
           if (use.removes) expect(Object.keys(items), h.id).toContain(use.removes);
@@ -78,6 +79,8 @@ describe('room content', () => {
         if (h.action.type !== 'exit') continue;
         const to = rooms[h.action.room];
         expect(to, h.id).toBeDefined();
+        // Worlds are entered from the world switcher, never through a door.
+        expect(to.world, h.id).toBe(room.world);
         if (h.action.at) expect(insidePolygon(h.action.at, to.walkable), h.id).toBe(true);
       }
     });
