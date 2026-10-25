@@ -199,6 +199,7 @@ All controls and text are DOM over the canvas: the UI bar (location label, actio
 
 - **Hotspot buttons** get their rects from `renderer.hotspotBounds()` on every layout or camera change. In 2D that is the asset entry's rect. In 3D it is the projected bounds of the hit area.
 - **Speech** is positioned at `renderer.anchor('player', 'head')`.
+- **Pointer input in 3D.** The 3D renderer turns pointer events off on the hotspot buttons. They stay focusable for keyboard and screen-reader players, but mouse hover and click are raycast against what is drawn (models spec, "Picking in 3D"). In 2D the buttons keep taking the pointer, as today.
 
 This is what lets the renderer be swapped with the same public interface (architecture spec, "Replaceable renderer"). It also means the UI no longer needs Phaser text or `loadFonts()` before a scene.
 
