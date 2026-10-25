@@ -47,6 +47,10 @@ punland-api           # uvicorn on $PORT (default 8000)
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the backend with a `/health` probe, the unsafe-change checker's own tests, and `openspec validate --specs --strict` (`openspec.yml`). All must be green to merge.
 
+## Architecture: read docs/ARCHITECTURE.md before changing frontend/src
+
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) is the target structure (specs: `openspec/specs/architecture`, `openspec/specs/models`). It splits the code into a pure domain and rules layer (commands to state and events), content and a model registry validated by schemas, and presentation behind a renderer interface (Phaser 2D now, Three.js 3D from phase B). It also holds the 3D asset contract for model files. The refactor lands as issues `A1`…`A9`, then the 3D work as `B1`…`B7`. Until they land, the layout below is the current code. Each step updates both this file and ARCHITECTURE.md. Layering is enforced by `tests/unit/architecture.test.ts` (from A1), not by a linter: TypeScript 7 has no JS compiler API for typescript-eslint or dependency-cruiser.
+
 ## Layout
 
 ```
