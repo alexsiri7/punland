@@ -19,6 +19,9 @@ class Settings:
     environment: str = "development"
     cors_origins: tuple[str, ...] = field(default=DEFAULT_ORIGINS)
     cors_origin_regex: str = DEFAULT_ORIGIN_REGEX
+    # Postgres for saves, authenticating as the app's own role so unqualified table names
+    # resolve to its schema (punland / punland_staging). Unset: /saves answers 503.
+    database_url: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -26,4 +29,8 @@ class Settings:
         origins = _split(os.environ.get("PUNLAND_CORS_ORIGINS", "")) or DEFAULT_ORIGINS
         if env != "production":
             origins = origins + LOCAL_ORIGINS
-        return cls(environment=env, cors_origins=origins)
+        return cls(
+            environment=env,
+            cors_origins=origins,
+            database_url=os.environ.get("DATABASE_URL") or None,
+        )

@@ -5,6 +5,7 @@ import { type Hotspot, type Point, type Room, rooms, START_ROOM } from '../conte
 import { type World, worlds } from '../content/worlds';
 import type { Inventory } from '../inventory';
 import type { Journey, Place } from '../journey';
+import type { SaveGame } from '../save';
 import { createHotspotLayer, type HotspotLayer } from '../room/hotspots';
 import { createInventoryBar, type InventoryBar } from '../room/inventory';
 import { createWorldSwitcher } from '../room/worlds';
@@ -28,6 +29,8 @@ export interface RoomData {
   inventory: Inventory;
   /** Carried from room to room and world to world. */
   journey: Journey;
+  /** Called with the game state whenever it changes; the store decides where it goes. */
+  autosave?: (game: SaveGame) => void;
 }
 
 const WALK_SPEED = 320; // scene px per second
@@ -53,6 +56,7 @@ export class RoomScene extends Phaser.Scene {
   private player: Phaser.GameObjects.Image | null = null;
   private inventory!: Inventory;
   private journey!: Journey;
+  private autosave: RoomData['autosave'];
   private hotspots: HotspotLayer | null = null;
   private bar: InventoryBar | null = null;
   /** Room sprites of hotspots that come and go, by hotspot id. */
@@ -77,6 +81,7 @@ export class RoomScene extends Phaser.Scene {
     this.inventory = data.inventory;
     this.inventory.select(null);
     this.journey = data.journey;
+    this.autosave = data.autosave;
     this.hotspots = null;
     this.bar = null;
     this.hotspotSprites = new Map();
@@ -181,6 +186,7 @@ export class RoomScene extends Phaser.Scene {
       this.hover(null);
       this.walkTo(nearestWalkable({ x: pointer.worldX, y: pointer.worldY }, this.room.walkable), null);
     });
+    this.persist();
   }
 
   update(): void {
@@ -246,6 +252,7 @@ export class RoomScene extends Phaser.Scene {
         action satisfies never;
     }
     if (h.dreamMaterial) this.journey.gather(h.dreamMaterial);
+    if (action.type !== 'exit') this.persist(); // else the next room saves once it is in
   }
 
   private isPresent(h: Hotspot): boolean {
@@ -260,7 +267,8 @@ export class RoomScene extends Phaser.Scene {
   }
 
   private goTo(place: Place): void {
-    this.scene.restart({ ...place, inventory: this.inventory, journey: this.journey } satisfies RoomData);
+    const { inventory, journey, autosave } = this;
+    this.scene.restart({ ...place, inventory, journey, autosave } satisfies RoomData);
   }
 
   /** Uses an inventory item on a hotspot: its puzzle step if it accepts the item, else the item's refusal. */
@@ -273,6 +281,17 @@ export class RoomScene extends Phaser.Scene {
     this.say(use.say);
     if (use.removes) this.inventory.remove(use.removes);
     this.renderInventory();
+    this.persist();
+  }
+
+  private persist(): void {
+    this.autosave?.({
+      version: 1,
+      room: this.id,
+      savedAt: new Date().toISOString(),
+      inventory: this.inventory.snapshot(),
+      journey: this.journey.snapshot(),
+    });
   }
 
   private select(id: string | null): void {

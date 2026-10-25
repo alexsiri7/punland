@@ -1,6 +1,12 @@
+/** An inventory as it is saved: the carried items, and every item ever picked up. */
+export interface InventoryState {
+  items: string[];
+  pickedUp: string[];
+}
+
 /**
- * The inventory for one play session, handed from room to room in the scene data.
- * Saving it is #10's job.
+ * The inventory for one play session, handed from room to room in the scene data, and saved
+ * through snapshot().
  */
 export class Inventory {
   selected: string | null = null;
@@ -9,6 +15,16 @@ export class Inventory {
 
   constructor(start: readonly string[]) {
     this.carried = [...start];
+  }
+
+  static restore(state: InventoryState): Inventory {
+    const inventory = new Inventory(state.items);
+    inventory.picked = new Set(state.pickedUp);
+    return inventory;
+  }
+
+  snapshot(): InventoryState {
+    return { items: [...this.carried], pickedUp: [...this.picked] };
   }
 
   /** The carried item ids, in the order they came. */
