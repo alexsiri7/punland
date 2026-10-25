@@ -111,12 +111,13 @@ interface GameState {
   flags: Record<string, boolean | number | string>;      // puzzle state; #11 adds stats, act and goals beside it
   // transient, never saved:
   selected: ItemId | null;
-  walk: { target: FloorPoint; then: Command | null } | null;
+  walk: { target: FloorPoint; then: { hotspot: HotspotId; item: ItemId | null } | null } | null; // on arrival: the hotspot's interaction, or use `item` on it
   saying: { line: string; by: 'player' | CharacterId } | null;
 }
 ```
 
-- **Save format.** `SaveGame` stays `version: 1` and only grows by optional fields, so old saves still load (architecture spec, "An older save"). `domain/save.ts` holds `toSave(state)` and `fromSave(save, content)`, which drops unknown ids the way `game.ts` does today.
+- **Today's content shapes.** Until A6 and A7, `domain/content.ts` holds the content types as the files have them today (string ids, `action` and `uses` on a hotspot, items keyed by id), and `Content` carries the start room and items. `content/index.ts` (`loadContent()`) puts the files together.
+- **Save format.** `SaveGame` stays `version: 1` and only grows by optional fields, so old saves still load (architecture spec, "An older save"). `domain/save.ts` holds `SaveGame` (with an optional `at`, the spot the player stood on), `toSave(state)` and `fromSave(save, content)`, which drops unknown ids the way `game.ts` does today. `toSave` leaves out `savedAt`: the rules read no clock, so whoever writes the save stamps it.
 - **Hotspot rects.** The screen `rect` of a hotspot moves out of the room content into the room's 2D asset entry (A8). In 3D it is derived from the projected bounds of the model's hit area.
 - **Stats and acts (#11).** These plug in as `GameState.stats`, `GameState.act` and `GameState.goals`, plus the effects `changeStat` and `reachGoal` and the conditions `stat`, `act` and `goal`. Act definitions go in `content/acts.json`. No other layer needs to change.
 
@@ -145,6 +146,7 @@ type GameEvent =
 function apply(content: Content, state: GameState, command: Command): { state: GameState; events: GameEvent[] };
 ```
 
+- **Dialogue.** `dialogueResult` and `conversationStarted` arrive with the dialogue panel (#8); A2 has the rest.
 - **The rules are pure.** `apply` never mutates its input, reads no clock and no randomness, and needs no DOM. That is how the spec scenario "Playing without a renderer" is tested.
 - **Walking is a tick.** `tick` is the old `RoomScene.update()` at `WALK_SPEED`, and the app's frame loop sends it. The `walk` command clamps its target to the floor with `nearestWalkable`.
 - **Interactions** replace `action` and `uses` (A7):
@@ -312,7 +314,7 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | Step (issue) | Size | What lands |
 | --- | --- | --- |
 | **A1** ([#27](https://github.com/alexsiri7/punland/issues/27)), done | 3 | Folders `domain/ rules/ content/ assets/ services/ presentation/ app/`. Move the pure modules (`walk.ts` → `domain/geometry.ts`, inventory and journey state, `Point` types, theme and fonts, api/save/player/storage → `services/`). `architecture.test.ts`. Stricter `tsconfig` flags. No behaviour change. |
-| **A2** ([#28](https://github.com/alexsiri7/punland/issues/28)) | 5 | `domain` `GameState` plus `rules/apply` with commands and events for everything `RoomScene` does today (walk and tick, activate, use X on Y, pickup, exit, enterWorld, gather, presence), with unit tests. Not wired in yet. |
+| **A2** ([#28](https://github.com/alexsiri7/punland/issues/28)), done | 5 | `domain` `GameState` plus `rules/apply` with commands and events for everything `RoomScene` does today (walk and tick, activate, use X on Y, pickup, exit, enterWorld, gather, presence), with unit tests. Not wired in yet. |
 | **A3** ([#29](https://github.com/alexsiri7/punland/issues/29)) | 5 | `app/session.ts` (`GameSession`): `RoomScene` becomes a view that dispatches commands and draws from events. Autosave and the `data-*` mirror run from session events. Mutable `Inventory` and `Journey` classes are removed. The save format is unchanged. |
 | **A4** ([#30](https://github.com/alexsiri7/punland/issues/30)) | 3 | DOM UI layer: the UI bar text, action line, hint and speech move from Phaser text to `presentation/ui`, driven by the session. Hotspot, inventory and world controls move under `presentation/ui`. The dialogue panel (#8) builds on this. |
 | **A5** ([#31](https://github.com/alexsiri7/punland/issues/31)) | 5 | `presentation/renderer.ts` plus `presentation/phaser2d` (the only `phaser` import), with picking through `renderer.pick` and a fake renderer for unit tests. `game.ts`/`RoomScene` are folded into the 2D renderer and the app. |
@@ -328,4 +330,4 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **B6** ([#41](https://github.com/alexsiri7/punland/issues/41)) | 3 | 3D becomes the default renderer. The whole e2e suite runs against it, and `?renderer=2d` stays as a fallback. |
 | **B7** ([#42](https://github.com/alexsiri7/punland/issues/42)) | 3 | Remove the 2D path: `phaser2d`, the `phaser` dependency, `sprite2d` entries, `scripts/render-art.mjs` and `public/rooms/*` layers. Replace the 2D-specific tests (see Tests). Update CLAUDE.md and STYLE.md's "Scene build" to describe 3D. |
 
-**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 waits on A4 (#30); stats and acts #11 wait on A7 (#33).
+**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 and A2 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 waits on A4 (#30); stats and acts #11 wait on A7 (#33).

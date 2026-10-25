@@ -22,7 +22,7 @@ const select = (item: string): Command => ({ type: 'select', item });
 describe('Rules as commands and events', () => {
   // Requirement: Rules as commands and events. Every player action is a command the rules apply
   // to the game state, giving the new state and events, without a renderer or the DOM.
-  it.fails('Playing without a renderer (needs #28)', async () => {
+  it('Playing without a renderer', async () => {
     const { content, state } = await newGame();
     const played = await play(content, state, [
       activate('flyer'),
@@ -44,7 +44,7 @@ describe('Rules as commands and events', () => {
 
   // Requirement: Rules as commands and events. Using an item on a hotspot gives the hotspot's
   // response when it accepts the item, and the item's refusal (`noUse`) when it does not.
-  it.fails('Use X on Y (needs #28)', async () => {
+  it('Use X on Y', async () => {
     const game = await newGame();
     const inPub = await play(game.content, game.state, [activate('flyer'), activate('door')]);
     const refused = await play(game.content, inPub.state, [select('broken-guitar'), activate('bartender')]);

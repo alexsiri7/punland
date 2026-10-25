@@ -8,21 +8,11 @@
 import { apiBase } from './api';
 import type { InventoryState } from '../domain/inventory';
 import type { JourneyState } from '../domain/journey';
+import type { SaveGame } from '../domain/save';
 import { playerId } from './player';
 import { safeLocalStorage } from './storage';
 
-/** Everything needed to resume a game. Grows as features land (#11). */
-export interface SaveGame {
-  version: 1;
-  /** Room id the player was in, from the content data. */
-  room: string;
-  /** ISO timestamp of the save. */
-  savedAt: string;
-  /** Absent in saves from before #10: the starting inventory. */
-  inventory?: InventoryState;
-  /** Absent in saves from before #10: a fresh journey. */
-  journey?: JourneyState;
-}
+export type { SaveGame } from '../domain/save';
 
 export interface SaveStore {
   load(): Promise<SaveGame | null>;
@@ -42,10 +32,11 @@ function isInventory(value: unknown): value is InventoryState {
   return isObject(value) && isStrings(value.items) && isStrings(value.pickedUp);
 }
 
+const isPoint = (value: unknown): boolean =>
+  isObject(value) && typeof value.x === 'number' && typeof value.y === 'number';
+
 function isPlace(value: unknown): boolean {
-  if (!isObject(value) || typeof value.room !== 'string') return false;
-  if (value.at === undefined) return true;
-  return isObject(value.at) && typeof value.at.x === 'number' && typeof value.at.y === 'number';
+  return isObject(value) && typeof value.room === 'string' && (value.at === undefined || isPoint(value.at));
 }
 
 function isJourney(value: unknown): value is JourneyState {
@@ -61,6 +52,7 @@ export function isSaveGame(value: unknown): value is SaveGame {
     value.version === 1 &&
     typeof value.room === 'string' &&
     typeof value.savedAt === 'string' &&
+    (value.at === undefined || isPoint(value.at)) &&
     (value.inventory === undefined || isInventory(value.inventory)) &&
     (value.journey === undefined || isJourney(value.journey))
   );
