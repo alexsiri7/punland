@@ -16,6 +16,8 @@ describe('An import that breaks the layering', () => {
         "export const at = { x: 0, y: 0 }; // import '../app/main'",
         "/* import { load } from '../services/api'; */",
         'export const saved = () => globalThis.localStorage;',
+        "export const sent = () => self.fetch('/x');",
+        'export const agent = () => window.navigator.userAgent;',
       ].join('\n'),
       'rules/apply.ts': [
         "import { at } from '../domain/state';",
@@ -32,7 +34,10 @@ describe('An import that breaks the layering', () => {
     expect(violations).toEqual([
       { file: 'domain/state.ts', import: '../presentation/ui/view', rule: 'domain must not import presentation' },
       { file: 'domain/state.ts', import: '../rules/apply', rule: 'domain must not import rules' },
+      { file: 'domain/state.ts', import: 'window', rule: 'domain uses no browser globals' },
       { file: 'domain/state.ts', import: 'localStorage', rule: 'domain uses no browser globals' },
+      { file: 'domain/state.ts', import: 'fetch', rule: 'domain uses no browser globals' },
+      { file: 'domain/state.ts', import: 'navigator', rule: 'domain uses no browser globals' },
       { file: 'rules/apply.ts', import: '../services/api', rule: 'rules must not import services' },
       { file: 'rules/apply.ts', import: '../content/rooms', rule: 'rules must not import content' },
       { file: 'rules/apply.ts', import: 'window', rule: 'rules uses no browser globals' },
