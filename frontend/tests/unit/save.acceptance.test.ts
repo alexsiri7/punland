@@ -4,7 +4,7 @@ import { load, play } from './support/modules';
 // Acceptance tests for openspec/specs/architecture/spec.md, requirement "Serialisable game
 // state". The save format is in docs/ARCHITECTURE.md, section 3.
 
-/** A save as the game writes it before spec change #25 (SaveGame in src/save.ts). */
+/** A save as the game writes it before spec change #25 (SaveGame in src/services/save.ts). */
 const V1_SAVE = {
   version: 1,
   room: 'pub',

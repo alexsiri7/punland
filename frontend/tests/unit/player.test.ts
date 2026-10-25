@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { PLAYER_KEY, playerId } from '../../src/player';
+import { PLAYER_KEY, playerId } from '../../src/services/player';
 
 describe('playerId', () => {
   beforeEach(() => localStorage.clear());

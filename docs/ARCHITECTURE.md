@@ -40,7 +40,7 @@ frontend/src/
   presentation/
     renderer.ts  the Renderer interface and its types (no engine imports)
     ui/          DOM overlay: UI bar, action line, speech, hotspot buttons, inventory, world switcher, dialogue panel
-    theme.ts     design tokens (palette, fonts, sizes); fonts.ts
+    theme.ts     design tokens (palette, fonts, sizes); fonts.ts; style.css
     phaser2d/    the 2D renderer: the ONLY folder that imports `phaser` (removed in B7)
     three3d/     the 3D renderer: the ONLY folder that imports `three` (from B2)
   app/           composition root: main.ts boot, title screen, GameSession, data-* mirror, autosave wiring, renderer choice
@@ -69,7 +69,9 @@ The reasons for a test rather than a lint tool:
 
 If a TS-7-compatible linter is wanted later, Oxlint (Rust, parses TS itself) is the candidate. The test stays the source of truth for layering.
 
-`tsconfig.json` is already `strict`. A1 also turns on `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `noImplicitOverride`, fixing what they find.
+`tsconfig.json` is `strict`, with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `noImplicitOverride` on (from A1).
+
+Code that A1 moved into a layer but that still imports across the table (the `phaser2d` game and scene import `content/` and `services/`, and its `room/` controls import `content/`) is listed in `tests/unit/support/layer-baseline.json`. The test fails on a new violation and on an entry that no longer occurs, so the list only shrinks; the step that removes an import deletes its entry, and A9 needs the list empty.
 
 ## 3. Domain model (`domain/`)
 
@@ -309,7 +311,7 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 
 | Step (issue) | Size | What lands |
 | --- | --- | --- |
-| **A1** ([#27](https://github.com/alexsiri7/punland/issues/27)) | 3 | Folders `domain/ rules/ content/ assets/ services/ presentation/ app/`. Move the pure modules (`walk.ts` → `domain/geometry.ts`, inventory and journey state, `Point` types, theme and fonts, api/save/player/storage → `services/`). `architecture.test.ts`. Stricter `tsconfig` flags. No behaviour change. |
+| **A1** ([#27](https://github.com/alexsiri7/punland/issues/27)), done | 3 | Folders `domain/ rules/ content/ assets/ services/ presentation/ app/`. Move the pure modules (`walk.ts` → `domain/geometry.ts`, inventory and journey state, `Point` types, theme and fonts, api/save/player/storage → `services/`). `architecture.test.ts`. Stricter `tsconfig` flags. No behaviour change. |
 | **A2** ([#28](https://github.com/alexsiri7/punland/issues/28)) | 5 | `domain` `GameState` plus `rules/apply` with commands and events for everything `RoomScene` does today (walk and tick, activate, use X on Y, pickup, exit, enterWorld, gather, presence), with unit tests. Not wired in yet. |
 | **A3** ([#29](https://github.com/alexsiri7/punland/issues/29)) | 5 | `app/session.ts` (`GameSession`): `RoomScene` becomes a view that dispatches commands and draws from events. Autosave and the `data-*` mirror run from session events. Mutable `Inventory` and `Journey` classes are removed. The save format is unchanged. |
 | **A4** ([#30](https://github.com/alexsiri7/punland/issues/30)) | 3 | DOM UI layer: the UI bar text, action line, hint and speech move from Phaser text to `presentation/ui`, driven by the session. Hotspot, inventory and world controls move under `presentation/ui`. The dialogue panel (#8) builds on this. |
@@ -326,4 +328,4 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **B6** ([#41](https://github.com/alexsiri7/punland/issues/41)) | 3 | 3D becomes the default renderer. The whole e2e suite runs against it, and `?renderer=2d` stays as a fallback. |
 | **B7** ([#42](https://github.com/alexsiri7/punland/issues/42)) | 3 | Remove the 2D path: `phaser2d`, the `phaser` dependency, `sprite2d` entries, `scripts/render-art.mjs` and `public/rooms/*` layers. Replace the 2D-specific tests (see Tests). Update CLAUDE.md and STYLE.md's "Scene build" to describe 3D. |
 
-**Status:** design merged (spec change #25); acceptance tests #26 come first, then phase A. Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 waits on A4 (#30); stats and acts #11 wait on A7 (#33).
+**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 waits on A4 (#30); stats and acts #11 wait on A7 (#33).

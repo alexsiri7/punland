@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { insidePolygon, nearestWalkable } from '../../src/room/walk';
+import { insidePolygon, nearestWalkable } from '../../src/domain/geometry';
 
 const floor = [
   { x: 100, y: 500 },

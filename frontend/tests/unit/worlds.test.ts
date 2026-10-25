@@ -11,7 +11,7 @@ const hotspots = Object.values(rooms).flatMap((room) => room.hotspots.map((h) =>
 describe('world content', () => {
   it('has the street, online and dream worlds, starting in the street', () => {
     expect(worlds.map((w) => w.id)).toEqual(['street', 'online', 'dream']);
-    expect(rooms[START_ROOM].world).toBe('street');
+    expect(rooms[START_ROOM]?.world).toBe('street');
     expect(world('street')?.locked).toBeUndefined();
   });
 

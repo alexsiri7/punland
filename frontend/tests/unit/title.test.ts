@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SaveGame, SaveStore } from '../../src/save';
-import { initTitleScreen } from '../../src/title';
+import type { SaveGame, SaveStore } from '../../src/services/save';
+import { initTitleScreen } from '../../src/app/title';
 
 class MemoryStore implements SaveStore {
   constructor(public game: SaveGame | null = null) {}

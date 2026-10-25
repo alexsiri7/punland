@@ -1,24 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { items } from '../../src/content/items';
 import { PROTAGONIST } from '../../src/content/protagonist';
-import { ACTION_TYPES, type Point, rooms, START_ROOM } from '../../src/content/rooms';
-import { insidePolygon } from '../../src/room/walk';
-import { SCENE_HEIGHT, SCENE_WIDTH } from '../../src/theme';
+import { ACTION_TYPES, rooms, START_ROOM } from '../../src/content/rooms';
+import { type FloorPoint, insidePolygon } from '../../src/domain/geometry';
+import { SCENE_HEIGHT, SCENE_WIDTH } from '../../src/presentation/theme';
 
 // Rooms are content data: adding one must not need a code change, so this checks that every
 // room file holds together (progress spec, "Story as content").
 
 // The layer fields RoomScene reads; scripts/render-art.mjs writes them.
-const art = import.meta.glob<{ layers: { actor?: string; foot?: Point }[] }>('../../public/rooms/*/art.json', {
+const art = import.meta.glob<{ layers: { actor?: string; foot?: FloorPoint }[] }>('../../public/rooms/*/art.json', {
   eager: true,
   import: 'default',
 });
 
 /** The player walks in straight lines, which only stay on a convex floor. */
-function convex(poly: Point[]): boolean {
+function convex(poly: FloorPoint[]): boolean {
   let sign = 0;
   for (let i = 0; i < poly.length; i++) {
     const [a, b, c] = [poly[i], poly[(i + 1) % poly.length], poly[(i + 2) % poly.length]];
+    if (!a || !b || !c) return false;
     const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
     if (cross === 0) continue;
     if (sign !== 0 && Math.sign(cross) !== sign) return false;
@@ -80,8 +81,8 @@ describe('room content', () => {
         const to = rooms[h.action.room];
         expect(to, h.id).toBeDefined();
         // Worlds are entered from the world switcher, never through a door.
-        expect(to.world, h.id).toBe(room.world);
-        if (h.action.at) expect(insidePolygon(h.action.at, to.walkable), h.id).toBe(true);
+        expect(to?.world, h.id).toBe(room.world);
+        if (h.action.at) expect(insidePolygon(h.action.at, to?.walkable ?? []), h.id).toBe(true);
       }
     });
 

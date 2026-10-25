@@ -1,5 +1,5 @@
-import type { World } from '../content/worlds';
-import { SCENE_HEIGHT, SCENE_WIDTH } from '../theme';
+import type { World } from '../../../content/worlds';
+import { SCENE_HEIGHT, SCENE_WIDTH } from '../../theme';
 
 export interface WorldSwitcher {
   /** Lines the switcher up with the top of the canvas's UI bar, wherever the scale manager has put it. */

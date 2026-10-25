@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { World } from '../../src/content/worlds';
-import { Journey } from '../../src/journey';
+import { Journey } from '../../src/presentation/phaser2d/journey';
 
 const street: World = { id: 'street', name: 'Street', start: 'opening' };
 const dream: World = { id: 'dream', name: 'Dream', start: 'dream' };
