@@ -53,7 +53,7 @@ function layerOf(path: string): Layer | null {
     return 'presentation';
   }
   const layers: readonly string[] = ['domain', 'rules', 'content', 'assets', 'services', 'app'];
-  return top !== undefined && layers.includes(top) && path.includes('/') ? (top as Layer) : null;
+  return top !== undefined && layers.includes(top) ? (top as Layer) : null;
 }
 
 export function layerViolations(files: Record<string, string>): Violation[] {
@@ -141,7 +141,9 @@ function specifiers(code: string): string[] {
 }
 
 function globals(bare: string): string[] {
-  const used = BROWSER_GLOBALS.filter((name) => new RegExp(`(?<![\\w$.])${name}\\b(?!\\s*:)`).test(bare));
+  const used = BROWSER_GLOBALS.filter((name) =>
+    new RegExp(`(?<![\\w$.])(?:(?:globalThis|self|window)\\s*\\.\\s*)?${name}\\b(?!\\s*:)`).test(bare),
+  );
   if (/\bimport\.meta\.env\b/.test(bare)) used.push('import.meta.env');
   return used;
 }
