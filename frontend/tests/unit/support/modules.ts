@@ -7,37 +7,23 @@
  * expected-to-fail markers.
  */
 
-export interface FloorPoint {
-  x: number;
-  y: number;
-}
+import type { Content as DomainContent, FloorPoint, GameState, Hotspot, Room } from '../../../src/domain';
+import type { Command, GameEvent } from '../../../src/rules';
 
-export type Command =
-  | { type: 'walk'; to: FloorPoint }
-  | { type: 'activate'; hotspot: string }
-  | { type: 'select'; item: string | null }
-  | { type: 'enterWorld'; world: string }
-  | { type: 'tick'; dtMs: number };
+export type { Command, FloorPoint, GameEvent, GameState };
 
-export type GameEvent = { type: string } & Record<string, unknown>;
-
-export interface GameState {
-  room: string;
-  at: FloorPoint;
-  inventory: { carried: string[]; pickedUp: string[] };
-  journey: { left: Record<string, { room: string; at?: FloorPoint }>; gathered: string[] };
-  flags: Record<string, boolean | number | string>;
-  selected: string | null;
-  walk: unknown;
-  saying: unknown;
-}
-
-/** Content as the validators turn it into the domain's types. */
-export interface Content {
-  rooms: Record<string, { hotspots: { id: string; target?: { entity: string; at: FloorPoint } | { node: string } }[] }>;
+/**
+ * Content as the domain has it, with the entities A7 (#33) adds: rooms place them through a
+ * hotspot's `target`, and `objects` and `characters` name their models. Those three fields are
+ * undefined until A7 lands.
+ */
+export type Content = Omit<DomainContent, 'rooms'> & {
+  rooms: Readonly<Record<string, Omit<Room, 'hotspots'> & { hotspots: (Hotspot & { target?: EntityTarget })[] }>>;
   objects: Record<string, { model: string }>;
   characters: Record<string, { model: string }>;
-}
+};
+
+type EntityTarget = { entity: string; at: FloorPoint } | { node: string };
 
 /** Content files by their path under src/, e.g. `content/rooms/opening.json`, parsed. */
 export type ContentFiles = Record<string, unknown>;
@@ -56,8 +42,8 @@ export interface ContractBreach {
 export type ModelKind = 'scene' | 'character' | 'object';
 
 interface Modules {
-  domain: { newGame(content: Content): GameState };
-  rules: { apply(content: Content, state: GameState, command: Command): { state: GameState; events: GameEvent[] } };
+  domain: typeof import('../../../src/domain');
+  rules: typeof import('../../../src/rules');
   content: {
     /** The real content when called without files. */
     loadContent(files?: ContentFiles): Content;
@@ -65,6 +51,7 @@ interface Modules {
   };
   save: {
     toSave(state: GameState): unknown;
+    /** The save as read back from storage, unchecked. */
     fromSave(save: unknown, content: Content): GameState;
   };
   assets: { models: Record<string, { kind: ModelKind }> };
