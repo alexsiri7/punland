@@ -69,10 +69,24 @@ export const goal = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('list', { name: 'Goals' }).getByRole('checkbox', { name });
 export const conversation = (page: Page): Locator => page.getByRole('dialog');
 
-export async function newGame(page: Page): Promise<void> {
-  await page.goto('/');
+/**
+ * The renderers while both exist (docs/ARCHITECTURE.md, "Renderer choice"): `?renderer=2d`
+ * draws the room's art layers, `?renderer=3d` its scene model. Without one, the game's default.
+ */
+export type Renderer = '2d' | '3d';
+
+/** The opening room's scene model, which the 3D renderer draws it from (models spec). */
+export const openingSceneModel = '/models/scenes/opening.glb';
+
+export async function newGame(page: Page, renderer?: Renderer): Promise<void> {
+  const requested: string[] = [];
+  if (renderer === '3d') page.on('request', (request) => requested.push(new URL(request.url()).pathname));
+  await page.goto(renderer ? `/?renderer=${renderer}` : '/');
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  if (renderer === '3d') {
+    await expect.poll(() => requested, 'the 3D renderer loads the scene model').toContain(openingSceneModel);
+  }
 }
 
 export async function enterPub(page: Page): Promise<void> {
@@ -87,6 +101,28 @@ export async function clickScene(page: Page, at: { x: number; y: number }): Prom
   if (!box) throw new Error('no game canvas');
   const scale = box.width / 1280;
   await canvas.click({ position: { x: at.x * scale, y: at.y * scale } });
+}
+
+/**
+ * The centre of a hotspot's button, in page pixels. In 3D the button lies over the hotspot's
+ * model but lets the pointer through to the canvas, so pointing there points at the model.
+ */
+async function hotspotCentre(page: Page, name: string | RegExp): Promise<{ x: number; y: number }> {
+  const box = await hotspot(page, name).boundingBox();
+  if (!box) throw new Error(`no hotspot ${name}`);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/** Moves the pointer over the room where a hotspot is drawn, whichever renderer draws it. */
+export async function pointAtHotspot(page: Page, name: string | RegExp): Promise<void> {
+  const at = await hotspotCentre(page, name);
+  await page.mouse.move(at.x, at.y);
+}
+
+/** Clicks the room where a hotspot is drawn, whichever renderer draws it. */
+export async function clickHotspot(page: Page, name: string | RegExp): Promise<void> {
+  const at = await hotspotCentre(page, name);
+  await page.mouse.click(at.x, at.y);
 }
 
 /** The colour the canvas shows at scene pixels, read from a 1 x 1 screenshot. */
