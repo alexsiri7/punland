@@ -303,6 +303,15 @@ describe('exit', () => {
     expect(state.at).toEqual({ x: 300, y: 550 });
     expect(events.slice(-2)).toEqual([{ type: 'roomChanged', room: 'pub', at: { x: 300, y: 550 } }, { type: 'saved' }]);
   });
+
+  it('ends the selection made on the way to the door', () => {
+    const walking = apply(content, start(), activate('door')).state;
+    const selected = apply(content, walking, select('guitar')).state;
+    const { state, events } = walkOn({ state: selected, events: [] });
+    expect(state.room).toBe('pub');
+    expect(state.selected).toBeNull();
+    expect(events).toContainEqual({ type: 'selected', item: null });
+  });
 });
 
 describe('enterWorld', () => {
@@ -322,6 +331,14 @@ describe('enterWorld', () => {
     expect(back.at).toEqual({ x: 250, y: 580 });
     const again = play(back, [enterWorld('dream')]).state;
     expect(again.at).toEqual({ x: 900, y: 520 });
+  });
+
+  it('ends the selection and speech', () => {
+    const talking = play(start(), [activate('sign'), select('guitar')]).state;
+    expect(talking.saying).not.toBeNull();
+    const { state, events } = apply(content, talking, enterWorld('dream'));
+    expect(state).toMatchObject({ room: 'dream', selected: null, saying: null });
+    expect(events.slice(0, 2)).toEqual([{ type: 'selected', item: null }, { type: 'hushed' }]);
   });
 
   it("can't enter a locked world, an unknown one, or the one the player is in", () => {

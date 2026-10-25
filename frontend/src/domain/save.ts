@@ -38,7 +38,7 @@ export function toSave(state: GameState): UnstampedSave {
  */
 export function fromSave(save: UnstampedSave, content: Content): GameState {
   const game = newGame(content);
-  const room = content.rooms[save.room];
+  const room = Object.hasOwn(content.rooms, save.room) ? content.rooms[save.room] : undefined;
   const at = room ? (save.at ?? room.start) : game.at;
   return {
     ...game,

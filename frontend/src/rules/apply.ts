@@ -199,7 +199,7 @@ function presentHotspot(content: Content, state: GameState, id: string): Hotspot
 }
 
 function roomOf(content: Content, id: string): Room {
-  const room = content.rooms[id];
+  const room = Object.hasOwn(content.rooms, id) ? content.rooms[id] : undefined;
   if (!room) throw new Error(`room "${id}" is not in the content`);
   return room;
 }

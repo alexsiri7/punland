@@ -46,4 +46,10 @@ describe('fromSave', () => {
     expect(state.inventory).toEqual({ carried: ['broken-guitar'], pickedUp: ['gone-item'] });
     expect(state.journey).toEqual({ left: { street: { room: 'pub' } }, gathered: ['open-mic'] });
   });
+
+  it('drops a room named after a property every object inherits', () => {
+    const state = fromSave({ version: 1, room: 'constructor', at: { x: 1, y: 2 } }, content);
+    expect(state.room).toBe(content.start.room);
+    expect(state.at).toEqual(newGame(content).at);
+  });
 });
