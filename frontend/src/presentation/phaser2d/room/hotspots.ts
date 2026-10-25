@@ -1,5 +1,5 @@
-import type { Hotspot } from '../content/rooms';
-import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
+import type { Hotspot } from '../../../content/rooms';
+import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../../theme';
 
 export interface HotspotLayer {
   /** Lines the layer up with the canvas, wherever the scale manager has put it. */

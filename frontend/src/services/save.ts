@@ -2,12 +2,12 @@
 // "is there a save?" and "load it", and the game only says "save this".
 // The game autosaves through BackendSaveStore: a copy in this browser
 // (LocalSaveStore) and one behind the backend, keyed by the anonymous player
-// id (src/player.ts). Continue takes whichever copy is newer, so the game
+// id (./player.ts). Continue takes whichever copy is newer, so the game
 // keeps saving and resuming while the backend is down.
 
 import { apiBase } from './api';
-import type { InventoryState } from './inventory';
-import type { JourneyState } from './journey';
+import type { InventoryState } from '../domain/inventory';
+import type { JourneyState } from '../domain/journey';
 import { playerId } from './player';
 import { safeLocalStorage } from './storage';
 
@@ -161,9 +161,13 @@ export class BackendSaveStore implements SaveStore {
   /** Queues a write so the backend sees them in the order the game made them. */
   private send(method: 'PUT' | 'DELETE', body?: string): Promise<void> {
     const headers: Record<string, string> = { 'X-Player-Id': this.options.player };
-    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    const init: RequestInit = { method, headers };
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+      init.body = body;
+    }
     const write = async () => {
-      await this.options.fetch(`${this.options.base}/saves`, { method, headers, body });
+      await this.options.fetch(`${this.options.base}/saves`, init);
     };
     this.writes = this.writes.then(write).catch(() => undefined);
     return this.writes;

@@ -160,7 +160,7 @@ export async function useItemOn(page: Page, item: string | RegExp, target: strin
 }
 
 /**
- * Matches backend requests by path, whatever origin the build's apiBase() (src/api.ts)
+ * Matches backend requests by path, whatever origin the build's apiBase() (src/services/api.ts)
  * resolves to: the production API, or another one when the build sets VITE_API_BASE.
  */
 function apiPath(prefix: string): (url: URL) => boolean {
@@ -215,7 +215,7 @@ export async function stubSaves(page: Page, store: Map<string, string>): Promise
 
 /**
  * A saved game, as the title screen's Continue loads it. `version`, `room` and `savedAt` are
- * today's save (src/save.ts); the rest is what #10 and #11 add to it.
+ * today's save (src/services/save.ts); the rest is what #10 and #11 add to it.
  */
 export interface Save {
   room: string;

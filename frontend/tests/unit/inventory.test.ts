@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../../src/inventory';
+import { Inventory } from '../../src/presentation/phaser2d/inventory';
 
 describe('Inventory', () => {
   it('remembers a used-up item was picked up, so it never comes back to its room', () => {

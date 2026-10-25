@@ -44,7 +44,7 @@ describe('An import that breaks the layering', () => {
     ]);
   });
 
-  it.fails('does not occur in src/ beyond the known violations (needs #27)', () => {
+  it('does not occur in src/ beyond the known violations', () => {
     expect(againstBaseline(layerViolations(srcFiles))).toEqual({ unexpected: [], gone: [] });
   });
 });
@@ -66,7 +66,7 @@ describe('One engine per renderer', () => {
     ]);
   });
 
-  it.fails('holds in src/ (needs #27)', () => {
+  it('holds in src/', () => {
     const { unexpected, gone } = againstBaseline(layerViolations(srcFiles));
     expect([...unexpected, ...gone].filter((v) => isEngineRule(v.rule))).toEqual([]);
   });

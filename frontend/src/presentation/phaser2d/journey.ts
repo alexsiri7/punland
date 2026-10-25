@@ -1,16 +1,4 @@
-import type { Point } from './content/rooms';
-import type { World } from './content/worlds';
-
-export interface Place {
-  room: string;
-  at?: Point;
-}
-
-/** A journey as it is saved: where each world was left, by world id, and the material gathered. */
-export interface JourneyState {
-  left: Record<string, Place>;
-  gathered: string[];
-}
+import type { JourneyState, Place } from '../../domain/journey';
 
 /**
  * Where the player has been in each world, and the dream material the street has given, for
@@ -40,7 +28,7 @@ export class Journey {
   }
 
   /** Where the player comes into a world: where they left it, else its start room. */
-  enter(world: World): Place {
+  enter(world: { id: string; start: string }): Place {
     return this.left.get(world.id) ?? { room: world.start };
   }
 

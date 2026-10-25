@@ -10,7 +10,7 @@ Every new scene, character, prop or piece of UI follows [`docs/design/STYLE.md`]
 - Bebas Neue for in-world signs and titles, Inter for the UI. Both are self-hosted, never Google Fonts, because of the CSP.
 - Each room is one layered 1280 × 640 SVG in `frontend/art/<room>/scene.svg`, rendered with `node scripts/render-art.mjs` to `public/rooms/<room>/`. The UI bar is 160 px under it.
 
-Take colours from `src/theme.ts` and the CSS variables, not new hex values. The opening pub is **The Three Crows**. The protagonist is **Paws Anka**, a placeholder name chosen 2026-10-24 that may change: it lives only in `frontend/src/content/protagonist.ts`, so read it from there and don't build anything that depends on the exact name.
+Take colours from `src/presentation/theme.ts` and the CSS variables, not new hex values. The opening pub is **The Three Crows**. The protagonist is **Paws Anka**, a placeholder name chosen 2026-10-24 that may change: it lives only in `frontend/src/content/protagonist.ts`, so read it from there and don't build anything that depends on the exact name.
 
 ## Stack
 
@@ -55,22 +55,20 @@ CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the
 
 ```
 frontend/
-  index.html            title screen markup (Tune Story, New game, Continue)
-  src/main.ts           boot: title screen -> startGame()
-  src/title.ts          title screen logic (Continue only when a save exists)
-  src/save.ts           SaveStore interface + LocalSaveStore (localStorage); #10 swaps in the backend store
-  src/game.ts           Phaser game factory; starts RoomScene in the opening (or saved) room
-  src/scenes/RoomScene.ts  the room engine: any room from its content + art; mirrors data-scene/-player/-hover/-say on #game
-  src/room/             walking (convex floor) and the hotspot buttons over the canvas
+  index.html            title screen markup (Tune Story, New game, Continue); loads src/app/main.ts
+  src/domain/           pure model: floor geometry (FloorPoint, walking on a convex floor), inventory/journey save state
+  src/content/          content data and its loaders: rooms/<room>.json, items, worlds, protagonist.ts
   src/content/rooms/<room>.json  room content: floor, start point, hotspots and their actions (say, exit)
   src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
-  src/theme.ts          design tokens (palette, fonts, scene/UI-bar sizes) from docs/design/STYLE.md
-  src/fonts.ts          self-hosted Bebas Neue + Inter, and loadFonts() for canvas text
+  src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), player.ts, storage.ts
+  src/presentation/     theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts, loadFonts()), style.css
+  src/presentation/phaser2d/  game.ts (Phaser game factory), RoomScene.ts (the room engine; mirrors data-scene/-player/-hover/-say on #game),
+                        the Inventory/Journey session classes, room/ (hotspot, inventory and world buttons over the canvas)
+  src/app/              main.ts (boot: title screen -> startGame()), title.ts (Continue only when a save exists)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
   public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
-  src/api.ts            backend base URL + fetch helpers
   public/_headers       production CSP and security headers (Cloudflare Pages)
-  tests/unit/           vitest (jsdom)
+  tests/unit/           vitest (jsdom); architecture.test.ts enforces the layers, support/layer-baseline.json lists the known violations
   tests/e2e/            Playwright; fixtures.ts fails any test on page errors, console errors, CSP violations
   tests/serve.mjs       local stand-in for Pages: serves dist/ with _headers, 404.html for unknown paths
 backend/

@@ -1,5 +1,5 @@
-import { items } from '../content/items';
-import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
+import { items } from '../../../content/items';
+import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../../theme';
 
 export interface InventoryBar {
   /** Shows the carried items, with the selected one marked. */
@@ -34,7 +34,7 @@ export function createInventoryBar(
         ...carried.map((id) => {
           const button = doc.createElement('button');
           button.type = 'button';
-          button.setAttribute('aria-label', items[id].name);
+          button.setAttribute('aria-label', items[id]?.name ?? id);
           button.setAttribute('aria-pressed', String(id === selected));
           const icon = doc.createElement('img');
           icon.src = `items/${id}.svg`;

@@ -1,3 +1,5 @@
+import type { FloorPoint, Rect } from '../domain/geometry';
+
 /**
  * Rooms as content data (progress spec, "Story as content"): one JSON file per room in
  * ./rooms/, named after the room id. Adding a room is adding a file here plus its art in
@@ -6,23 +8,11 @@
  * A hotspot that comes and goes (a pickup, or dream material) is drawn as the art actor with
  * the hotspot's id, so the room shows it only while the hotspot is there.
  */
-export interface Point {
-  x: number;
-  y: number;
-}
-
-export interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 /** What happens once the player has walked to a hotspot. */
 export type HotspotAction =
   | { type: 'say'; line: string }
   /** `at`: where the player stands in the other room; that room's `start` when left out. */
-  | { type: 'exit'; room: string; at?: Point }
+  | { type: 'exit'; room: string; at?: FloorPoint }
   /** The item goes into the inventory, and the hotspot is gone for good. */
   | { type: 'pickup'; item: string };
 
@@ -45,7 +35,7 @@ export interface Hotspot {
   verb: string;
   rect: Rect;
   /** Where the player walks to before the action happens; inside the walkable area. */
-  walkTo: Point;
+  walkTo: FloorPoint;
   action: HotspotAction;
   /** Items this hotspot accepts; using any other item on it gets that item's `noUse` line. */
   uses?: ItemUse[];
@@ -64,9 +54,9 @@ export interface Room {
   place: { verb: string; name: string };
   hint: string;
   /** Where the player stands on arriving, unless the exit says otherwise. */
-  start: Point;
+  start: FloorPoint;
   /** The floor, a convex polygon: the player walks in straight lines inside it. */
-  walkable: Point[];
+  walkable: FloorPoint[];
   hotspots: Hotspot[];
 }
 

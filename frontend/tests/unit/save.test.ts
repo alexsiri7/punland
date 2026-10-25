@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BackendSaveStore, isSaveGame, LocalSaveStore, SAVE_KEY, type SaveGame } from '../../src/save';
+import { BackendSaveStore, isSaveGame, LocalSaveStore, SAVE_KEY, type SaveGame } from '../../src/services/save';
 
 const game: SaveGame = { version: 1, room: 'opening', savedAt: '2026-10-24T12:00:00.000Z' };
 
@@ -69,7 +69,7 @@ describe('BackendSaveStore', () => {
   interface Call {
     method: string;
     headers: Record<string, string>;
-    body?: string;
+    body?: string | undefined;
   }
 
   /** A backend that answers GET with `answer` and records every request. */

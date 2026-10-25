@@ -1,16 +1,17 @@
 import Phaser from 'phaser';
-import { items } from '../content/items';
-import { PROTAGONIST } from '../content/protagonist';
-import { type Hotspot, type Point, type Room, rooms, START_ROOM } from '../content/rooms';
-import { type World, worlds } from '../content/worlds';
-import type { Inventory } from '../inventory';
-import type { Journey, Place } from '../journey';
-import type { SaveGame } from '../save';
-import { createHotspotLayer, type HotspotLayer } from '../room/hotspots';
-import { createInventoryBar, type InventoryBar } from '../room/inventory';
-import { createWorldSwitcher } from '../room/worlds';
-import { nearestWalkable } from '../room/walk';
+import { items } from '../../content/items';
+import { PROTAGONIST } from '../../content/protagonist';
+import { type Hotspot, type Room, rooms, START_ROOM } from '../../content/rooms';
+import { type World, worlds } from '../../content/worlds';
+import { type FloorPoint, nearestWalkable } from '../../domain/geometry';
+import type { Place } from '../../domain/journey';
+import type { SaveGame } from '../../services/save';
 import { fonts, hex, palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
+import type { Inventory } from './inventory';
+import type { Journey } from './journey';
+import { createHotspotLayer, type HotspotLayer } from './room/hotspots';
+import { createInventoryBar, type InventoryBar } from './room/inventory';
+import { createWorldSwitcher } from './room/worlds';
 
 /** public/rooms/<room>/art.json, written by scripts/render-art.mjs from art/<room>/scene.svg. */
 interface RoomArt {
@@ -18,19 +19,19 @@ interface RoomArt {
   width: number;
   height: number;
   scale: number;
-  layers: { key: string; file: string; x: number; y: number; depth: number; actor?: string; foot?: Point }[];
+  layers: { key: string; file: string; x: number; y: number; depth: number; actor?: string; foot?: FloorPoint }[];
 }
 
 export interface RoomData {
   room: string;
   /** Where the player stands; the room's start when left out. */
-  at?: Point;
+  at?: FloorPoint;
   /** Carried from room to room. */
   inventory: Inventory;
   /** Carried from room to room and world to world. */
   journey: Journey;
   /** Called with the game state whenever it changes; the store decides where it goes. */
-  autosave?: (game: SaveGame) => void;
+  autosave?: ((game: SaveGame) => void) | undefined;
 }
 
 const WALK_SPEED = 320; // scene px per second
@@ -49,8 +50,8 @@ export class RoomScene extends Phaser.Scene {
 
   private id = START_ROOM;
   private room!: Room;
-  private at!: Point;
-  private target: Point | null = null;
+  private at!: FloorPoint;
+  private target: FloorPoint | null = null;
   /** What happens once the walk ends. */
   private pending: (() => void) | null = null;
   private player: Phaser.GameObjects.Image | null = null;
@@ -72,7 +73,9 @@ export class RoomScene extends Phaser.Scene {
 
   init(data: RoomData): void {
     this.id = Object.hasOwn(rooms, data.room) ? data.room : START_ROOM;
-    this.room = rooms[this.id];
+    const room = rooms[this.id];
+    if (!room) throw new Error(`room "${this.id}" is not in the content`);
+    this.room = room;
     this.at = { ...(data.at ?? this.room.start) };
     this.target = null;
     this.pending = null;
@@ -189,7 +192,7 @@ export class RoomScene extends Phaser.Scene {
     this.persist();
   }
 
-  update(): void {
+  override update(): void {
     if (!this.target) return;
     // Phaser's smoothed delta is capped per frame, so a slow or unfocused page would walk in slow motion.
     const delta = this.game.loop.rawDelta;
@@ -215,7 +218,7 @@ export class RoomScene extends Phaser.Scene {
     return `${this.id}-art`;
   }
 
-  private walkTo(target: Point, then: (() => void) | null): void {
+  private walkTo(target: FloorPoint, then: (() => void) | null): void {
     this.say(null);
     this.target = { ...target };
     this.pending = then;
@@ -239,7 +242,7 @@ export class RoomScene extends Phaser.Scene {
         this.say(action.line);
         break;
       case 'exit':
-        this.goTo({ room: action.room, at: action.at });
+        this.goTo(action.at ? { room: action.room, at: action.at } : { room: action.room });
         break;
       case 'pickup':
         this.inventory.pickUp(action.item);
@@ -275,7 +278,7 @@ export class RoomScene extends Phaser.Scene {
   private use(item: string, h: Hotspot): void {
     const use = h.uses?.find((u) => u.item === item);
     if (!use) {
-      this.say(items[item].noUse);
+      this.say(items[item]?.noUse ?? null);
       return;
     }
     this.say(use.say);
@@ -331,7 +334,7 @@ export class RoomScene extends Phaser.Scene {
     this.setData('hover', h?.name ?? '');
     const selected = this.inventory.selected;
     if (selected !== null) {
-      const item = items[selected].name;
+      const item = items[selected]?.name ?? selected;
       this.setActionLine(h ? `Use ${item} on` : 'Use', h ? h.name : item);
     } else {
       this.setActionLine(h ? h.verb : this.room.place.verb, h ? h.name : this.room.place.name);
@@ -340,7 +343,7 @@ export class RoomScene extends Phaser.Scene {
 
   private hoverItem(id: string | null): void {
     if (id === null) this.hover(null);
-    else this.setActionLine('Use', items[id].name);
+    else this.setActionLine('Use', items[id]?.name ?? id);
   }
 
   private setData(key: 'player' | 'hover' | 'say', value: string): void {
@@ -348,7 +351,7 @@ export class RoomScene extends Phaser.Scene {
     if (container) container.dataset[key] = value;
   }
 
-  /** The UI bar under the scene (STYLE.md, UI bar). Its inventory slots are DOM (src/room/inventory.ts). */
+  /** The UI bar under the scene (STYLE.md, UI bar). Its inventory slots are DOM (./room/inventory.ts). */
   private drawUiBar(): void {
     const top = SCENE_HEIGHT;
     this.add.rectangle(0, top, SCENE_WIDTH, UI_BAR_HEIGHT, hex(palette.uiGround)).setOrigin(0).setDepth(UI_DEPTH);

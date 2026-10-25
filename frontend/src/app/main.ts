@@ -1,8 +1,8 @@
-import './fonts';
-import './style.css';
-import { loadFonts } from './fonts';
-import { startGame } from './game';
-import { BackendSaveStore, LocalSaveStore } from './save';
+import '../presentation/fonts';
+import '../presentation/style.css';
+import { loadFonts } from '../presentation/fonts';
+import { startGame } from '../presentation/phaser2d/game';
+import { BackendSaveStore, LocalSaveStore } from '../services/save';
 import { initTitleScreen } from './title';
 
 const store = new BackendSaveStore(new LocalSaveStore());

@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
-import { items, START_ITEMS } from './content/items';
-import { rooms, START_ROOM } from './content/rooms';
-import { Inventory, type InventoryState } from './inventory';
-import { Journey, type JourneyState } from './journey';
-import type { SaveGame } from './save';
-import { type RoomData, RoomScene } from './scenes/RoomScene';
-import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from './theme';
+import { items, START_ITEMS } from '../../content/items';
+import { rooms, START_ROOM } from '../../content/rooms';
+import type { InventoryState } from '../../domain/inventory';
+import type { JourneyState } from '../../domain/journey';
+import type { SaveGame } from '../../services/save';
+import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
+import { type RoomData, RoomScene } from './RoomScene';
+import { Inventory } from './inventory';
+import { Journey } from './journey';
 
 /** 1280 x 640 scene plus the 160 px UI bar under it (docs/design/STYLE.md). */
 export const GAME_WIDTH = SCENE_WIDTH;
@@ -13,7 +15,7 @@ export const GAME_HEIGHT = SCENE_HEIGHT + UI_BAR_HEIGHT;
 
 export interface StartOptions {
   /** The game to resume; a new game when left out. An unknown room starts in the opening room. */
-  save?: SaveGame;
+  save?: SaveGame | undefined;
   /** Called with the game state whenever it changes. */
   autosave?: (game: SaveGame) => void;
 }
