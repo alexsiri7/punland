@@ -1,5 +1,18 @@
 import { expect, test } from './fixtures';
-import { clickScene, content, enterPub, game, hotspot, newGame, playerPosition, scenePixel } from './play';
+import { fixtures } from '../fixtures/models/glb';
+import {
+  clickHotspot,
+  clickScene,
+  content,
+  enterPub,
+  game,
+  hotspot,
+  newGame,
+  openingSceneModel,
+  playerPosition,
+  pointAtHotspot,
+  scenePixel,
+} from './play';
 
 // Acceptance tests for openspec/specs/scenes/spec.md.
 
@@ -65,4 +78,25 @@ test('Swapping art', async ({ page }) => {
   await hotspot(page, content.pubDoor).hover();
   await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
   await enterPub(page);
+});
+
+test('Swapping art (scene model)', async ({ page }) => {
+  test.fail(true, 'needs #38');
+  // Requirement: Placeholder art. Replacing a room's scene model needs no change to game logic.
+  await page.route(`**${openingSceneModel}`, (route) =>
+    route.fulfill({ status: 200, contentType: 'model/gltf-binary', body: Buffer.from(fixtures.magentaScene()) }),
+  );
+  await newGame(page, '3d');
+  // The toon ramp gives the backdrop two tones and the grain overlay sits above the canvas, so
+  // the pixel is strongly magenta rather than exactly #FF00FF.
+  await expect
+    .poll(async () => {
+      const [r = 0, g = 255, b = 0] = await scenePixel(page, { x: 40, y: 300 });
+      return r > 150 && b > 150 && g < 80;
+    })
+    .toBe(true);
+  await pointAtHotspot(page, content.pubDoor);
+  await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
+  await clickHotspot(page, content.pubDoor);
+  await expect(game(page)).toHaveAttribute('data-scene', content.pubInterior);
 });
