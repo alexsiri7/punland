@@ -1,13 +1,14 @@
 import {
+  type Command,
   type Content,
   type FloorPoint,
+  type GameEvent,
   type GameState,
   type Hotspot,
   nearestWalkable,
   type Place,
   type Room,
 } from '../domain';
-import type { Command, GameEvent } from './commands';
 
 /** Floor px per second. */
 export const WALK_SPEED = 320;

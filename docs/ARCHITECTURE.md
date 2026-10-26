@@ -123,6 +123,8 @@ interface GameState {
 
 ## 4. Rules (`rules/`): commands, events, interactions
 
+`Command` and `GameEvent` are types in `domain/commands.ts`, so presentation can send the one and draw the other without importing `rules/`; `rules/` re-exports them with `apply`.
+
 ```ts
 type Command =
   | { type: 'walk'; to: FloorPoint }                       // a floor click; the rules clamp it to the floor
@@ -165,7 +167,7 @@ function apply(content: Content, state: GameState, command: Command): { state: G
   ```
 
   Activating a hotspot with no item selected runs its first interaction whose verb is the hotspot's default and whose conditions hold. With an item selected, it runs the matching `use` interaction for that item, or else says the item's `noUse`. Adding an effect or condition is a rules change with unit tests. Adding a puzzle that uses existing ones is content only (progress spec, "Adding a puzzle").
-- **The session.** `app/session.ts` (`GameSession`) owns the current `GameState`. It exposes `dispatch(command)` and `subscribe(listener)`, applies the rules and fans the events out to the renderer, the UI, the `data-*` mirror and autosave (on `saved`). It is the one stateful object, and it is small.
+- **The session.** `app/session.ts` (`GameSession`) owns the current `GameState`. It exposes `dispatch(command)` and `subscribe(listener)`, applies the rules and fans the events out to the renderer, the UI, the `data-*` mirror and autosave (on `saved`, through the `SaveStore`, stamping `savedAt`). It is the one stateful object, and it is small. `app/main.ts` builds it from `fromSave` or `newGame` and hands it to the 2D game, which may not import `app/`: the scene sees it through the `Session` interface in `RoomScene.ts`.
 
 ## 5. Presentation
 
@@ -209,7 +211,7 @@ This is what lets the renderer be swapped with the same public interface (archit
 
 ### The `#game` mirror (`app/mirror.ts`)
 
-`data-scene`, `data-world`, `data-player` ("x,y" in scene pixels, which is the floor point, so it is the same in 2D and 3D), `data-hover`, `data-say` and, from B5, `data-player-animation` are written from session events in one place. They are not written by renderers.
+`data-scene`, `data-world`, `data-player` ("x,y" in scene pixels, which is the floor point, so it is the same in 2D and 3D), `data-hover`, `data-say` and, from B5, `data-player-animation` are written from session events in one place. They are not written by renderers. Two of them are what only the view knows, which it reports to the mirror rather than writing them: `data-hover` (the pointer's hotspot) and when a room is drawn and takes input, which is when `data-scene` and `data-world` change.
 
 ## 6. Assets: the model registry (`assets/`)
 
@@ -315,7 +317,7 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | --- | --- | --- |
 | **A1** ([#27](https://github.com/alexsiri7/punland/issues/27)), done | 3 | Folders `domain/ rules/ content/ assets/ services/ presentation/ app/`. Move the pure modules (`walk.ts` → `domain/geometry.ts`, inventory and journey state, `Point` types, theme and fonts, api/save/player/storage → `services/`). `architecture.test.ts`. Stricter `tsconfig` flags. No behaviour change. |
 | **A2** ([#28](https://github.com/alexsiri7/punland/issues/28)), done | 5 | `domain` `GameState` plus `rules/apply` with commands and events for everything `RoomScene` does today (walk and tick, activate, use X on Y, pickup, exit, enterWorld, gather, presence), with unit tests. Not wired in yet. |
-| **A3** ([#29](https://github.com/alexsiri7/punland/issues/29)) | 5 | `app/session.ts` (`GameSession`): `RoomScene` becomes a view that dispatches commands and draws from events. Autosave and the `data-*` mirror run from session events. Mutable `Inventory` and `Journey` classes are removed. The save format is unchanged. |
+| **A3** ([#29](https://github.com/alexsiri7/punland/issues/29)), done | 5 | `app/session.ts` (`GameSession`): `RoomScene` becomes a view that dispatches commands and draws from events. Autosave and the `data-*` mirror run from session events. Mutable `Inventory` and `Journey` classes are removed. The save format is unchanged. |
 | **A4** ([#30](https://github.com/alexsiri7/punland/issues/30)) | 3 | DOM UI layer: the UI bar text, action line, hint and speech move from Phaser text to `presentation/ui`, driven by the session. Hotspot, inventory and world controls move under `presentation/ui`. The dialogue panel (#8) builds on this. |
 | **A5** ([#31](https://github.com/alexsiri7/punland/issues/31)) | 5 | `presentation/renderer.ts` plus `presentation/phaser2d` (the only `phaser` import), with picking through `renderer.pick` and a fake renderer for unit tests. `game.ts`/`RoomScene` are folded into the 2D renderer and the app. |
 | **A6** ([#32](https://github.com/alexsiri7/punland/issues/32)) | 3 | Content validators: every content file is checked at load and in tests, ids are branded, and errors name the file and the field. |

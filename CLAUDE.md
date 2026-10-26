@@ -57,16 +57,19 @@ CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the
 frontend/
   index.html            title screen markup (Tune Story, New game, Continue); loads src/app/main.ts
   src/domain/           pure model: floor geometry (FloorPoint, walking on a convex floor), content types (content.ts),
-                        GameState and newGame (state.ts), SaveGame with toSave/fromSave (save.ts), inventory/journey save state
-  src/rules/            pure rules: apply(content, state, command) -> {state, events}; Command and GameEvent (not yet wired in, A3)
+                        GameState and newGame (state.ts), Command and GameEvent (commands.ts), SaveGame with toSave/fromSave
+                        (save.ts), inventory/journey save state
+  src/rules/            pure rules: apply(content, state, command) -> {state, events}; isPresent
   src/content/          content data and its loaders: rooms/<room>.json, items, worlds, protagonist.ts; index.ts loadContent()
   src/content/rooms/<room>.json  room content: floor, start point, hotspots and their actions (say, exit)
   src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), player.ts, storage.ts
-  src/presentation/     theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts, loadFonts()), style.css
-  src/presentation/phaser2d/  game.ts (Phaser game factory), RoomScene.ts (the room engine; mirrors data-scene/-player/-hover/-say on #game),
-                        the Inventory/Journey session classes, room/ (hotspot, inventory and world buttons over the canvas)
-  src/app/              main.ts (boot: title screen -> startGame()), title.ts (Continue only when a save exists)
+  src/presentation/     theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts, loadFonts()), speech.ts, style.css
+  src/presentation/phaser2d/  game.ts (Phaser game factory), RoomScene.ts (draws the session's room: input -> commands, events -> drawing;
+                        no game rules), room/ (hotspot, inventory and world buttons over the canvas)
+  src/app/              main.ts (boot: title screen -> GameSession -> startGame()), title.ts (Continue only when a save exists),
+                        session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
+                        mirror.ts (data-scene/-world/-player/-hover/-say on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
   public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
   public/_headers       production CSP and security headers (Cloudflare Pages)

@@ -1,14 +1,8 @@
 import Phaser from 'phaser';
-import { items } from '../../content/items';
 import { PROTAGONIST } from '../../content/protagonist';
-import { type Hotspot, type Room, rooms, START_ROOM } from '../../content/rooms';
-import { type World, worlds } from '../../content/worlds';
-import { type FloorPoint, nearestWalkable } from '../../domain/geometry';
-import type { Place } from '../../domain/journey';
-import type { SaveGame } from '../../services/save';
+import type { Command, Content, FloorPoint, GameEvent, GameState, Hotspot, Room } from '../../domain';
+import { speechMs } from '../speech';
 import { fonts, hex, palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
-import type { Inventory } from './inventory';
-import type { Journey } from './journey';
 import { createHotspotLayer, type HotspotLayer } from './room/hotspots';
 import { createInventoryBar, type InventoryBar } from './room/inventory';
 import { createWorldSwitcher } from './room/worlds';
@@ -22,72 +16,74 @@ interface RoomArt {
   layers: { key: string; file: string; x: number; y: number; depth: number; actor?: string; foot?: FloorPoint }[];
 }
 
-export interface RoomData {
-  room: string;
-  /** Where the player stands; the room's start when left out. */
-  at?: FloorPoint;
-  /** Carried from room to room. */
-  inventory: Inventory;
-  /** Carried from room to room and world to world. */
-  journey: Journey;
-  /** Called with the game state whenever it changes; the store decides where it goes. */
-  autosave?: ((game: SaveGame) => void) | undefined;
+/** The game session the scene plays (app/session.ts): it reads the state and sends commands. */
+export interface Session {
+  readonly content: Content;
+  readonly state: GameState;
+  dispatch(command: Command): void;
+  subscribe(listener: (event: GameEvent) => void): () => void;
+  isPresent(hotspot: Hotspot): boolean;
 }
 
-const WALK_SPEED = 320; // scene px per second
+/** What only the view knows, for the #game mirror (app/mirror.ts). */
+export interface ViewMirror {
+  /** The session's room is drawn and takes input. */
+  shown(): void;
+  /** The name of the hotspot under the pointer, empty for none. */
+  hover(name: string): void;
+}
+
+/** The room to show: the session's. Everything else is in the session. */
+export interface RoomData {
+  room: string;
+}
+
 const SPEECH_DEPTH = 150;
 const UI_DEPTH = 200;
 
 /**
- * Shows one room at a time, from its content (src/content/rooms/<room>.json: floor,
- * hotspots, exits, items) and its art (public/rooms/<room>/: swappable layer files). Nothing
- * here is specific to a room. Hotspots and inventory slots are DOM buttons over the canvas.
- * What the canvas shows is mirrored on the #game container for tests and the DOM:
- * data-scene (room id), data-world (the room's world), data-player ("x,y"), data-hover, data-say.
+ * Shows the session's room, from its content (src/content/rooms/<room>.json: floor, hotspots,
+ * exits, items) and its art (public/rooms/<room>/: swappable layer files). Nothing here is
+ * specific to a room, and nothing here is a game rule: input becomes commands to the session,
+ * and the session's events are drawn. Hotspots and inventory slots are DOM buttons over the
+ * canvas.
  */
 export class RoomScene extends Phaser.Scene {
   static readonly KEY = 'room';
 
-  private id = START_ROOM;
+  private id = '';
   private room!: Room;
-  private at!: FloorPoint;
-  private target: FloorPoint | null = null;
-  /** What happens once the walk ends. */
-  private pending: (() => void) | null = null;
   private player: Phaser.GameObjects.Image | null = null;
-  private inventory!: Inventory;
-  private journey!: Journey;
-  private autosave: RoomData['autosave'];
   private hotspots: HotspotLayer | null = null;
   private bar: InventoryBar | null = null;
   /** Room sprites of hotspots that come and go, by hotspot id. */
   private hotspotSprites = new Map<string, Phaser.GameObjects.Image>();
+  /** The hotspot under the pointer. */
+  private hovered: Hotspot | null = null;
+  private unsubscribe: () => void = () => {};
   private speech!: Phaser.GameObjects.Text;
   private speechTimer: Phaser.Time.TimerEvent | null = null;
   private actionVerb!: Phaser.GameObjects.Text;
   private actionName!: Phaser.GameObjects.Text;
 
-  constructor() {
+  constructor(
+    private readonly session: Session,
+    private readonly mirror: ViewMirror,
+  ) {
     super(RoomScene.KEY);
   }
 
   init(data: RoomData): void {
-    this.id = Object.hasOwn(rooms, data.room) ? data.room : START_ROOM;
-    const room = rooms[this.id];
-    if (!room) throw new Error(`room "${this.id}" is not in the content`);
+    const room = this.session.content.rooms[data.room];
+    if (!room) throw new Error(`room "${data.room}" is not in the content`);
+    this.id = data.room;
     this.room = room;
-    this.at = { ...(data.at ?? this.room.start) };
-    this.target = null;
-    this.pending = null;
     this.player = null;
     this.speechTimer = null;
-    this.inventory = data.inventory;
-    this.inventory.select(null);
-    this.journey = data.journey;
-    this.autosave = data.autosave;
     this.hotspots = null;
     this.bar = null;
     this.hotspotSprites = new Map();
+    this.hovered = null;
   }
 
   preload(): void {
@@ -108,7 +104,7 @@ export class RoomScene extends Phaser.Scene {
 
   create(): void {
     const art = this.cache.json.get(this.artKey()) as RoomArt;
-    const present = this.room.hotspots.filter((h) => this.isPresent(h));
+    const present = this.room.hotspots.filter((h) => this.session.isPresent(h));
     const absent = new Set(this.room.hotspots.filter((h) => !present.includes(h)).map((h) => h.id));
     for (const layer of art.layers) {
       if (layer.actor && absent.has(layer.actor)) continue;
@@ -150,16 +146,18 @@ export class RoomScene extends Phaser.Scene {
     if (container) {
       const hotspots = createHotspotLayer(container, present, {
         hover: (h) => this.hover(h),
-        activate: (h) => this.activate(h),
+        activate: (h) => this.session.dispatch({ type: 'activate', hotspot: h.id }),
       });
       const bar = createInventoryBar(container, {
         hover: (id) => this.hoverItem(id),
         select: (id) => {
-          this.select(this.inventory.selected === id ? null : id);
+          this.session.dispatch({ type: 'select', item: this.session.state.selected === id ? null : id });
           this.hoverItem(id);
         },
       });
-      const switcher = createWorldSwitcher(container, worlds, this.room.world, { enter: (w) => this.enter(w) });
+      const switcher = createWorldSwitcher(container, this.session.content.worlds, this.room.world, {
+        enter: (w) => this.session.dispatch({ type: 'enterWorld', world: w.id }),
+      });
       this.hotspots = hotspots;
       this.bar = bar;
       this.renderInventory();
@@ -176,165 +174,102 @@ export class RoomScene extends Phaser.Scene {
         bar.destroy();
         switcher.destroy();
       });
-      container.dataset.scene = this.id;
-      container.dataset.world = this.room.world;
-      container.dataset.hover = '';
-      container.dataset.say = '';
     }
-    this.placePlayer();
+    this.placePlayer(this.session.state.at);
+    this.unsubscribe = this.session.subscribe((event) => this.draw(event));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribe());
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       if (pointer.worldY >= SCENE_HEIGHT) return;
-      this.select(null);
+      this.session.dispatch({ type: 'walk', to: { x: pointer.worldX, y: pointer.worldY } });
       this.hover(null);
-      this.walkTo(nearestWalkable({ x: pointer.worldX, y: pointer.worldY }, this.room.walkable), null);
     });
-    this.persist();
+    this.mirror.shown();
   }
 
   override update(): void {
-    if (!this.target) return;
+    if (!this.session.state.walk) return;
     // Phaser's smoothed delta is capped per frame, so a slow or unfocused page would walk in slow motion.
-    const delta = this.game.loop.rawDelta;
-    const dx = this.target.x - this.at.x;
-    const dy = this.target.y - this.at.y;
-    const left = Math.hypot(dx, dy);
-    const step = (WALK_SPEED * delta) / 1000;
-    if (left <= step) {
-      this.at = { ...this.target };
-      this.target = null;
-    } else {
-      this.at = { x: this.at.x + (dx * step) / left, y: this.at.y + (dy * step) / left };
+    this.session.dispatch({ type: 'tick', dtMs: this.game.loop.rawDelta });
+  }
+
+  private draw(event: GameEvent): void {
+    switch (event.type) {
+      case 'moved':
+        this.placePlayer(event.at);
+        break;
+      case 'said':
+        this.say(event.line);
+        break;
+      case 'hushed':
+        this.say(null);
+        break;
+      case 'pickedUp':
+      case 'itemRemoved':
+        this.renderInventory();
+        break;
+      case 'selected':
+        this.renderInventory();
+        this.hover(this.hovered);
+        break;
+      case 'hotspotHidden':
+        this.hotspots?.remove(event.hotspot);
+        this.hotspotSprites.get(event.hotspot)?.destroy();
+        this.hotspotSprites.delete(event.hotspot);
+        break;
+      case 'hotspotShown':
+      case 'roomChanged':
+        this.redraw();
+        break;
+      default:
+        break;
     }
-    this.placePlayer();
-    if (!this.target && this.pending) {
-      const then = this.pending;
-      this.pending = null;
-      then();
-    }
+  }
+
+  /** Draws the session's room afresh. This scene draws nothing more: its events are done with. */
+  private redraw(): void {
+    this.unsubscribe();
+    this.scene.restart({ room: this.session.state.room } satisfies RoomData);
   }
 
   private artKey(): string {
     return `${this.id}-art`;
   }
 
-  private walkTo(target: FloorPoint, then: (() => void) | null): void {
-    this.say(null);
-    this.target = { ...target };
-    this.pending = then;
-  }
-
-  private activate(h: Hotspot): void {
-    const item = this.inventory.selected;
-    if (item === null) {
-      this.walkTo(h.walkTo, () => this.run(h));
-      return;
-    }
-    this.select(null);
-    this.hover(h);
-    this.walkTo(h.walkTo, () => this.use(item, h));
-  }
-
-  private run(h: Hotspot): void {
-    const action = h.action;
-    switch (action.type) {
-      case 'say':
-        this.say(action.line);
-        break;
-      case 'exit':
-        this.goTo(action.at ? { room: action.room, at: action.at } : { room: action.room });
-        break;
-      case 'pickup':
-        this.inventory.pickUp(action.item);
-        this.hotspots?.remove(h.id);
-        this.hotspotSprites.get(h.id)?.destroy();
-        this.hotspotSprites.delete(h.id);
-        this.renderInventory();
-        break;
-      default:
-        action satisfies never;
-    }
-    if (h.dreamMaterial) this.journey.gather(h.dreamMaterial);
-    if (action.type !== 'exit') this.persist(); // else the next room saves once it is in
-  }
-
-  private isPresent(h: Hotspot): boolean {
-    if (h.action.type === 'pickup' && this.inventory.wasPickedUp(h.action.item)) return false;
-    return h.shownWith === undefined || this.journey.hasGathered(h.shownWith);
-  }
-
-  /** Switches worlds: the player leaves this one where they stand, and comes back to the same spot. */
-  private enter(world: World): void {
-    this.journey.leave(this.room.world, { room: this.id, at: this.at });
-    this.goTo(this.journey.enter(world));
-  }
-
-  private goTo(place: Place): void {
-    const { inventory, journey, autosave } = this;
-    this.scene.restart({ ...place, inventory, journey, autosave } satisfies RoomData);
-  }
-
-  /** Uses an inventory item on a hotspot: its puzzle step if it accepts the item, else the item's refusal. */
-  private use(item: string, h: Hotspot): void {
-    const use = h.uses?.find((u) => u.item === item);
-    if (!use) {
-      this.say(items[item]?.noUse ?? null);
-      return;
-    }
-    this.say(use.say);
-    if (use.removes) this.inventory.remove(use.removes);
-    this.renderInventory();
-    this.persist();
-  }
-
-  private persist(): void {
-    this.autosave?.({
-      version: 1,
-      room: this.id,
-      savedAt: new Date().toISOString(),
-      inventory: this.inventory.snapshot(),
-      journey: this.journey.snapshot(),
-    });
-  }
-
-  private select(id: string | null): void {
-    this.inventory.select(id);
-    this.renderInventory();
-  }
-
   private renderInventory(): void {
-    this.bar?.render(this.inventory.items, this.inventory.selected);
+    const { inventory, selected } = this.session.state;
+    this.bar?.render(inventory.carried, selected);
   }
 
-  private placePlayer(): void {
-    this.player?.setPosition(this.at.x, this.at.y);
-    this.setData('player', `${Math.round(this.at.x)},${Math.round(this.at.y)}`);
+  private placePlayer(at: FloorPoint): void {
+    this.player?.setPosition(at.x, at.y);
   }
 
   /** Shows a line over the player's head for a while; null hushes them. */
   private say(line: string | null): void {
     this.speechTimer?.remove();
     this.speechTimer = null;
-    this.setData('say', line ?? '');
     if (line === null) {
       this.speech.setVisible(false);
       return;
     }
+    const { at } = this.session.state;
     const headroom = this.player ? this.player.displayHeight * this.player.originY + 16 : 280;
     this.speech.setText(line).setVisible(true);
     const half = this.speech.width / 2 + 16;
     this.speech.setPosition(
-      Phaser.Math.Clamp(this.at.x, half, SCENE_WIDTH - half),
-      Math.max(this.speech.height + 16, this.at.y - headroom),
+      Phaser.Math.Clamp(at.x, half, SCENE_WIDTH - half),
+      Math.max(this.speech.height + 16, at.y - headroom),
     );
-    this.speechTimer = this.time.delayedCall(Math.max(3000, 60 * line.length), () => this.say(null));
+    this.speechTimer = this.time.delayedCall(speechMs(line), () => this.say(null));
   }
 
   private hover(h: Hotspot | null): void {
-    this.setData('hover', h?.name ?? '');
-    const selected = this.inventory.selected;
+    this.hovered = h;
+    this.mirror.hover(h?.name ?? '');
+    const { selected } = this.session.state;
     if (selected !== null) {
-      const item = items[selected]?.name ?? selected;
+      const item = this.itemName(selected);
       this.setActionLine(h ? `Use ${item} on` : 'Use', h ? h.name : item);
     } else {
       this.setActionLine(h ? h.verb : this.room.place.verb, h ? h.name : this.room.place.name);
@@ -343,12 +278,11 @@ export class RoomScene extends Phaser.Scene {
 
   private hoverItem(id: string | null): void {
     if (id === null) this.hover(null);
-    else this.setActionLine('Use', items[id]?.name ?? id);
+    else this.setActionLine('Use', this.itemName(id));
   }
 
-  private setData(key: 'player' | 'hover' | 'say', value: string): void {
-    const container = this.game.canvas.parentElement;
-    if (container) container.dataset[key] = value;
+  private itemName(id: string): string {
+    return this.session.content.items[id]?.name ?? id;
   }
 
   /** The UI bar under the scene (STYLE.md, UI bar). Its inventory slots are DOM (./room/inventory.ts). */
