@@ -61,7 +61,10 @@ def create_app(settings: Settings | None = None, model: Model | None = None) -> 
     app.include_router(saves.router)
     app.include_router(
         dialogue.router(
-            model or model_from_settings(settings), load_characters(), dialogue.DialogueStore()
+            model or model_from_settings(settings),
+            load_characters(),
+            dialogue.DialogueStore(),
+            dialogue.TurnAllowance(),
         )
     )
     return app
