@@ -2,8 +2,8 @@ import '../presentation/fonts';
 import '../presentation/style.css';
 import { loadContent } from '../content';
 import { fromSave, newGame } from '../domain';
-import { loadFonts } from '../presentation/fonts';
 import { startGame } from '../presentation/phaser2d/game';
+import { mountUi } from '../presentation/ui';
 import { BackendSaveStore, LocalSaveStore } from '../services/save';
 import { createMirror } from './mirror';
 import { GameSession } from './session';
@@ -17,10 +17,19 @@ void initTitleScreen(document, {
   store,
   start: async (save) => {
     container.hidden = false;
-    await loadFonts(); // Phaser draws text on a canvas, which does not load web fonts by itself
     const content = loadContent();
     const session = new GameSession(content, save ? fromSave(save, content) : newGame(content), store);
     session.save();
-    startGame(container, session, createMirror(container, session));
+    const mirror = createMirror(container, session);
+    const ui = mountUi(container, session, mirror);
+    startGame(container, session, {
+      shown(room) {
+        ui.shown(room);
+        mirror.shown();
+      },
+      walked() {
+        ui.walked();
+      },
+    });
   },
 });

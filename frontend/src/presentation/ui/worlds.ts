@@ -1,9 +1,7 @@
-import type { World } from '../../../content/worlds';
-import { SCENE_HEIGHT, SCENE_WIDTH } from '../../theme';
+import type { World } from '../../domain';
 
 export interface WorldSwitcher {
-  /** Lines the switcher up with the top of the canvas's UI bar, wherever the scale manager has put it. */
-  layout(canvas: HTMLCanvasElement): void;
+  readonly element: HTMLElement;
   destroy(): void;
 }
 
@@ -12,12 +10,11 @@ export interface WorldSwitcher {
  * button per world. A locked world's button is disabled and says why in its description.
  */
 export function createWorldSwitcher(
-  container: HTMLElement,
+  doc: Document,
   worlds: readonly World[],
   current: string,
   on: { enter(world: World): void },
 ): WorldSwitcher {
-  const doc = container.ownerDocument;
   const nav = doc.createElement('nav');
   nav.className = 'worlds';
   nav.setAttribute('aria-label', 'Worlds');
@@ -45,15 +42,8 @@ export function createWorldSwitcher(
     );
     nav.append(button);
   }
-  container.append(nav);
   return {
-    layout(canvas) {
-      const s = canvas.clientWidth / SCENE_WIDTH;
-      nav.style.left = `${canvas.offsetLeft}px`;
-      nav.style.top = `${canvas.offsetTop + SCENE_HEIGHT * s}px`;
-      nav.style.width = `${canvas.clientWidth}px`;
-      nav.style.setProperty('--s', String(s));
-    },
+    element: nav,
     destroy() {
       listening.abort();
       nav.remove();

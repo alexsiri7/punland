@@ -23,9 +23,6 @@ export const palette = {
   castShadow: '#141218',
 } as const;
 
-/** Phaser wants numbers for fills. */
-export const hex = (c: string): number => Number.parseInt(c.slice(1), 16);
-
 export const fonts = {
   ui: 'Inter, system-ui, sans-serif',
   sign: '"Bebas Neue", Impact, sans-serif',

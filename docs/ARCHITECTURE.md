@@ -71,7 +71,7 @@ If a TS-7-compatible linter is wanted later, Oxlint (Rust, parses TS itself) is 
 
 `tsconfig.json` is `strict`, with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `noImplicitOverride` on (from A1).
 
-Code that A1 moved into a layer but that still imports across the table (the `phaser2d` game and scene import `content/` and `services/`, and its `room/` controls import `content/`) is listed in `tests/unit/support/layer-baseline.json`. The test fails on a new violation and on an entry that no longer occurs, so the list only shrinks; the step that removes an import deletes its entry, and A9 needs the list empty.
+Code that A1 moved into a layer but that still imports across the table (the `phaser2d` scene imports `content/`) is listed in `tests/unit/support/layer-baseline.json`. The test fails on a new violation and on an entry that no longer occurs, so the list only shrinks; the step that removes an import deletes its entry, and A9 needs the list empty.
 
 ## 3. Domain model (`domain/`)
 
@@ -167,7 +167,7 @@ function apply(content: Content, state: GameState, command: Command): { state: G
   ```
 
   Activating a hotspot with no item selected runs its first interaction whose verb is the hotspot's default and whose conditions hold. With an item selected, it runs the matching `use` interaction for that item, or else says the item's `noUse`. Adding an effect or condition is a rules change with unit tests. Adding a puzzle that uses existing ones is content only (progress spec, "Adding a puzzle").
-- **The session.** `app/session.ts` (`GameSession`) owns the current `GameState`. It exposes `dispatch(command)` and `subscribe(listener)`, applies the rules and fans the events out to the renderer, the UI, the `data-*` mirror and autosave (on `saved`, through the `SaveStore`, stamping `savedAt`). It is the one stateful object, and it is small. `app/main.ts` builds it from `fromSave` or `newGame` and hands it to the 2D game, which may not import `app/`: the scene sees it through the `Session` interface in `RoomScene.ts`.
+- **The session.** `app/session.ts` (`GameSession`) owns the current `GameState`. It exposes `dispatch(command)` and `subscribe(listener)`, applies the rules and fans the events out to the renderer, the UI, the `data-*` mirror and autosave (on `saved`, through the `SaveStore`, stamping `savedAt`). It is the one stateful object, and it is small. `app/main.ts` builds it from `fromSave` or `newGame` and hands it to the 2D game and the DOM UI, which may not import `app/`: they see it through the `Session` interface in `presentation/session.ts`.
 
 ## 5. Presentation
 
@@ -209,9 +209,11 @@ All controls and text are DOM over the canvas: the UI bar (location label, actio
 
 This is what lets the renderer be swapped with the same public interface (architecture spec, "Replaceable renderer"). It also means the UI no longer needs Phaser text or `loadFonts()` before a scene.
 
+**The mount point (from A4).** `presentation/ui/index.ts` exports `mountUi(container, session, mirror)`. It puts one overlay root (`ui/overlay.ts`) over the canvas, lines it up with the canvas on every resize and sets `--s`, the canvas scale, so `style.css` sizes everything in scene pixels as `calc(<px> * var(--s))`. In that root go the UI bar (`uiBar.ts`: location label, action line, hint), the inventory, the speech line (`speech.ts`, held for `max(3000, 60 * length)` ms), and the room's hotspot buttons and world switcher. The UI subscribes to the session for what it shows and dispatches commands for what the player does. It reports the hotspot under the pointer to the mirror's `hover`. The renderer calls the returned `shown(room)` each time it has drawn the session's room, with a `DrawnRoom`: its canvas, the player's head (where speech goes) and a resize hook, which A5 replaces with `renderer.canvas()` and `renderer.anchor('player', 'head')`. It calls `walked()` when the player clicks the floor, which clears the hover. Once the session changes room, the old room's controls are removed until the new room is shown. The dialogue panel (#8) is a `ui/dialogue.ts` that `mountUi` creates and appends to the same root.
+
 ### The `#game` mirror (`app/mirror.ts`)
 
-`data-scene`, `data-world`, `data-player` ("x,y" in scene pixels, which is the floor point, so it is the same in 2D and 3D), `data-hover`, `data-say` and, from B5, `data-player-animation` are written from session events in one place. They are not written by renderers. Two of them are what only the view knows, which it reports to the mirror rather than writing them: `data-hover` (the pointer's hotspot) and when a room is drawn and takes input, which is when `data-scene` and `data-world` change.
+`data-scene`, `data-world`, `data-player` ("x,y" in scene pixels, which is the floor point, so it is the same in 2D and 3D), `data-hover`, `data-say` and, from B5, `data-player-animation` are written from session events in one place. They are not written by renderers. Two of them are what only the view knows, which it reports to the mirror rather than writing them: `data-hover` (the pointer's hotspot, which the DOM UI reports) and when a room is drawn and takes input, which is when `data-scene` and `data-world` change.
 
 ## 6. Assets: the model registry (`assets/`)
 
@@ -318,7 +320,7 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **A1** ([#27](https://github.com/alexsiri7/punland/issues/27)), done | 3 | Folders `domain/ rules/ content/ assets/ services/ presentation/ app/`. Move the pure modules (`walk.ts` → `domain/geometry.ts`, inventory and journey state, `Point` types, theme and fonts, api/save/player/storage → `services/`). `architecture.test.ts`. Stricter `tsconfig` flags. No behaviour change. |
 | **A2** ([#28](https://github.com/alexsiri7/punland/issues/28)), done | 5 | `domain` `GameState` plus `rules/apply` with commands and events for everything `RoomScene` does today (walk and tick, activate, use X on Y, pickup, exit, enterWorld, gather, presence), with unit tests. Not wired in yet. |
 | **A3** ([#29](https://github.com/alexsiri7/punland/issues/29)), done | 5 | `app/session.ts` (`GameSession`): `RoomScene` becomes a view that dispatches commands and draws from events. Autosave and the `data-*` mirror run from session events. Mutable `Inventory` and `Journey` classes are removed. The save format is unchanged. |
-| **A4** ([#30](https://github.com/alexsiri7/punland/issues/30)) | 3 | DOM UI layer: the UI bar text, action line, hint and speech move from Phaser text to `presentation/ui`, driven by the session. Hotspot, inventory and world controls move under `presentation/ui`. The dialogue panel (#8) builds on this. |
+| **A4** ([#30](https://github.com/alexsiri7/punland/issues/30)), done | 3 | DOM UI layer: the UI bar text, action line, hint and speech move from Phaser text to `presentation/ui`, driven by the session. Hotspot, inventory and world controls move under `presentation/ui`. The dialogue panel (#8) builds on this. |
 | **A5** ([#31](https://github.com/alexsiri7/punland/issues/31)) | 5 | `presentation/renderer.ts` plus `presentation/phaser2d` (the only `phaser` import), with picking through `renderer.pick` and a fake renderer for unit tests. `game.ts`/`RoomScene` are folded into the 2D renderer and the app. |
 | **A6** ([#32](https://github.com/alexsiri7/punland/issues/32)) | 3 | Content validators: every content file is checked at load and in tests, ids are branded, and errors name the file and the field. |
 | **A7** ([#33](https://github.com/alexsiri7/punland/issues/33)) | 5 | Entities and interactions as data: `characters.json` and `objects.json`, rooms place entities, `interactions` with verbs, conditions and effects replace `action` and `uses`, the `talk` effect, and the four rooms migrated. |
@@ -332,4 +334,4 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **B6** ([#41](https://github.com/alexsiri7/punland/issues/41)) | 3 | 3D becomes the default renderer. The whole e2e suite runs against it, and `?renderer=2d` stays as a fallback. |
 | **B7** ([#42](https://github.com/alexsiri7/punland/issues/42)) | 3 | Remove the 2D path: `phaser2d`, the `phaser` dependency, `sprite2d` entries, `scripts/render-art.mjs` and `public/rooms/*` layers. Replace the 2D-specific tests (see Tests). Update CLAUDE.md and STYLE.md's "Scene build" to describe 3D. |
 
-**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 and A2 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 waits on A4 (#30); stats and acts #11 wait on A7 (#33).
+**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 to A4 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 wait on A7 (#33).

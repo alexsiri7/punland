@@ -64,10 +64,13 @@ frontend/
   src/content/rooms/<room>.json  room content: floor, start point, hotspots and their actions (say, exit)
   src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), player.ts, storage.ts
-  src/presentation/     theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts, loadFonts()), speech.ts, style.css
-  src/presentation/phaser2d/  game.ts (Phaser game factory), RoomScene.ts (draws the session's room: input -> commands, events -> drawing;
-                        no game rules), room/ (hotspot, inventory and world buttons over the canvas)
-  src/app/              main.ts (boot: title screen -> GameSession -> startGame()), title.ts (Continue only when a save exists),
+  src/presentation/     theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
+                        session.ts (the Session interface the renderer and UI see)
+  src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, mirror), overlay.ts (lines it up
+                        with the canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts, inventory.ts, worlds.ts
+  src/presentation/phaser2d/  game.ts (Phaser game factory), RoomScene.ts (draws only the session's room: input -> commands,
+                        events -> sprites; no game rules, no text; tells the UI and mirror when the room is shown)
+  src/app/              main.ts (boot: title screen -> GameSession -> mountUi() and startGame()), title.ts (Continue only when a save exists),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/

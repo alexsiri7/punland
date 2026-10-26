@@ -1,12 +1,9 @@
-import { items } from '../../../content/items';
-import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../../theme';
+import type { Item } from '../../domain';
 
 export interface InventoryBar {
+  readonly element: HTMLElement;
   /** Shows the carried items, with the selected one marked. */
   render(carried: readonly string[], selected: string | null): void;
-  /** Lines the bar up with the canvas's UI bar, wherever the scale manager has put it. */
-  layout(canvas: HTMLCanvasElement): void;
-  destroy(): void;
 }
 
 /**
@@ -14,18 +11,18 @@ export interface InventoryBar {
  * a player with a keyboard or a screen reader can use them too.
  */
 export function createInventoryBar(
-  container: HTMLElement,
+  doc: Document,
+  items: Readonly<Record<string, Item>>,
   on: { hover(id: string | null): void; select(id: string): void },
 ): InventoryBar {
-  const doc = container.ownerDocument;
   const list = doc.createElement('ul');
   list.className = 'inventory';
   list.setAttribute('role', 'list');
   list.setAttribute('aria-label', 'Inventory');
-  container.append(list);
   // Removing a focused or hovered button fires blur/pointerleave: stop listening first.
   let listening = new AbortController();
   return {
+    element: list,
     render(carried, selected) {
       listening.abort();
       listening = new AbortController();
@@ -50,18 +47,6 @@ export function createInventoryBar(
           return slot;
         }),
       );
-    },
-    layout(canvas) {
-      const s = canvas.clientWidth / SCENE_WIDTH;
-      list.style.left = `${canvas.offsetLeft}px`;
-      list.style.top = `${canvas.offsetTop + SCENE_HEIGHT * s}px`;
-      list.style.width = `${canvas.clientWidth}px`;
-      list.style.height = `${UI_BAR_HEIGHT * s}px`;
-      list.style.setProperty('--s', String(s));
-    },
-    destroy() {
-      listening.abort();
-      list.remove();
     },
   };
 }

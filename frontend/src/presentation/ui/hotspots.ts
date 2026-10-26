@@ -1,9 +1,8 @@
-import type { Hotspot } from '../../../content/rooms';
-import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../../theme';
+import type { Hotspot } from '../../domain';
+import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
 
 export interface HotspotLayer {
-  /** Lines the layer up with the canvas, wherever the scale manager has put it. */
-  layout(canvas: HTMLCanvasElement): void;
+  readonly element: HTMLElement;
   /** Takes one hotspot's button away, e.g. once its item is picked up. */
   remove(id: string): void;
   destroy(): void;
@@ -14,21 +13,21 @@ export interface HotspotLayer {
  * screen reader can use them too. Clicks that miss a hotspot fall through to the canvas.
  */
 export function createHotspotLayer(
-  container: HTMLElement,
-  hotspots: Hotspot[],
+  doc: Document,
+  hotspots: readonly Hotspot[],
   on: { hover(h: Hotspot | null): void; activate(h: Hotspot): void },
 ): HotspotLayer {
-  const layer = container.ownerDocument.createElement('div');
+  const layer = doc.createElement('div');
   layer.className = 'hotspots';
   layer.setAttribute('role', 'group');
   layer.setAttribute('aria-label', 'Hotspots');
   const height = SCENE_HEIGHT + UI_BAR_HEIGHT;
-  // Removing a focused or hovered button fires blur/pointerleave; the scene is gone by then.
+  // Removing a focused or hovered button fires blur/pointerleave; the room is gone by then.
   const listening = new AbortController();
   const { signal } = listening;
   const buttons = new Map<string, HTMLButtonElement>();
   for (const h of hotspots) {
-    const button = container.ownerDocument.createElement('button');
+    const button = doc.createElement('button');
     button.type = 'button';
     button.setAttribute('aria-label', h.name);
     button.style.left = `${(100 * h.rect.x) / SCENE_WIDTH}%`;
@@ -43,14 +42,8 @@ export function createHotspotLayer(
     layer.append(button);
     buttons.set(h.id, button);
   }
-  container.append(layer);
   return {
-    layout(canvas) {
-      layer.style.left = `${canvas.offsetLeft}px`;
-      layer.style.top = `${canvas.offsetTop}px`;
-      layer.style.width = `${canvas.clientWidth}px`;
-      layer.style.height = `${canvas.clientHeight}px`;
-    },
+    element: layer,
     remove(id) {
       buttons.get(id)?.remove();
       buttons.delete(id);
