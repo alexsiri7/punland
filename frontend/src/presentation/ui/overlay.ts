@@ -1,4 +1,4 @@
-import { SCENE_WIDTH } from '../theme';
+import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
 
 /** A point in scene pixels (1280 x 640). */
 export interface ScenePoint {
@@ -31,6 +31,8 @@ export function createOverlay(container: HTMLElement): Overlay {
   const root = container.ownerDocument.createElement('div');
   root.className = 'ui';
   root.hidden = true;
+  root.style.setProperty('--scene-height', `${SCENE_HEIGHT}px`);
+  root.style.setProperty('--ui-bar-height', `${UI_BAR_HEIGHT}px`);
   container.append(root);
   let unfollow = () => {};
   return {

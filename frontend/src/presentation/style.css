@@ -137,7 +137,8 @@ body {
 
 /*
  * The UI over the canvas (src/presentation/ui/): lined up with it by overlay.ts, which sets
- * --s, the canvas scale. Sizes are scene pixels times --s. Only the controls take the pointer;
+ * --s, the canvas scale, and --scene-height and --ui-bar-height from theme.ts. Sizes are scene
+ * pixels times --s. Only the controls take the pointer;
  * every other click reaches the canvas.
  */
 .ui {
@@ -148,10 +149,10 @@ body {
 /* The UI bar under the scene (ui/uiBar.ts; STYLE.md, UI bar): location label, action line, hint. */
 .ui-bar {
   position: absolute;
-  top: calc(640px * var(--s));
+  top: calc(var(--scene-height) * var(--s));
   left: 0;
   width: 100%;
-  height: calc(160px * var(--s));
+  height: calc(var(--ui-bar-height) * var(--s));
   background: var(--ui-ground);
   border-top: calc(1px * var(--s)) solid var(--divider);
 }
@@ -233,10 +234,10 @@ body {
 /* Inventory slots on the UI bar (ui/inventory.ts; STYLE.md, UI). */
 .inventory {
   position: absolute;
-  top: calc(640px * var(--s));
+  top: calc(var(--scene-height) * var(--s));
   left: 0;
   width: 100%;
-  height: calc(160px * var(--s));
+  height: calc(var(--ui-bar-height) * var(--s));
   margin: 0;
   padding: 0 calc(32px * var(--s));
   list-style: none;
@@ -287,7 +288,7 @@ body {
 /* World switcher along the top of the UI bar (ui/worlds.ts): small wide slots, gold for the world showing. */
 .worlds {
   position: absolute;
-  top: calc(640px * var(--s));
+  top: calc(var(--scene-height) * var(--s));
   left: 0;
   width: 100%;
   height: calc(48px * var(--s));

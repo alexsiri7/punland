@@ -64,7 +64,7 @@ These sizes are at 1280 × 640 scene scale. Use round caps and joins.
 | UI: menus, action line, dialogue, labels | **Inter** 400 / 500 / 600 | Action line 20–22 / 500. Dialogue 15 / 400. Labels 12 px caps with +2 tracking. |
 | In-world signs, posters, titles | **Bebas Neue** | Track wide on boards (+4 to +6), tighter on chalk. The title "TUNE STORY" is sign gold `#E3C58A`. |
 
-Both fonts are self-hosted from `@fontsource/*` (OFL) and imported in `frontend/src/presentation/fonts.ts`. **Do not link Google Fonts**, because the production CSP (`frontend/public/_headers`) only allows fonts from `'self'`. Phaser draws text on a canvas, which does not trigger font loading, so a scene must start after `loadFonts()` resolves (`app/main.ts` already does this).
+Both fonts are self-hosted from `@fontsource/*` (OFL) and imported in `frontend/src/presentation/fonts.ts`. **Do not link Google Fonts**, because the production CSP (`frontend/public/_headers`) only allows fonts from `'self'`.
 
 ## UI
 
