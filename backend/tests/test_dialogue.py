@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from punland_api.app import create_app
 from punland_api.config import Settings
 
-PLAYER = {"X-Player-Id": "test-player"}
+PLAYER = {"X-Player-Id": "6f1c0e2a-4b7d-4c1e-9a53-2d8e7f0b1c94"}
 NEVER_REACHES = ["I like your hat.", "Nice night for it.", "Is that a new door?"]
 
 

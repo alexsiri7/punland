@@ -15,7 +15,19 @@ when there is none.
   startup, `/saves` answers 503 and the rest of the API keeps running. The game falls back to the
   save in the browser.
 - Migrations (Alembic) live in `src/punland_api/migrations/versions/` and run at startup. To add
-  one, copy `0001_saves.py`, chain `revision`/`down_revision`, and change the `saves` table in
-  `saves.py` to match (a test checks the migrated table against it). Use unqualified table names
+  one, copy `0002_conversations.py`, chain `revision`/`down_revision`, and change the table in
+  `saves.py` to match (a test checks each migrated table against it). Use unqualified table names
   and plain `import a.b as c` lines: the unsafe-change check reads every added line under
   `migrations/` as SQL.
+
+## Dialogue
+
+`POST /dialogue/turn` (header `X-Player-Id: <uuid>`, body `{"character", "reply"}`, `reply` null
+to start) answers `{"line", "options": [{"text", "reaches_goal"}], "goal_reached", "ended"}`.
+Character sheets are content data in `src/punland_api/content/characters/<id>.json`.
+
+- `REQUESTY_API_KEY` is the Requesty key (server-side only); `PUNLAND_DIALOGUE_MODEL` overrides
+  the model. Without a key, or when the model fails, the character says its canned line and the
+  conversation ends (`ended: true`, no options).
+- Conversations are kept per player and character in the `conversations` table, next to the save;
+  `DELETE /saves` (New game) clears them. Without a usable database they are kept in memory.

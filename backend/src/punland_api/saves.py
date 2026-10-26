@@ -1,8 +1,9 @@
 """Autosave: one saved game per anonymous player, kept in Postgres (progress spec, Autosave).
 
 The player is the X-Player-Id header, a UUID the browser makes up and keeps. The save is an
-opaque JSON object: the backend never reads the game state, so new state (stats, acts,
-dialogue) needs no change here or in the schema.
+opaque JSON object: the backend never reads the game state, so new state (stats, acts)
+needs no change here or in the schema. Conversations with characters are the backend's own
+(dialogue.py keeps them in the conversations table) and go when the save is cleared.
 """
 
 import datetime as dt
@@ -30,6 +31,16 @@ saves = sa.Table(
     metadata,
     sa.Column("player_id", sa.Uuid(), primary_key=True),
     sa.Column("game", sa.JSON().with_variant(postgresql.JSONB(), "postgresql"), nullable=False),
+    sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+)
+# One conversation per player and character (dialogue spec, Characters remember). It belongs
+# to the player's game, so clearing the save (New game) clears it too.
+conversations = sa.Table(
+    "conversations",
+    metadata,
+    sa.Column("player_id", sa.Uuid(), primary_key=True),
+    sa.Column("character", sa.String(40), primary_key=True),
+    sa.Column("state", sa.JSON().with_variant(postgresql.JSONB(), "postgresql"), nullable=False),
     sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
 )
 
@@ -70,6 +81,7 @@ def store(engine: sa.Engine, player: uuid.UUID, game: dict[str, Any]) -> None:
 def clear(engine: sa.Engine, player: uuid.UUID) -> None:
     with engine.begin() as connection:
         connection.execute(sa.delete(saves).where(saves.c.player_id == player))
+        connection.execute(sa.delete(conversations).where(conversations.c.player_id == player))
 
 
 router = APIRouter()

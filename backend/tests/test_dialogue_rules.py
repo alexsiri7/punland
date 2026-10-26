@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -12,7 +13,7 @@ from punland_api.characters import load_characters
 from punland_api.config import Settings
 from punland_api.model import RequestyModel
 
-PLAYER = {"X-Player-Id": "test-player"}
+PLAYER = {"X-Player-Id": "6f1c0e2a-4b7d-4c1e-9a53-2d8e7f0b1c94"}
 GOAL = "let the cat downstairs to play at the open mic"
 
 
@@ -151,7 +152,9 @@ def test_players_have_their_own_conversations() -> None:
 
     model.calls.clear()
     other = client.post(
-        "/dialogue/turn", headers={"X-Player-Id": "other-player"}, json={"character": "bouncer"}
+        "/dialogue/turn",
+        headers={"X-Player-Id": "0b9d4a77-1e2f-4c3a-8b6d-5e4f3a2c1d0e"},
+        json={"character": "bouncer"},
     ).json()
     assert reaching(other) == []
     assert not any("kazoo" in m["content"] for m in model.calls[0])
@@ -187,3 +190,65 @@ def test_overlapping_turns_are_both_remembered() -> None:
     assert len(reaching(third)) == 1
     said = [m["content"] for m in model.calls[0]]
     assert "I play the kazoo." in said and "I play the tuba." in said
+
+
+def test_player_id_must_be_a_uuid() -> None:
+    # The same anonymous id the game saves under (progress spec, Autosave).
+    client = TestClient(create_app(Settings(), model=ScriptedModel(answer())))
+    body = {"character": "bartender"}
+    assert client.post("/dialogue/turn", json=body).status_code == 422
+    assert (
+        client.post("/dialogue/turn", headers={"X-Player-Id": "nope"}, json=body).status_code == 422
+    )
+
+
+@pytest.fixture
+def database(tmp_path: Path) -> Settings:
+    return Settings(database_url=f"sqlite:///{tmp_path}/punland.db")
+
+
+def test_characters_remember_across_a_restart(database: Settings) -> None:
+    # Characters remember: the conversation is kept with the player's game, so a redeploy
+    # (here: a new app on the same database) doesn't make the bouncer forget.
+    model = ScriptedModel(answer())
+    with TestClient(create_app(database, model=model)) as first:
+        turn(first, "bouncer")
+        for _ in range(3):
+            latest = turn(first, "bouncer", "I play the kazoo.")
+        assert len(reaching(latest)) == 1
+
+    model.calls.clear()
+    with TestClient(create_app(database, model=model)) as again:
+        back = turn(again, "bouncer", "Hello?")
+    assert len(reaching(back)) == 1
+    assert any("kazoo" in m["content"] for m in model.calls[0])
+
+
+def test_new_game_forgets_conversations(database: Settings) -> None:
+    # A new game clears the save (DELETE /saves); its conversations go with it, so the
+    # bouncer's goal can be reached again.
+    model = ScriptedModel(answer())
+    with TestClient(create_app(database, model=model)) as client:
+        latest = turn(client, "bouncer")
+        while not reaching(latest):
+            latest = turn(client, "bouncer", "I play the kazoo.")
+        assert turn(client, "bouncer", reaching(latest)[0])["goal_reached"] is True
+
+        assert client.delete("/saves", headers=PLAYER).status_code == 204
+        model.calls.clear()
+        fresh = turn(client, "bouncer")
+    assert reaching(fresh) == []
+    assert GOAL in model.calls[0][0]["content"]
+    assert not any("kazoo" in m["content"] for m in model.calls[0])
+
+
+def test_unusable_database_keeps_the_dialogue_going(tmp_path: Path) -> None:
+    # A database that can't be used disables saves, never the dialogue.
+    broken = Settings(database_url=f"sqlite:///{tmp_path}/missing-dir/punland.db")
+    model = ScriptedModel(answer())
+    with TestClient(create_app(broken, model=model)) as client:
+        turn(client, "bartender")
+        turn(client, "bartender", "I play the kazoo.")
+        model.calls.clear()
+        turn(client, "bartender")
+    assert any("kazoo" in m["content"] for m in model.calls[0])
