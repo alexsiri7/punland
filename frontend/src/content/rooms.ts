@@ -1,29 +1,31 @@
+import type { FloorPoint, Rect } from '../domain/geometry';
+
 /**
  * Rooms as content data (progress spec, "Story as content"): one JSON file per room in
  * ./rooms/, named after the room id. Adding a room is adding a file here plus its art in
  * art/<room>/scene.svg, rendered to public/rooms/<room>/; no code change.
  * Positions are scene pixels (1280 x 640).
+ * A hotspot that comes and goes (a pickup, or dream material) is drawn as the art actor with
+ * the hotspot's id, so the room shows it only while the hotspot is there.
  */
-export interface Point {
-  x: number;
-  y: number;
-}
-
-export interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 /** What happens once the player has walked to a hotspot. */
 export type HotspotAction =
   | { type: 'say'; line: string }
   /** `at`: where the player stands in the other room; that room's `start` when left out. */
-  | { type: 'exit'; room: string; at?: Point };
+  | { type: 'exit'; room: string; at?: FloorPoint }
+  /** The item goes into the inventory, and the hotspot is gone for good. */
+  | { type: 'pickup'; item: string };
 
 /** Every action type, typed so it can't drift from HotspotAction; content is checked against it. */
-export const ACTION_TYPES: Record<HotspotAction['type'], true> = { say: true, exit: true };
+export const ACTION_TYPES: Record<HotspotAction['type'], true> = { say: true, exit: true, pickup: true };
+
+/** Using an item on a hotspot that accepts it: the cat says `say`. */
+export interface ItemUse {
+  item: string;
+  say: string;
+  /** An item id taken out of the inventory. */
+  removes?: string;
+}
 
 export interface Hotspot {
   id: string;
@@ -33,20 +35,28 @@ export interface Hotspot {
   verb: string;
   rect: Rect;
   /** Where the player walks to before the action happens; inside the walkable area. */
-  walkTo: Point;
+  walkTo: FloorPoint;
   action: HotspotAction;
+  /** Items this hotspot accepts; using any other item on it gets that item's `noUse` line. */
+  uses?: ItemUse[];
+  /** Doing this hotspot's action gives the dream this material (worlds spec, "Things cross worlds"). */
+  dreamMaterial?: string;
+  /** A dream hotspot that is only there once some street hotspot has given its `dreamMaterial`. */
+  shownWith?: string;
 }
 
 export interface Room {
+  /** The world the room is in, an id from ./worlds.json. */
+  world: string;
   /** UI bar location label, e.g. "PUNLAND · HIGH STREET". */
   label: string;
   /** UI bar action line when nothing is hovered. */
   place: { verb: string; name: string };
   hint: string;
   /** Where the player stands on arriving, unless the exit says otherwise. */
-  start: Point;
+  start: FloorPoint;
   /** The floor, a convex polygon: the player walks in straight lines inside it. */
-  walkable: Point[];
+  walkable: FloorPoint[];
   hotspots: Hotspot[];
 }
 

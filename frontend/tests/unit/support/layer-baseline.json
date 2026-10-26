@@ -1,0 +1,13 @@
+[
+  { "file": "presentation/phaser2d/RoomScene.ts", "import": "../../content/items", "rule": "phaser2d must not import content" },
+  { "file": "presentation/phaser2d/RoomScene.ts", "import": "../../content/protagonist", "rule": "phaser2d must not import content" },
+  { "file": "presentation/phaser2d/RoomScene.ts", "import": "../../content/rooms", "rule": "phaser2d must not import content" },
+  { "file": "presentation/phaser2d/RoomScene.ts", "import": "../../content/worlds", "rule": "phaser2d must not import content" },
+  { "file": "presentation/phaser2d/RoomScene.ts", "import": "../../services/save", "rule": "phaser2d must not import services" },
+  { "file": "presentation/phaser2d/game.ts", "import": "../../content/items", "rule": "phaser2d must not import content" },
+  { "file": "presentation/phaser2d/game.ts", "import": "../../content/rooms", "rule": "phaser2d must not import content" },
+  { "file": "presentation/phaser2d/game.ts", "import": "../../services/save", "rule": "phaser2d must not import services" },
+  { "file": "presentation/phaser2d/room/hotspots.ts", "import": "../../../content/rooms", "rule": "phaser2d must not import content" },
+  { "file": "presentation/phaser2d/room/inventory.ts", "import": "../../../content/items", "rule": "phaser2d must not import content" },
+  { "file": "presentation/phaser2d/room/worlds.ts", "import": "../../../content/worlds", "rule": "phaser2d must not import content" }
+]

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Online room art: the band's page, the online world's placeholder room (worlds spec, "Placeholder worlds"). Drawn to docs/design/STYLE.md; the cat is board 2's, as in art/opening/scene.svg.
+     The band has no name yet, so the page header keeps the canvas's [BAND NAME] placeholder.
+     Layers follow docs/design/STYLE.md "Scene build": one <g id="layer-*"> per layer, back to front.
+     Rendered to PNG by frontend/scripts/render-art.mjs; do not hand-edit the PNGs. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Inside the band's social media page, drawn as a room: a dark violet hall whose back wall is a giant phone screen with a [BAND NAME] header, an empty avatar and zero followers; blank posts hang like posters on the walls; the ginger cat in his blue hoodie stands on a glowing scroll bar floor">
+<style>
+.p-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p-sign{font-family:'Bebas Neue',sans-serif;text-anchor:middle}
+.p-small{font-family:'Inter',sans-serif;font-weight:500;text-anchor:middle}
+</style>
+<defs>
+<filter id="p-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0 0.09  0 0 0 0.16 0"></feColorMatrix></filter>
+</defs>
+
+<g id="layer-sky">
+<rect x="0" y="0" width="1280" height="640" fill="#2F2D35"></rect>
+</g>
+
+<g id="layer-far">
+<g fill="#4A4A5E" opacity="0.6">
+<rect x="60" y="80" width="150" height="190"></rect><rect x="1070" y="80" width="150" height="190"></rect>
+<rect x="60" y="300" width="150" height="190"></rect><rect x="1070" y="300" width="150" height="190"></rect>
+</g>
+<g fill="#6E6A82" opacity="0.6">
+<rect x="76" y="96" width="118" height="100"></rect><rect x="1086" y="96" width="118" height="100"></rect>
+<rect x="76" y="316" width="118" height="100"></rect><rect x="1086" y="316" width="118" height="100"></rect>
+</g>
+<path d="M76 216 H170 M76 230 H140 M1086 216 H1180 M1086 230 H1150 M76 436 H170 M1086 436 H1180" class="p-line" stroke="#8E879C" style="stroke-width:3" opacity="0.6"></path>
+</g>
+
+<g id="layer-mid">
+<rect x="380" y="20" width="520" height="500" rx="40" fill="#1C1D22"></rect>
+<rect x="400" y="40" width="480" height="460" rx="24" fill="#26272E"></rect>
+<rect x="760" y="40" width="120" height="460" fill="#1F2026"></rect>
+<rect x="400" y="40" width="480" height="120" fill="#4F6A8A"></rect>
+<rect x="760" y="40" width="120" height="120" fill="#3E5572"></rect>
+<circle cx="470" cy="160" r="44" fill="#3A3C46"></circle>
+<circle cx="470" cy="160" r="36" fill="#26272E"></circle>
+<text x="470" y="172" class="p-sign" fill="#8E8B98" style="font-size:34px">?</text>
+<text x="640" y="110" class="p-sign" fill="#E3C58A" style="font-size:40px;letter-spacing:6px">[BAND NAME]</text>
+<text x="600" y="204" class="p-small" fill="#A9A6B2" style="font-size:16px">0 FOLLOWERS · 0 POSTS</text>
+<g fill="#3A3C46">
+<rect x="430" y="236" width="200" height="120"></rect><rect x="650" y="236" width="200" height="120"></rect>
+<rect x="430" y="372" width="200" height="110"></rect><rect x="650" y="372" width="200" height="110"></rect>
+</g>
+<path d="M500 296 H560 M530 266 V326 M720 296 H780 M750 266 V326 M500 427 H560 M530 397 V457 M720 427 H780 M750 397 V457" class="p-line" stroke="#26272E" style="stroke-width:4"></path>
+<polygon points="400,40 560,40 420,500 400,500" fill="#FFFFFF" opacity="0.04"></polygon>
+</g>
+
+<g id="layer-ground">
+<polygon points="0,520 1280,520 1280,640 0,640" fill="#26272E"></polygon>
+<polygon points="900,520 1280,520 1280,640 980,640" fill="#1F2026"></polygon>
+<rect x="0" y="520" width="1280" height="4" fill="#3A3C46"></rect>
+<polygon points="140,566 1140,566 1160,606 120,606" fill="#5FA39A" opacity="0.22"></polygon>
+<rect x="420" y="574" width="260" height="24" rx="12" fill="#5FA39A" opacity="0.55"></rect>
+<g fill="#FFE3A0" opacity="0.12"><polygon points="380,520 900,520 1000,640 280,640"></polygon></g>
+</g>
+
+<g id="layer-props">
+<g transform="translate(1000 520)">
+<polygon points="-40,0 40,0 72,10 -8,10" fill="#141218" opacity="0.45"></polygon>
+<rect x="-40" y="-90" width="80" height="90" rx="10" fill="#C8483B"></rect>
+<rect x="10" y="-90" width="30" height="90" fill="#8A3A30"></rect>
+<path d="M-40 -80 Q-40 -90 -30 -90 H10 V0 H-30 Q-40 0 -40 -10 Z" fill="#C8483B"></path>
+<path d="M-14 -62 C-14 -72 0 -72 0 -60 C0 -72 14 -72 14 -62 C14 -50 0 -40 0 -36 C0 -40 -14 -50 -14 -62 Z" fill="#D9CDB4"></path>
+<text x="0" y="-12" class="p-sign" fill="#D9CDB4" style="font-size:16px;letter-spacing:2px">0</text>
+</g>
+<g transform="translate(250 520)">
+<polygon points="-30,0 30,0 56,8 -4,8" fill="#141218" opacity="0.45"></polygon>
+<rect x="-30" y="-60" width="60" height="60" rx="10" fill="#8A7FA8"></rect>
+<rect x="8" y="-60" width="22" height="60" fill="#6E6478"></rect>
+<path d="M-12 -40 L12 -30 L-12 -20 Z" fill="#E8E4DC"></path>
+</g>
+</g>
+
+<g id="layer-actors">
+<g id="cat" transform="translate(300 585)">
+<polygon points="-30,0 30,0 100,20 34,22" fill="#141218" opacity="0.45"></polygon>
+<ellipse cx="0" cy="0" rx="34" ry="4" fill="#141218" opacity="0.6"></ellipse>
+<g transform="rotate(25 0 -150)">
+<rect x="-3" y="-228" width="6" height="64" fill="#4A3A30"></rect>
+<polygon points="-3,-228 -1.5,-232 0,-228.5 1.5,-231 3,-228" fill="#4A3A30"></polygon>
+<rect x="-4" y="-214" width="8" height="6" fill="#9A968C"></rect>
+</g>
+<g transform="rotate(-8 33 -218)">
+<rect x="29" y="-218" width="9" height="18" rx="2" fill="#3A2E26"></rect>
+<circle cx="28" cy="-212" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="28" cy="-205" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="39" cy="-212" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="39" cy="-205" r="1.6" fill="#B9B2A4"></circle>
+</g>
+<path d="M31 -221 Q41 -228 35 -217" class="p-line" stroke="#CFC9BE" style="stroke-width:0.9"></path>
+<path d="M10 -112 C34 -100 42 -70 32 -48 C27 -37 33 -29 40 -33" class="p-line" stroke="#B86A34" style="stroke-width:8"></path>
+<rect x="-19" y="-114" width="14" height="102" rx="5" fill="#26262C"></rect>
+<rect x="-11" y="-114" width="6" height="102" fill="#1C1C21"></rect>
+<rect x="5" y="-114" width="14" height="102" rx="5" fill="#26262C"></rect>
+<rect x="13" y="-114" width="6" height="102" fill="#1C1C21"></rect>
+<rect x="-21" y="-24" width="16" height="10" rx="3" fill="#E2DDD2"></rect>
+<rect x="5" y="-24" width="16" height="10" rx="3" fill="#C9C3B6"></rect>
+<rect x="-29" y="-16" width="26" height="15" rx="6" fill="#E2DDD2"></rect>
+<path d="M-12 -16 H-9 Q-3 -16 -3 -10 V-3 H-12 Z" fill="#C9C3B6"></path>
+<rect x="3" y="-16" width="26" height="15" rx="6" fill="#C9C3B6"></rect>
+<path d="M20 -16 H23 Q29 -16 29 -10 V-3 H20 Z" fill="#ADA799"></path>
+<rect x="-31" y="-3" width="30" height="4" rx="2" fill="#2A2A30"></rect>
+<rect x="1" y="-3" width="30" height="4" rx="2" fill="#2A2A30"></rect>
+<path d="M-19 -20 H-7 M-19 -16 H-7 M7 -20 H19 M7 -16 H19" class="p-line" stroke="#8A8478" style="stroke-width:1.3"></path>
+<path d="M-22 -194 Q0 -200 22 -194 L28 -120 Q27 -108 20 -108 H-20 Q-27 -108 -28 -120 Z" fill="#4F6A8A"></path>
+<path d="M10 -197 Q17 -196 22 -194 L28 -120 Q27 -108 20 -108 H14 Z" fill="#3E5572"></path>
+<path d="M-27 -116 H27 L28 -112 Q27 -108 20 -108 H-20 Q-27 -108 -28 -112 Z" fill="#46607E"></path>
+<path d="M-15 -146 H15 L18 -122 H-18 Z" fill="#46607E"></path>
+<circle cx="-12" cy="-178" r="4" fill="#E3C58A"></circle>
+<path d="M-21 -188 Q-38 -198 -42 -228" class="p-line" stroke="#4F6A8A" style="stroke-width:13"></path>
+<circle cx="-42" cy="-235" r="6.5" fill="#D88A4A"></circle>
+<path d="M-46 -240 L-48 -246 M-42 -242 L-42 -248 M-38 -240 L-36 -246" class="p-line" stroke="#D88A4A" style="stroke-width:3"></path>
+<path d="M-56 -244 Q-60 -236 -56 -228 M-62 -248 Q-68 -236 -62 -224" class="p-line" stroke="#E8E4DC" style="stroke-width:1.5" opacity="0.6"></path>
+<path d="M21 -188 Q33 -150 31 -108" class="p-line" stroke="#3E5572" style="stroke-width:13"></path>
+<circle cx="31" cy="-102" r="6" fill="#B86A34"></circle>
+<path d="M16 -194 L-22 -118" class="p-line" stroke="#18181C" style="stroke-width:5"></path>
+<rect x="-6" y="-200" width="12" height="8" fill="#B86A34"></rect>
+<path d="M-20 -196 Q-24 -206 -14 -208 Q0 -202 14 -208 Q24 -206 20 -196 Q0 -188 -20 -196 Z" fill="#3E5572"></path>
+<path d="M-5 -194 L-6 -168 M5 -194 L6 -164" class="p-line" stroke="#CFC9BE" style="stroke-width:1.4"></path>
+<polygon points="-21,-226 -19,-262 -5,-237" fill="#D88A4A"></polygon>
+<polygon points="-17,-233 -16,-253 -9,-238" fill="#B97A6E"></polygon>
+<polygon points="5,-237 19,-262 21,-226" fill="#B86A34"></polygon>
+<polygon points="9,-238 16,-253 17,-233" fill="#9E6458"></polygon>
+<circle cx="0" cy="-216" r="24" fill="#D88A4A"></circle>
+<path d="M-2 -240 A24 24 0 0 1 2 -192 A34 34 0 0 0 -2 -240 Z" fill="#B86A34"></path>
+<path d="M-13 -235 Q-2 -247 13 -236 Q7 -237 3 -229 Q-1 -237 -6 -233 Q-9 -236 -13 -235 Z" fill="#B86A34"></path>
+<ellipse cx="0" cy="-203" rx="12" ry="8" fill="#EBC9A4"></ellipse>
+<path d="M6 -210 Q14 -206 10 -198 Q6 -196 2 -195.4 Q10 -201 6 -210 Z" fill="#D6B08A"></path>
+<path d="M-3 -208 H3 L0 -204.5 Z" fill="#9E5A5A"></path>
+<path d="M-10 -204 L-26 -207 M-10 -201 L-25 -199 M10 -204 L26 -207 M10 -201 L25 -199" class="p-line" stroke="#5A3020" style="stroke-width:0.9" opacity="0.6"></path>
+<ellipse cx="-9" cy="-215" rx="4.6" ry="5.4" fill="#F4EFE6"></ellipse>
+<ellipse cx="9" cy="-215" rx="4.6" ry="5.4" fill="#F4EFE6"></ellipse>
+<circle cx="-8.5" cy="-214.5" r="2.6" fill="#16161A"></circle>
+<circle cx="9.5" cy="-214.5" r="2.6" fill="#16161A"></circle>
+<path d="M-13.5 -218 Q-9 -221.5 -4.5 -218 M4.5 -218 Q9 -221.5 13.5 -218" class="p-line" stroke="#3A2418" style="stroke-width:1.6"></path>
+<path d="M-15 -225 Q-10 -227.5 -4 -225.5 M4 -225.5 Q10 -227.5 15 -225" class="p-line" stroke="#7A4524" style="stroke-width:1.8"></path>
+<path d="M-5 -199 Q0.5 -199.5 6 -199 Q3 -193.5 0.5 -193.5 Q-2.5 -193.5 -5 -199 Z" fill="#3A1E1E"></path>
+<path d="M-3 -198.8 H4 L3.4 -197.4 H-2.4 Z" fill="#F4EFE6"></path>
+</g>
+</g>
+
+<g id="layer-fore">
+<rect x="0" y="0" width="1280" height="14" fill="#1C1D22"></rect>
+<g fill="#E8E4DC" opacity="0.5"><rect x="24" y="4" width="18" height="6" rx="2"></rect><rect x="1230" y="4" width="26" height="6" rx="2"></rect></g>
+</g>
+
+<rect x="0" y="0" width="1280" height="640" filter="url(#p-grain)"></rect>
+</svg>

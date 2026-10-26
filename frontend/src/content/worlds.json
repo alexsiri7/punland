@@ -1,0 +1,12 @@
+{
+  "worlds": [
+    { "id": "street", "name": "Street", "start": "opening" },
+    {
+      "id": "online",
+      "name": "Online",
+      "start": "feed",
+      "locked": "The band needs a name before it can go online."
+    },
+    { "id": "dream", "name": "Dream", "start": "dream" }
+  ]
+}

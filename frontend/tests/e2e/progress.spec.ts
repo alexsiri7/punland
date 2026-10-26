@@ -7,6 +7,8 @@ import {
   enterPub,
   game,
   hotspot,
+  inventory,
+  inventoryItem,
   newGame,
   type Save,
   seedSave,
@@ -14,6 +16,7 @@ import {
   stubDialogue,
   stubSaves,
   useItemOn,
+  worlds,
 } from './play';
 
 // Acceptance tests for openspec/specs/progress/spec.md.
@@ -39,7 +42,6 @@ async function statValues(page: Page): Promise<string[]> {
 }
 
 test('Closing and coming back', async ({ page, context }) => {
-  test.fail(true, 'needs #10');
   // Requirement: Autosave. Progress is saved automatically, without signing up.
   const saves = new Map<string, string>();
   await stubSaves(page, saves);
@@ -53,6 +55,46 @@ test('Closing and coming back', async ({ page, context }) => {
   await stubSaves(again, saves);
   await continueGame(again);
   await expect(game(again)).toHaveAttribute('data-scene', content.pubInterior);
+});
+
+test('Continue keeps the inventory', async ({ page, context }) => {
+  // Requirement: Autosave (inventory, #10). What the cat picked up is still carried, and
+  // gone from its room, after closing the browser and coming back.
+  const saves = new Map<string, string>();
+  await stubSaves(page, saves);
+  await newGame(page);
+  await hotspot(page, content.flyer).click();
+  await expect(inventoryItem(page, content.flyer)).toBeVisible();
+  await expect.poll(() => [...saves.values()].some((save) => save.includes('flyer'))).toBe(true);
+  await page.close();
+
+  const again = await context.newPage();
+  await stubSaves(again, saves);
+  await again.addInitScript(() => localStorage.removeItem('punland.save.v1'));
+  await continueGame(again);
+  await expect(game(again)).toHaveAttribute('data-scene', content.opening);
+  await expect(inventoryItem(again, content.flyer)).toBeVisible();
+  await expect(hotspot(again, content.flyer)).toHaveCount(0);
+});
+
+test('Continue drops what the content no longer has', async ({ page }) => {
+  // Requirement: Story as content. A save from before a content change can name an item or a
+  // room that is gone; Continue still resumes it, without them.
+  const save = {
+    version: 1,
+    room: content.opening,
+    savedAt: new Date().toISOString(),
+    inventory: { items: ['broken-guitar', 'gone-item'], pickedUp: [] },
+    journey: { left: { dream: { room: 'gone-room' } }, gathered: [] },
+  };
+  await stubSaves(page, new Map());
+  await page.addInitScript((value) => localStorage.setItem('punland.save.v1', value), JSON.stringify(save));
+  await continueGame(page);
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  await expect(inventoryItem(page, content.brokenGuitar)).toBeVisible();
+  await expect(inventory(page).getByRole('button')).toHaveCount(1);
+  await worlds(page).getByRole('button', { name: 'Dream' }).click();
+  await expect(game(page)).toHaveAttribute('data-scene', 'dream');
 });
 
 test('A stat changes', async ({ page }) => {

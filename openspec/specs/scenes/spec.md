@@ -39,8 +39,8 @@ Rooms SHALL have exits that take the player to other rooms.
 - THEN the player enters the pub interior room
 
 ### Requirement: Placeholder art
-The skeleton SHALL work with placeholder art, and replacing a room's art MUST NOT require changing game logic.
+The skeleton SHALL work with placeholder art, and replacing a room's art MUST NOT require changing game logic. A room's art is its art layer files while rooms are drawn in 2D, and its scene model once they are drawn in 3D (models spec).
 
 #### Scenario: Swapping art
-- WHEN a room's art file is replaced
+- WHEN a room's art file (its art layers in 2D, its scene model in 3D) is replaced
 - THEN the room shows the new art and its hotspots and exits still work

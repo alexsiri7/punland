@@ -1,0 +1,32 @@
+{
+  "world": "dream",
+  "label": "TUNE STORY · THE DREAM",
+  "place": { "verb": "Dreaming of", "name": "The stage" },
+  "hint": "Things from the street turn up here as songs.",
+  "start": { "x": 300, "y": 585 },
+  "walkable": [
+    { "x": 150, "y": 540 },
+    { "x": 1170, "y": 540 },
+    { "x": 1215, "y": 620 },
+    { "x": 105, "y": 620 }
+  ],
+  "hotspots": [
+    {
+      "id": "stage",
+      "name": "Dream stage",
+      "verb": "Look at",
+      "rect": { "x": 600, "y": 316, "width": 440, "height": 136 },
+      "walkTo": { "x": 820, "y": 560 },
+      "action": { "type": "say", "line": "An empty stage, and the lights already on. All it needs is a song." }
+    },
+    {
+      "id": "flyer",
+      "name": "Dream of the open mic flyer",
+      "verb": "Write about",
+      "rect": { "x": 780, "y": 222, "width": 92, "height": 92 },
+      "walkTo": { "x": 820, "y": 560 },
+      "action": { "type": "say", "line": "\"Open mic, nine o'clock.\" Tonight's the night. That's a first line." },
+      "shownWith": "open-mic"
+    }
+  ]
+}

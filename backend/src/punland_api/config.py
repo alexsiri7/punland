@@ -23,6 +23,9 @@ class Settings:
     # Unset means no AI: every character answers with its canned line.
     requesty_api_key: str | None = field(default=None, repr=False)
     dialogue_model: str = DEFAULT_DIALOGUE_MODEL
+    # Postgres for saves, authenticating as the app's own role so unqualified table names
+    # resolve to its schema (punland / punland_staging). Unset: /saves answers 503.
+    database_url: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -35,4 +38,5 @@ class Settings:
             cors_origins=origins,
             requesty_api_key=os.environ.get("REQUESTY_API_KEY") or None,
             dialogue_model=os.environ.get("PUNLAND_DIALOGUE_MODEL") or DEFAULT_DIALOGUE_MODEL,
+            database_url=os.environ.get("DATABASE_URL") or None,
         )

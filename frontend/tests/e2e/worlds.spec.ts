@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { content, game, hotspot, newGame, worlds } from './play';
+import { clickScene, content, game, hotspot, inventoryItem, newGame, playerPosition, worlds } from './play';
 
 // Acceptance tests for openspec/specs/worlds/spec.md.
 
@@ -16,12 +16,30 @@ async function unlockedOtherWorlds(page: Page): Promise<Locator[]> {
   return unlocked;
 }
 
+/** Waits for the player to stop walking near `near`, and returns where they stopped. */
+async function stopsAt(page: Page, near: { x: number; y: number }): Promise<{ x: number; y: number }> {
+  let last: { x: number; y: number } | null = null;
+  let stopped: { x: number; y: number } | null = null;
+  await expect
+    .poll(async () => {
+      const at = await playerPosition(page);
+      const still = at && last && at.x === last.x && at.y === last.y;
+      if (still && Math.hypot(at.x - near.x, at.y - near.y) < 24) stopped = at;
+      last = at;
+      return stopped;
+    })
+    .not.toBeNull();
+  if (!stopped) throw new Error('the player never stopped');
+  return stopped;
+}
+
 test('Switching', async ({ page }) => {
-  test.fail(true, 'needs #9');
   // Requirement: Switching worlds. The player can switch to any unlocked world.
   await newGame(page);
   await expect(worlds(page).getByRole('button', { name: 'Street' })).toBeVisible();
   await expect(game(page)).toHaveAttribute('data-world', 'street');
+  await clickScene(page, content.pavement);
+  const left = await stopsAt(page, content.pavement);
   const [other] = await unlockedOtherWorlds(page);
   expect(other, 'an unlocked world besides the street').toBeDefined();
   const name = (await other.textContent())?.trim().toLowerCase();
@@ -30,10 +48,12 @@ test('Switching', async ({ page }) => {
   await expect(game(page)).not.toHaveAttribute('data-scene', content.opening);
   await worlds(page).getByRole('button', { name: 'Street' }).click();
   await expect(game(page)).toHaveAttribute('data-world', 'street');
+  // Back in the street where the player left it, not at the room's start.
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  await expect.poll(() => playerPosition(page)).toEqual(left);
 });
 
 test('Locked world', async ({ page }) => {
-  test.fail(true, 'needs #9');
   // Requirement: Switching worlds. A locked world is shown as locked and cannot be entered.
   await newGame(page);
   const locked = worlds(page).getByRole('button', { disabled: true });
@@ -45,11 +65,17 @@ test('Locked world', async ({ page }) => {
 });
 
 test('Something done in the street turns up in the dream', async ({ page }) => {
-  test.fail(true, 'needs #9');
   // Requirement: Things cross worlds. In the Act 1 placeholder content, picking up the Open
   // Mic flyer is dream material.
   await newGame(page);
+  await worlds(page).getByRole('button', { name: 'Dream' }).click();
+  await expect(game(page)).toHaveAttribute('data-world', 'dream');
+  await expect(hotspot(page, content.flyer)).toHaveCount(0);
+  await worlds(page).getByRole('button', { name: 'Street' }).click();
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
   await hotspot(page, content.flyer).click();
+  // The cat walks to the flyer first; switching worlds on the way would call the pickup off.
+  await expect(inventoryItem(page, content.flyer)).toBeVisible();
   await worlds(page).getByRole('button', { name: 'Dream' }).click();
   await expect(game(page)).toHaveAttribute('data-world', 'dream');
   await hotspot(page, content.flyer).click();
@@ -57,7 +83,6 @@ test('Something done in the street turns up in the dream', async ({ page }) => {
 });
 
 test('Visiting a placeholder world', async ({ page }) => {
-  test.fail(true, 'needs #9');
   // Requirement: Placeholder worlds. The online and dream worlds each have a placeholder room.
   await newGame(page);
   const unlocked = await unlockedOtherWorlds(page);

@@ -1,7 +1,18 @@
-import { inflateSync } from 'node:zlib';
-import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { clickScene, content, enterPub, game, hotspot, newGame, playerPosition } from './play';
+import { fixtures } from '../fixtures/models/glb';
+import {
+  clickHotspot,
+  clickScene,
+  content,
+  enterPub,
+  game,
+  hotspot,
+  newGame,
+  openingSceneModel,
+  playerPosition,
+  pointAtHotspot,
+  scenePixel,
+} from './play';
 
 // Acceptance tests for openspec/specs/scenes/spec.md.
 
@@ -69,23 +80,23 @@ test('Swapping art', async ({ page }) => {
   await enterPub(page);
 });
 
-/** The colour the canvas shows at scene pixels, read from a 1 x 1 screenshot. */
-async function scenePixel(page: Page, at: { x: number; y: number }): Promise<number[]> {
-  const box = await page.locator('#game canvas').boundingBox();
-  if (!box) throw new Error('no game canvas');
-  const scale = box.width / 1280;
-  const clip = { x: box.x + at.x * scale, y: box.y + at.y * scale, width: 1, height: 1 };
-  const png = await page.screenshot({ clip });
-  return [...firstPixel(png)];
-}
-
-// A one-pixel PNG has a single scanline, and every PNG filter leaves its first pixel as is.
-function firstPixel(png: Buffer): Buffer {
-  const idat: Buffer[] = [];
-  for (let at = 8; at < png.length; ) {
-    const length = png.readUInt32BE(at);
-    if (png.toString('ascii', at + 4, at + 8) === 'IDAT') idat.push(png.subarray(at + 8, at + 8 + length));
-    at += length + 12;
-  }
-  return inflateSync(Buffer.concat(idat)).subarray(1, 4);
-}
+test('Swapping art (scene model)', async ({ page }) => {
+  test.fail(true, 'needs #38');
+  // Requirement: Placeholder art. Replacing a room's scene model needs no change to game logic.
+  await page.route(`**${openingSceneModel}`, (route) =>
+    route.fulfill({ status: 200, contentType: 'model/gltf-binary', body: Buffer.from(fixtures.magentaScene()) }),
+  );
+  await newGame(page, '3d');
+  // The toon ramp gives the backdrop two tones and the grain overlay sits above the canvas, so
+  // the pixel is strongly magenta rather than exactly #FF00FF.
+  await expect
+    .poll(async () => {
+      const [r = 0, g = 255, b = 0] = await scenePixel(page, { x: 40, y: 300 });
+      return r > 150 && b > 150 && g < 80;
+    })
+    .toBe(true);
+  await pointAtHotspot(page, content.pubDoor);
+  await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
+  await clickHotspot(page, content.pubDoor);
+  await expect(game(page)).toHaveAttribute('data-scene', content.pubInterior);
+});

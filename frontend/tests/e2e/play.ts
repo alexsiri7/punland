@@ -1,3 +1,4 @@
+import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
 import { expect } from './fixtures';
 
@@ -18,7 +19,8 @@ import { expect } from './fixtures';
  * reader can play too.
  *
  * The room attributes (data-scene, data-player, data-hover, data-say) and the Hotspots group
- * are built (#4); the rest is not yet. The issue that builds a piece may settle on a different
+ * are built (#4), the Inventory list (#5), and data-world and the Worlds switcher (#9); the
+ * rest is not yet. The issue that builds a piece may settle on a different
  * selector or content name: change it here, in one place, in the PR that removes the test's
  * expected-to-fail marker.
  */
@@ -31,7 +33,9 @@ export const content = {
   /** The "Tonight: open mic" board on the pavement: a thing to look at in the opening scene. */
   board: /tonight|board/i,
   /** The Open Mic flyer on the pub door: something in the opening scene the cat can pick up. */
-  flyer: /flyer|open mic/i,
+  flyer: /flyer/i,
+  /** A point on the flyer, in scene pixels, clear of the player when they stand on the pavement. */
+  flyerSprite: { x: 730, y: 410 },
   brokenGuitar: /broken guitar/i,
   /** A character in the pub interior with a conversation goal (getting a job at the pub). */
   bartender: /bartender/i,
@@ -65,10 +69,24 @@ export const goal = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('list', { name: 'Goals' }).getByRole('checkbox', { name });
 export const conversation = (page: Page): Locator => page.getByRole('dialog');
 
-export async function newGame(page: Page): Promise<void> {
-  await page.goto('/');
+/**
+ * The renderers while both exist (docs/ARCHITECTURE.md, "Renderer choice"): `?renderer=2d`
+ * draws the room's art layers, `?renderer=3d` its scene model. Without one, the game's default.
+ */
+export type Renderer = '2d' | '3d';
+
+/** The opening room's scene model, which the 3D renderer draws it from (models spec). */
+export const openingSceneModel = '/models/scenes/opening.glb';
+
+export async function newGame(page: Page, renderer?: Renderer): Promise<void> {
+  const requested: string[] = [];
+  if (renderer === '3d') page.on('request', (request) => requested.push(new URL(request.url()).pathname));
+  await page.goto(renderer ? `/?renderer=${renderer}` : '/');
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  if (renderer === '3d') {
+    await expect.poll(() => requested, 'the 3D renderer loads the scene model').toContain(openingSceneModel);
+  }
 }
 
 export async function enterPub(page: Page): Promise<void> {
@@ -85,6 +103,49 @@ export async function clickScene(page: Page, at: { x: number; y: number }): Prom
   await canvas.click({ position: { x: at.x * scale, y: at.y * scale } });
 }
 
+/**
+ * The centre of a hotspot's button, in page pixels. In 3D the button lies over the hotspot's
+ * model but lets the pointer through to the canvas, so pointing there points at the model.
+ */
+async function hotspotCentre(page: Page, name: string | RegExp): Promise<{ x: number; y: number }> {
+  const box = await hotspot(page, name).boundingBox();
+  if (!box) throw new Error(`no hotspot ${name}`);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/** Moves the pointer over the room where a hotspot is drawn, whichever renderer draws it. */
+export async function pointAtHotspot(page: Page, name: string | RegExp): Promise<void> {
+  const at = await hotspotCentre(page, name);
+  await page.mouse.move(at.x, at.y);
+}
+
+/** Clicks the room where a hotspot is drawn, whichever renderer draws it. */
+export async function clickHotspot(page: Page, name: string | RegExp): Promise<void> {
+  const at = await hotspotCentre(page, name);
+  await page.mouse.click(at.x, at.y);
+}
+
+/** The colour the canvas shows at scene pixels, read from a 1 x 1 screenshot. */
+export async function scenePixel(page: Page, at: { x: number; y: number }): Promise<number[]> {
+  const box = await page.locator('#game canvas').boundingBox();
+  if (!box) throw new Error('no game canvas');
+  const scale = box.width / 1280;
+  const clip = { x: box.x + at.x * scale, y: box.y + at.y * scale, width: 1, height: 1 };
+  const png = await page.screenshot({ clip });
+  return [...firstPixel(png)];
+}
+
+// A one-pixel PNG has a single scanline, and every PNG filter leaves its first pixel as is.
+function firstPixel(png: Buffer): Buffer {
+  const idat: Buffer[] = [];
+  for (let at = 8; at < png.length; ) {
+    const length = png.readUInt32BE(at);
+    if (png.toString('ascii', at + 4, at + 8) === 'IDAT') idat.push(png.subarray(at + 8, at + 8 + length));
+    at += length + 12;
+  }
+  return inflateSync(Buffer.concat(idat)).subarray(1, 4);
+}
+
 export async function playerPosition(page: Page): Promise<{ x: number; y: number } | null> {
   const value = await game(page).getAttribute('data-player');
   if (!value) return null;
@@ -99,7 +160,7 @@ export async function useItemOn(page: Page, item: string | RegExp, target: strin
 }
 
 /**
- * Matches backend requests by path, whatever origin the build's apiBase() (src/api.ts)
+ * Matches backend requests by path, whatever origin the build's apiBase() (src/services/api.ts)
  * resolves to: the production API, or another one when the build sets VITE_API_BASE.
  */
 function apiPath(prefix: string): (url: URL) => boolean {
@@ -154,7 +215,7 @@ export async function stubSaves(page: Page, store: Map<string, string>): Promise
 
 /**
  * A saved game, as the title screen's Continue loads it. `version`, `room` and `savedAt` are
- * today's save (src/save.ts); the rest is what #10 and #11 add to it.
+ * today's save (src/services/save.ts); the rest is what #10 and #11 add to it.
  */
 export interface Save {
   room: string;

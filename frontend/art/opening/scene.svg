@@ -186,9 +186,6 @@
 <path d="M654 400 H692 V500 H654 Z M718 450 H756 V500 H718 Z" class="p-line" stroke="#23382F" style="stroke-width:2"></path>
 <rect x="696" y="400" width="4" height="24" fill="#C9A86A"></rect>
 <rect x="710" y="400" width="4" height="24" fill="#C9A86A"></rect>
-<rect x="720" y="396" width="34" height="46" fill="#D9CDB4" transform="rotate(3 737 419)"></rect>
-<text x="737" y="416" class="p-sign" fill="#C8483B" style="font-size:12px" transform="rotate(3 737 419)">OPEN MIC</text>
-<path d="M726 424 H748 M726 430 H744" class="p-line" stroke="#2A1C1A" style="stroke-width:1.2" transform="rotate(3 737 419)"></path>
 <polygon points="626,520 784,520 790,532 620,532" fill="#4A464E"></polygon>
 
 <path d="M480 200 Q520 214 560 200 Q600 214 640 200 Q680 214 720 200 Q760 214 800 200 Q840 214 880 200 Q920 214 960 200 Q1000 214 1040 200 Q1080 214 1120 200 Q1160 214 1200 200 Q1240 214 1280 200" class="p-line" stroke="#1A1820" style="stroke-width:1"></path>
@@ -274,6 +271,11 @@
 </g>
 
 <g id="layer-actors">
+<g id="flyer">
+<rect x="720" y="396" width="34" height="46" fill="#D9CDB4" transform="rotate(3 737 419)"></rect>
+<text x="737" y="416" class="p-sign" fill="#C8483B" style="font-size:12px" transform="rotate(3 737 419)">OPEN MIC</text>
+<path d="M726 424 H748 M726 430 H744" class="p-line" stroke="#2A1C1A" style="stroke-width:1.2" transform="rotate(3 737 419)"></path>
+</g>
 <g id="cat" transform="translate(560 590)">
 <polygon points="-30,0 30,0 100,20 34,22" fill="#141218" opacity="0.45"></polygon>
 <ellipse cx="0" cy="0" rx="34" ry="4" fill="#141218" opacity="0.6"></ellipse>
