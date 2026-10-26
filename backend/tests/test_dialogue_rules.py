@@ -1,13 +1,16 @@
 """How POST /dialogue/turn decides goals and failures, beyond the spec scenarios."""
 
 import asyncio
+import datetime as dt
 import json
+import uuid
 from pathlib import Path
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from punland_api import dialogue
 from punland_api.app import create_app
 from punland_api.characters import load_characters
 from punland_api.config import Settings
@@ -158,6 +161,30 @@ def test_players_have_their_own_conversations() -> None:
     ).json()
     assert reaching(other) == []
     assert not any("kazoo" in m["content"] for m in model.calls[0])
+
+
+def test_turn_allowance_is_per_player_and_resets_each_day() -> None:
+    day = dt.date(2026, 10, 26)
+    allowance = dialogue.TurnAllowance(per_day=2, today=lambda: day)
+    a, b = uuid.uuid4(), uuid.uuid4()
+    assert [allowance.take(a) for _ in range(3)] == [True, True, False]
+    assert allowance.take(b) is True
+
+    day += dt.timedelta(days=1)
+    assert allowance.take(a) is True
+
+
+def test_limit_spans_characters() -> None:
+    model = ScriptedModel(answer())
+    allowance = dialogue.TurnAllowance(per_day=2)
+    client = TestClient(create_app(Settings(), model=model, allowance=allowance))
+    turn(client, "bartender")
+    turn(client, "bouncer")
+
+    limited = turn(client, "bouncer", "One.")
+    bouncer = load_characters()["bouncer"]
+    assert limited == {"line": bouncer.canned, "options": [], "goal_reached": False, "ended": True}
+    assert len(model.calls) == 2
 
 
 class SlowModel(ScriptedModel):

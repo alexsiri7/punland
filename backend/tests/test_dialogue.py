@@ -11,7 +11,6 @@ the app is given it as create_app(settings, model=<async callable: messages -> s
 
 import json
 
-import pytest
 from fastapi.testclient import TestClient
 
 from punland_api.app import create_app
@@ -86,7 +85,6 @@ def test_ai_unavailable() -> None:
     assert answer["options"] == []
 
 
-@pytest.mark.xfail(reason="needs #7")
 def test_limit_reached() -> None:
     # Requirement: Spending limits. A player's AI dialogue turns are limited per period;
     # at the limit the character ends the conversation with a canned line.

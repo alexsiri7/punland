@@ -3,6 +3,9 @@
 The app, not the model, decides how many suggested replies reach a conversation's goal:
 none at first, one after ONE_OPTION_FROM replies, all three after ALL_OPTIONS_FROM. The
 model is told which of its replies those are, and picking one reaches the goal.
+
+Each player gets TURNS_PER_DAY model-backed turns per UTC day (dialogue spec, Spending
+limits); after that every character answers with its canned line and the conversation ends.
 """
 
 import asyncio
@@ -10,6 +13,7 @@ import datetime as dt
 import json
 import logging
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -27,6 +31,7 @@ ONE_OPTION_FROM = 3
 ALL_OPTIONS_FROM = 6
 HISTORY_LIMIT = 40
 REPLY_MAX = 300
+TURNS_PER_DAY = 100
 
 THE_CAT = (
     "You are talking to a teenage cat from Literal Village, new in Punland, "
@@ -124,6 +129,38 @@ class DialogueStore:
         self._memory[(player, character)] = conv
 
 
+class TurnAllowance:
+    """AI dialogue turns per player per UTC day (dialogue spec, Spending limits).
+
+    Kept in memory: the API is one process, and the player id is the browser's own, so this
+    bounds spending per player, not a hard cap (that is Requesty's spending limit).
+    """
+
+    def __init__(
+        self,
+        per_day: int = TURNS_PER_DAY,
+        today: Callable[[], dt.date] = lambda: dt.datetime.now(dt.UTC).date(),
+    ) -> None:
+        self._per_day = per_day
+        self._today = today
+        self._day: dt.date | None = None
+        self._used: dict[uuid.UUID, int] = {}
+
+    def take(self, player: uuid.UUID) -> bool:
+        """Use one of the player's turns today; False once they have none left.
+
+        Synchronous on purpose: check and increment can't interleave on the event loop.
+        """
+        day = self._today()
+        if day != self._day:
+            self._day, self._used = day, {}
+        used = self._used.get(player, 0)
+        if used >= self._per_day:
+            return False
+        self._used[player] = used + 1
+        return True
+
+
 def _load(engine: sa.Engine, player: uuid.UUID, character: str) -> dict[str, Any] | None:
     table = saves.conversations
     query = sa.select(table.c.state).where(
@@ -213,7 +250,12 @@ def parse_answer(text: str) -> tuple[str, list[str], bool] | None:
     return line.strip(), [o.strip() for o in options], data.get("goal_reached") is True
 
 
-def router(model: Model, characters: dict[str, Character], store: DialogueStore) -> APIRouter:
+def router(
+    model: Model,
+    characters: dict[str, Character],
+    store: DialogueStore,
+    allowance: TurnAllowance,
+) -> APIRouter:
     api = APIRouter()
 
     @api.post("/dialogue/turn")
@@ -221,6 +263,8 @@ def router(model: Model, characters: dict[str, Character], store: DialogueStore)
         character = characters.get(body.character)
         if character is None:
             raise HTTPException(status_code=404, detail="unknown character")
+        if not allowance.take(player):
+            return TurnAnswer(line=character.canned, options=[], goal_reached=False, ended=True)
 
         async with store.lock(player, character.id):
             engine: sa.Engine | None = getattr(request.app.state, "saves_engine", None)

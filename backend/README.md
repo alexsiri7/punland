@@ -29,5 +29,8 @@ Character sheets are content data in `src/punland_api/content/characters/<id>.js
 - `REQUESTY_API_KEY` is the Requesty key (server-side only); `PUNLAND_DIALOGUE_MODEL` overrides
   the model. Without a key, or when the model fails, the character says its canned line and the
   conversation ends (`ended: true`, no options).
+- Each player gets `TURNS_PER_DAY` (100) model-backed turns per UTC day, shared across every
+  character and counted in memory (a restart resets them). Past that, every character says its
+  canned line and the conversation ends (`ended: true`, no options) until the day turns over.
 - Conversations are kept per player and character in the `conversations` table, next to the save;
   `DELETE /saves` (New game) clears them. Without a usable database they are kept in memory.
