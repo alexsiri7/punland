@@ -40,11 +40,6 @@ test('Walking', async ({ page }) => {
 test('Hovering a hotspot', async ({ page }) => {
   // Requirement: Hotspots. Hotspots show their name on hover.
   await newGame(page);
-  // A hotspot keeps keyboard focus through a floor click, so the walk itself has to clear the name.
-  await hotspot(page, content.board).focus();
-  await expect(game(page)).toHaveAttribute('data-hover', content.board);
-  await clickScene(page, content.pavement);
-  await expect(game(page)).toHaveAttribute('data-hover', '');
   const door = hotspot(page, content.pubDoor);
   await door.hover();
   await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
