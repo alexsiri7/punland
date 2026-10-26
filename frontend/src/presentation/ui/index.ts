@@ -11,6 +11,8 @@ export type { DrawnRoom, ScenePoint } from './overlay';
 export interface Ui {
   /** The renderer has drawn the session's room and takes input there: lay the room's controls over it. */
   shown(room: DrawnRoom): void;
+  /** The player clicked the room's floor: nothing is hovered any more. */
+  walked(): void;
 }
 
 /**
@@ -58,10 +60,21 @@ export function mountUi(container: HTMLElement, session: Session, mirror: { hove
         break;
       case 'hotspotShown':
       case 'roomChanged':
+        // The room is redrawn; until it is shown, its old controls must not take input.
         drawn = null;
+        hotspots?.destroy();
+        switcher?.destroy();
+        hotspots = null;
+        switcher = null;
+        break;
+      case 'moved':
+      case 'arrived':
+      case 'worldChanged':
+      case 'gathered':
+      case 'saved':
         break;
       default:
-        break;
+        event satisfies never;
     }
   });
 
@@ -73,7 +86,7 @@ export function mountUi(container: HTMLElement, session: Session, mirror: { hove
       overlay.follow(room);
       speech.hush();
       bar.show(current);
-      const nextHotspots = createHotspotLayer(
+      hotspots = createHotspotLayer(
         doc,
         current.hotspots.filter((h) => session.isPresent(h)),
         {
@@ -81,17 +94,16 @@ export function mountUi(container: HTMLElement, session: Session, mirror: { hove
           activate: (h) => session.dispatch({ type: 'activate', hotspot: h.id }),
         },
       );
-      const nextSwitcher = createWorldSwitcher(doc, session.content.worlds, current.world, {
+      switcher = createWorldSwitcher(doc, session.content.worlds, current.world, {
         enter: (w) => session.dispatch({ type: 'enterWorld', world: w.id }),
       });
       // In the order a keyboard reaches them: hotspots, then the inventory, then the worlds.
-      inventory.element.before(nextHotspots.element);
-      inventory.element.after(nextSwitcher.element);
-      hotspots?.destroy();
-      switcher?.destroy();
-      hotspots = nextHotspots;
-      switcher = nextSwitcher;
+      inventory.element.before(hotspots.element);
+      inventory.element.after(switcher.element);
       renderInventory();
+    },
+    walked() {
+      bar.hover(null);
     },
   };
 }

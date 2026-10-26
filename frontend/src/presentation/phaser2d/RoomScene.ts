@@ -14,9 +14,10 @@ interface RoomArt {
   layers: { key: string; file: string; x: number; y: number; depth: number; actor?: string; foot?: FloorPoint }[];
 }
 
-/** Told when the session's room is drawn and takes input: the DOM UI and the #game mirror. */
+/** Told when the session's room is drawn and takes input, and when its floor is clicked: the DOM UI and mirror. */
 export interface RoomShown {
   shown(room: DrawnRoom): void;
+  walked(): void;
 }
 
 /** The room to show: the session's. Everything else is in the session. */
@@ -101,6 +102,7 @@ export class RoomScene extends Phaser.Scene {
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       if (pointer.worldY >= SCENE_HEIGHT) return;
       this.session.dispatch({ type: 'walk', to: { x: pointer.worldX, y: pointer.worldY } });
+      this.view.walked();
     });
     this.view.shown({
       canvas: this.game.canvas,

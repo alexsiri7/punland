@@ -25,12 +25,12 @@ describe('the DOM UI', () => {
     vi.useRealTimers();
   });
 
-  function mount() {
+  function mount(head = { x: 560, y: 300 }) {
     const game = new GameSession(content, newGame(content), { save: async () => {} });
     const ui = mountUi(container, game, { hover: (name) => hovered.push(name) });
     const room: DrawnRoom = {
       canvas: document.createElement('canvas'),
-      head: () => ({ x: 560, y: 300 }),
+      head: () => head,
       onResize: () => () => {},
     };
     ui.shown(room);
@@ -72,16 +72,36 @@ describe('the DOM UI', () => {
     while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
     expect(speech.hidden).toBe(false);
     expect(speech.textContent).toMatch(/open mic/i);
+    expect([speech.style.left, speech.style.top]).toEqual(['43.75%', '37.5%']);
     vi.advanceTimersByTime(60_000);
     expect(speech.hidden).toBe(true);
   });
 
-  it("swaps in the new room's controls once it is shown", () => {
+  it('keeps a line spoken near the edge of the scene inside it', () => {
+    const { game } = mount({ x: 4, y: -40 });
+    const speech = container.querySelector<HTMLElement>('.speech')!;
+    game.dispatch({ type: 'activate', hotspot: 'board' });
+    while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
+    // jsdom lays nothing out, so the line is 0 wide: kept 16 scene px from the left and top.
+    expect([speech.style.left, speech.style.top]).toEqual(['1.25%', '2%']);
+  });
+
+  it('clears the action line and the hover when the player clicks the floor', () => {
+    const { ui, text, button } = mount();
+    button('Hotspots', 'Open mic board').focus();
+    expect(text('.ui-bar-name')).toBe('Open mic board');
+    ui.walked();
+    expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Outside', 'The Three Crows']);
+    expect(hovered.at(-1)).toBe('');
+  });
+
+  it("swaps in the new room's controls once it is shown, and takes the old ones away at once", () => {
     const { game, ui, room, text, button } = mount();
     game.dispatch({ type: 'activate', hotspot: 'door' });
     while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
     expect(game.state.room).toBe('pub');
-    expect(button('Hotspots', 'Open mic board')).not.toBeNull();
+    expect(container.querySelector('.hotspots')).toBeNull();
+    expect(container.querySelector('.worlds')).toBeNull();
     ui.shown(room);
     expect(container.querySelectorAll('.hotspots')).toHaveLength(1);
     expect(button('Hotspots', 'Open mic board')).toBeNull();

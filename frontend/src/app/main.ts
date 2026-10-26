@@ -27,6 +27,9 @@ void initTitleScreen(document, {
         ui.shown(room);
         mirror.shown();
       },
+      walked() {
+        ui.walked();
+      },
     });
   },
 });
