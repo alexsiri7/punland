@@ -138,10 +138,10 @@ class TurnAllowance:
 
     def __init__(
         self,
-        per_day: int | None = None,
+        per_day: int = TURNS_PER_DAY,
         today: Callable[[], dt.date] = lambda: dt.datetime.now(dt.UTC).date(),
     ) -> None:
-        self._per_day = TURNS_PER_DAY if per_day is None else per_day
+        self._per_day = per_day
         self._today = today
         self._day: dt.date | None = None
         self._used: dict[uuid.UUID, int] = {}

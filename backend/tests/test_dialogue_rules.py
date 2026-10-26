@@ -174,10 +174,10 @@ def test_turn_allowance_is_per_player_and_resets_each_day() -> None:
     assert allowance.take(a) is True
 
 
-def test_limit_spans_characters(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(dialogue, "TURNS_PER_DAY", 2)
+def test_limit_spans_characters() -> None:
     model = ScriptedModel(answer())
-    client = TestClient(create_app(Settings(), model=model))
+    allowance = dialogue.TurnAllowance(per_day=2)
+    client = TestClient(create_app(Settings(), model=model, allowance=allowance))
     turn(client, "bartender")
     turn(client, "bouncer")
 

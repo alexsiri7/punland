@@ -16,7 +16,11 @@ from .model import Model, model_from_settings
 logger = logging.getLogger(__name__)
 
 
-def create_app(settings: Settings | None = None, model: Model | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    model: Model | None = None,
+    allowance: dialogue.TurnAllowance | None = None,
+) -> FastAPI:
     settings = settings or Settings.from_env()
 
     @asynccontextmanager
@@ -64,7 +68,7 @@ def create_app(settings: Settings | None = None, model: Model | None = None) -> 
             model or model_from_settings(settings),
             load_characters(),
             dialogue.DialogueStore(),
-            dialogue.TurnAllowance(),
+            allowance or dialogue.TurnAllowance(),
         )
     )
     return app
