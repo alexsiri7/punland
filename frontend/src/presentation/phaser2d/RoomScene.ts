@@ -221,8 +221,13 @@ export class RoomScene extends Phaser.Scene {
       case 'roomChanged':
         this.redraw();
         break;
-      default:
+      case 'arrived':
+      case 'worldChanged':
+      case 'gathered':
+      case 'saved':
         break;
+      default:
+        event satisfies never;
     }
   }
 

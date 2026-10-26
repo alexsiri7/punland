@@ -33,3 +33,15 @@ test('New game starts in the opening scene', async ({ page }) => {
   await expect(page.locator('#game canvas')).toBeVisible();
   await expect(page.locator('#game')).toHaveAttribute('data-scene', 'opening');
 });
+
+test('A new game left before any action can be continued', async ({ page }) => {
+  // Requirement: Autosave. A new game is saved before the player does anything.
+  await page.goto('/');
+  await page.getByRole('button', { name: 'New game' }).click();
+  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'opening');
+  await page.reload();
+  const cont = page.getByRole('button', { name: 'Continue' });
+  await expect(cont).toBeVisible();
+  await cont.click();
+  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'opening');
+});
