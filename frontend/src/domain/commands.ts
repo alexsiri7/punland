@@ -1,4 +1,5 @@
-import type { FloorPoint, Speaker } from '../domain';
+import type { FloorPoint } from './geometry';
+import type { Speaker } from './state';
 
 /** Everything the player does (docs/ARCHITECTURE.md, section 4). */
 export type Command =
