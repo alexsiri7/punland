@@ -106,15 +106,17 @@ def test_malformed_database_url_degrades() -> None:
         assert client.get("/health").status_code == 200
 
 
-def test_migrations_build_the_table_the_app_queries(database: Settings) -> None:
-    # The migrations and saves.saves declare the table separately; a column changed in only
-    # one of them would turn every /saves call into a 503.
+@pytest.mark.parametrize("table", [saves.saves, saves.conversations], ids=lambda t: t.name)
+def test_migrations_build_the_table_the_app_queries(database: Settings, table: sa.Table) -> None:
+    # The migrations and saves.py declare the tables separately; a column changed in only
+    # one of them would turn every call that uses the table into an error.
     assert database.database_url
     engine = saves.connect(database.database_url)
     saves.migrate(engine)
     ddl = engine.dialect.type_compiler_instance.process
-    built = {
-        c["name"]: (ddl(c["type"]), c["nullable"]) for c in sa.inspect(engine).get_columns("saves")
-    }
+    inspector = sa.inspect(engine)
+    built = {c["name"]: (ddl(c["type"]), c["nullable"]) for c in inspector.get_columns(table.name)}
+    primary_key = inspector.get_pk_constraint(table.name)["constrained_columns"]
     engine.dispose()
-    assert built == {c.name: (ddl(c.type), c.nullable) for c in saves.saves.c}
+    assert built == {c.name: (ddl(c.type), c.nullable) for c in table.c}
+    assert sorted(primary_key) == sorted(c.name for c in table.primary_key)

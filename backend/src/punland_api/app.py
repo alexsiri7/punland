@@ -8,13 +8,15 @@ import sqlalchemy as sa
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import __version__, saves
+from . import __version__, dialogue, saves
+from .characters import load_characters
 from .config import Settings
+from .model import Model, model_from_settings
 
 logger = logging.getLogger(__name__)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, model: Model | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
 
     @asynccontextmanager
@@ -57,6 +59,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok", "version": __version__}
 
     app.include_router(saves.router)
+    app.include_router(
+        dialogue.router(
+            model or model_from_settings(settings), load_characters(), dialogue.DialogueStore()
+        )
+    )
     return app
 
 

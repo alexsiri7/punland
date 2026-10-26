@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 # (<hash>.punland.pages.dev and <branch>.punland.pages.dev).
 DEFAULT_ORIGINS = ("https://punland.interstellarai.net", "https://punland.pages.dev")
 DEFAULT_ORIGIN_REGEX = r"https://[a-z0-9-]+\.punland\.pages\.dev"
+DEFAULT_DIALOGUE_MODEL = "anthropic/claude-haiku-4-5"
 LOCAL_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173")
 
 
@@ -19,6 +20,9 @@ class Settings:
     environment: str = "development"
     cors_origins: tuple[str, ...] = field(default=DEFAULT_ORIGINS)
     cors_origin_regex: str = DEFAULT_ORIGIN_REGEX
+    # Unset means no AI: every character answers with its canned line.
+    requesty_api_key: str | None = field(default=None, repr=False)
+    dialogue_model: str = DEFAULT_DIALOGUE_MODEL
     # Postgres for saves, authenticating as the app's own role so unqualified table names
     # resolve to its schema (punland / punland_staging). Unset: /saves answers 503.
     database_url: str | None = None
@@ -32,5 +36,7 @@ class Settings:
         return cls(
             environment=env,
             cors_origins=origins,
+            requesty_api_key=os.environ.get("REQUESTY_API_KEY") or None,
+            dialogue_model=os.environ.get("PUNLAND_DIALOGUE_MODEL") or DEFAULT_DIALOGUE_MODEL,
             database_url=os.environ.get("DATABASE_URL") or None,
         )
