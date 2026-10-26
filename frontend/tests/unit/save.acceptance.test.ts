@@ -16,7 +16,7 @@ const V1_SAVE = {
 describe('Serialisable game state', () => {
   // Requirement: Serialisable game state. The game state is plain data: a saved state that is
   // loaded again equals the one that was saved.
-  it.fails('Saving and restoring (needs #28)', async () => {
+  it('Saving and restoring', async () => {
     const [{ loadContent }, { newGame }, { toSave, fromSave }] = await Promise.all([
       load('content'),
       load('domain'),
@@ -33,7 +33,7 @@ describe('Serialisable game state', () => {
   });
 
   // Requirement: Serialisable game state. Saves made by earlier versions of the game still load.
-  it.fails('An older save (needs #28)', async () => {
+  it('An older save', async () => {
     const [{ loadContent }, { fromSave }] = await Promise.all([load('content'), load('save')]);
     const state = fromSave(V1_SAVE, loadContent());
     expect(state.room).toBe('pub');

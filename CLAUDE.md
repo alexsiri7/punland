@@ -56,11 +56,13 @@ CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the
 ```
 frontend/
   index.html            title screen markup (Tune Story, New game, Continue); loads src/app/main.ts
-  src/domain/           pure model: floor geometry (FloorPoint, walking on a convex floor), inventory/journey save state
-  src/content/          content data and its loaders: rooms/<room>.json, items, worlds, protagonist.ts
+  src/domain/           pure model: floor geometry (FloorPoint, walking on a convex floor), content types (content.ts),
+                        GameState and newGame (state.ts), SaveGame with toSave/fromSave (save.ts), inventory/journey save state
+  src/rules/            pure rules: apply(content, state, command) -> {state, events}; Command and GameEvent (not yet wired in, A3)
+  src/content/          content data and its loaders: rooms/<room>.json, items, worlds, protagonist.ts; index.ts loadContent()
   src/content/rooms/<room>.json  room content: floor, start point, hotspots and their actions (say, exit)
   src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
-  src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), player.ts, storage.ts
+  src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), player.ts, storage.ts
   src/presentation/     theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts, loadFonts()), style.css
   src/presentation/phaser2d/  game.ts (Phaser game factory), RoomScene.ts (the room engine; mirrors data-scene/-player/-hover/-say on #game),
                         the Inventory/Journey session classes, room/ (hotspot, inventory and world buttons over the canvas)

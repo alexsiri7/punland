@@ -47,12 +47,14 @@ describe('isSaveGame', () => {
       ...game,
       inventory: { items: ['flyer'], pickedUp: ['flyer'] },
       journey: { left: { street: { room: 'pub', at: { x: 1, y: 2 } }, dream: { room: 'dream' } }, gathered: [] },
+      at: { x: 3, y: 4 },
       act: '2',
     };
     expect(isSaveGame(full)).toBe(true);
   });
 
-  it('rejects a malformed inventory or journey', () => {
+  it('rejects a malformed spot, inventory or journey', () => {
+    expect(isSaveGame({ ...game, at: { x: 1 } })).toBe(false);
     expect(isSaveGame({ ...game, inventory: { items: 'flyer', pickedUp: [] } })).toBe(false);
     expect(isSaveGame({ ...game, journey: { left: { street: { at: { x: 1, y: 2 } } }, gathered: [] } })).toBe(false);
     expect(isSaveGame({ ...game, journey: { left: { street: { room: 'pub', at: 'here' } }, gathered: [] } })).toBe(false);
