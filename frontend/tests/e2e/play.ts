@@ -1,6 +1,6 @@
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
-import type { DialogueTurn } from '../../src/domain';
+import type { DialogueTurn, SaveGame } from '../../src/domain';
 import { expect } from './fixtures';
 
 /**
@@ -209,17 +209,8 @@ export async function stubSaves(page: Page, store: Map<string, string>): Promise
   });
 }
 
-/**
- * A saved game, as the title screen's Continue loads it. `version`, `room` and `savedAt` are
- * today's save (src/services/save.ts); the rest is what #10 and #11 add to it.
- */
-export interface Save {
-  room: string;
-  act: string;
-  /** Ids of the reached goals of the current act. */
-  goals: string[];
-  stats: { followers: number; musicians: number; practice: number; instruments: number };
-}
+/** A saved game, as the title screen's Continue loads it, with the fields the tests set; seedSave stamps the rest. */
+export type Save = Required<Pick<SaveGame, 'room' | 'act' | 'goals' | 'stats'>>;
 
 let seeds = 0;
 
