@@ -1,0 +1,42 @@
+{
+  "acts": [
+    {
+      "id": "1",
+      "name": "Act 1",
+      "goals": [
+        { "id": "fix-guitar", "name": "Fix the guitar" },
+        { "id": "pub-job", "name": "Get a job at the pub" },
+        { "id": "late-slot", "name": "Get the late slot" }
+      ],
+      "next": [{ "act": "2" }]
+    },
+    {
+      "id": "2",
+      "name": "Act 2",
+      "goals": [
+        { "id": "act2-first", "name": "Find a band" },
+        { "id": "act2-last", "name": "Play a full set" }
+      ],
+      "next": [{ "act": "3" }]
+    },
+    {
+      "id": "3",
+      "name": "Act 3",
+      "goals": [
+        { "id": "act3-first", "name": "Name the band" },
+        { "id": "act3-last", "name": "Get a festival slot" }
+      ],
+      "next": [{ "act": "4-star", "when": [{ "stat": "followers", "atLeast": 1000 }] }, { "act": "4-band" }]
+    },
+    {
+      "id": "4-star",
+      "name": "Act 4: The Star",
+      "goals": [{ "id": "star-headline", "name": "Headline the Three Crows" }]
+    },
+    {
+      "id": "4-band",
+      "name": "Act 4: The Band",
+      "goals": [{ "id": "band-record", "name": "Record the album" }]
+    }
+  ]
+}

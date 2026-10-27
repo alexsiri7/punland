@@ -60,6 +60,9 @@ describe('GameSession', () => {
       inventory: { items: ['broken-guitar', 'flyer'], pickedUp: ['flyer'] },
       journey: { left: {}, gathered: ['open-mic'] },
       flags: {},
+      act: '1',
+      goals: [],
+      stats: { followers: 0, musicians: 0, practice: 0, instruments: 1 },
     });
     expect(saves.every(isSaveGame)).toBe(true);
   });
@@ -79,6 +82,9 @@ describe('GameSession', () => {
         inventory: V1_SAVE.inventory,
         journey: V1_SAVE.journey,
         flags: {},
+        act: '1',
+            goals: [],
+          stats: { followers: 0, musicians: 0, practice: 0, instruments: 1 },
       },
     ]);
   });
@@ -106,7 +112,7 @@ describe('the #game mirror', () => {
     vi.useRealTimers();
   });
 
-  it('shows the room, its world and the player once the view has drawn it', () => {
+  it('shows the room, its world, the player and the act once the view has drawn it', () => {
     const { game } = session();
     const mirror = createMirror(container, game);
     expect(container.dataset.scene).toBeUndefined();
@@ -117,7 +123,15 @@ describe('the #game mirror', () => {
       player: '560,590',
       hover: '',
       say: '',
+      act: '1',
     });
+  });
+
+  it('follows the act as it changes', () => {
+    const { game } = session({ ...newGame(content), room: 'pub', goals: ['fix-guitar', 'pub-job'] });
+    createMirror(container, game).shown();
+    game.dispatch({ type: 'dialogueResult', character: 'bartender', goalReached: true });
+    expect(container.dataset.act).toBe('2');
   });
 
   it('follows the player as they walk, and changes room only when the view shows the new one', () => {

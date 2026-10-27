@@ -1,4 +1,22 @@
 {
   "protagonist": { "model": "character/protagonist" },
-  "characters": [{ "id": "bartender", "name": "Bartender", "model": "character/bartender" }]
+  "characters": [
+    {
+      "id": "bartender",
+      "name": "Bartender",
+      "model": "character/bartender",
+      "onGoal": [
+        {
+          "when": [{ "act": "1" }, { "not": { "goal": "pub-job" } }],
+          "effects": [{ "changeStat": "followers", "by": 10 }, { "reachGoal": "pub-job" }]
+        },
+        {
+          "when": [{ "act": "1" }, { "not": { "goal": "late-slot" } }],
+          "effects": [{ "changeStat": "followers", "by": 50 }, { "reachGoal": "late-slot" }]
+        },
+        { "when": [{ "act": "2" }, { "not": { "goal": "act2-last" } }], "effects": [{ "reachGoal": "act2-last" }] },
+        { "when": [{ "act": "3" }, { "not": { "goal": "act3-last" } }], "effects": [{ "reachGoal": "act3-last" }] }
+      ]
+    }
+  ]
 }

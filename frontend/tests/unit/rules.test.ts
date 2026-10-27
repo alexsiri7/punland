@@ -29,7 +29,48 @@ const files: Record<string, any> = {
   },
   'content/characters.json': {
     protagonist: { model: 'character/protagonist' },
-    characters: [{ id: 'bartender', name: 'Bartender', model: 'character/bartender' }],
+    characters: [
+      {
+        id: 'bartender',
+        name: 'Bartender',
+        model: 'character/bartender',
+        onGoal: [
+          {
+            when: [{ act: 'one' }, { not: { goal: 'job' } }],
+            effects: [{ changeStat: 'fame', by: 10 }, { reachGoal: 'job' }],
+          },
+          { when: [{ act: 'two' }], effects: [{ reachGoal: 'gig' }] },
+        ],
+      },
+      { id: 'busker', name: 'Busker', model: 'character/busker' },
+    ],
+  },
+  'content/stats.json': {
+    stats: [
+      { id: 'fame', name: 'Fame', start: 0 },
+      { id: 'skill', name: 'Skill', start: 1 },
+    ],
+  },
+  'content/acts.json': {
+    acts: [
+      {
+        id: 'one',
+        name: 'Act One',
+        goals: [
+          { id: 'guitar', name: 'Fix the guitar' },
+          { id: 'job', name: 'Get a job' },
+        ],
+        next: [{ act: 'two' }],
+      },
+      {
+        id: 'two',
+        name: 'Act Two',
+        goals: [{ id: 'gig', name: 'Play a gig' }],
+        next: [{ act: 'star', when: [{ stat: 'fame', atLeast: 100 }] }, { act: 'band' }],
+      },
+      { id: 'star', name: 'The Star', goals: [{ id: 'headline', name: 'Headline' }] },
+      { id: 'band', name: 'The Band', goals: [{ id: 'record', name: 'Record' }] },
+    ],
   },
   'content/objects.json': { objects: [{ id: 'flyer', name: 'Flyer', model: 'object/flyer' }] },
   'content/rooms/street.json': {
@@ -193,13 +234,16 @@ function deepFreeze<T>(value: T): T {
 const start = () => newGame(content);
 
 describe('newGame', () => {
-  it('starts at the start room, carrying the start items', () => {
+  it('starts at the start room, carrying the start items, in the first act with the start stats', () => {
     expect(start()).toEqual({
       room: 'street',
       at: { x: 100, y: 550 },
       inventory: { carried: ['guitar'], pickedUp: [] },
       journey: { left: {}, gathered: [] },
       flags: {},
+      stats: { fame: 0, skill: 1 },
+      act: 'one',
+      goals: [],
       selected: null,
       walk: null,
       saying: null,
@@ -358,11 +402,95 @@ describe('talk', () => {
     expect(state).toEqual({ ...inPub, at: { x: 700, y: 550 } });
     expect(events.slice(-2)).toEqual([{ type: 'conversationStarted', character: 'bartender' }, { type: 'saved' }]);
   });
+});
 
-  it('changes nothing yet when a conversation reaches its goal', () => {
+describe('stats and acts', () => {
+  const reached = (character = 'bartender', goalReached = true): Command => ({
+    type: 'dialogueResult',
+    character,
+    goalReached,
+  });
+  const inPub = (given = content) => play(newGame(given), [activate('door')], given).state;
+  /** The fixture content, with the bar running `effects` when looked at, while `when` holds. */
+  const barDoes = (effects: unknown[], when?: unknown[]) =>
+    editedRoom('pub', (room) =>
+      room.hotspots
+        .find((h: { id: string }) => h.id === 'bar')
+        .interactions.unshift({ verb: 'look', ...(when && { when }), effects }),
+    );
+
+  it("runs the first of the character's goal reactions whose conditions hold", () => {
+    const { state, events } = apply(content, start(), reached());
+    expect(state.stats).toEqual({ fame: 10, skill: 1 });
+    expect(state.goals).toEqual(['job']);
+    expect(events).toEqual([
+      { type: 'statChanged', stat: 'fame', value: 10 },
+      { type: 'goalReached', goal: 'job' },
+      { type: 'saved' },
+    ]);
+    expect(apply(content, state, reached())).toEqual({ state, events: [] });
+  });
+
+  it('changes nothing when the goal is not reached, or the character has no goal reactions', () => {
     const state = start();
-    const result: Command = { type: 'dialogueResult', character: 'bartender', goalReached: true };
-    expect(apply(content, state, result)).toEqual({ state, events: [] });
+    expect(apply(content, state, reached('bartender', false))).toEqual({ state, events: [] });
+    expect(apply(content, state, reached('busker'))).toEqual({ state, events: [] });
+    expect(apply(content, state, reached('nobody'))).toEqual({ state, events: [] });
+  });
+
+  it('changes a stat by any amount', () => {
+    const given = barDoes([{ changeStat: 'skill', by: -3 }]);
+    const { state, events } = play(inPub(given), [activate('bar')], given);
+    expect(state.stats).toEqual({ fame: 0, skill: -2 });
+    expect(events.slice(-2)).toEqual([{ type: 'statChanged', stat: 'skill', value: -2 }, { type: 'saved' }]);
+  });
+
+  it("reaches only the current act's goals, once", () => {
+    const given = barDoes([{ reachGoal: 'gig' }, { reachGoal: 'guitar' }, { reachGoal: 'guitar' }]);
+    const { state, events } = play(inPub(given), [activate('bar')], given);
+    expect(state.goals).toEqual(['guitar']);
+    expect(events.slice(-2)).toEqual([{ type: 'goalReached', goal: 'guitar' }, { type: 'saved' }]);
+  });
+
+  it("starts the next act once all the act's goals are reached, and runs the effects after in it", () => {
+    const given = barDoes([{ reachGoal: 'job' }, { reachGoal: 'guitar' }, { reachGoal: 'gig' }]);
+    const { state, events } = play(inPub(given), [activate('bar')], given);
+    expect(state).toMatchObject({ act: 'band', goals: [] });
+    expect(events.slice(-6)).toEqual([
+      { type: 'goalReached', goal: 'job' },
+      { type: 'goalReached', goal: 'guitar' },
+      { type: 'actStarted', act: 'two' },
+      { type: 'goalReached', goal: 'gig' },
+      { type: 'actStarted', act: 'band' },
+      { type: 'saved' },
+    ]);
+  });
+
+  it('chooses the next act from the stats', () => {
+    const inActTwo = { ...start(), act: 'two' };
+    const famous = apply(content, { ...inActTwo, stats: { fame: 100, skill: 1 } }, reached());
+    expect(famous.state).toMatchObject({ act: 'star', goals: [] });
+    expect(famous.events).toContainEqual({ type: 'actStarted', act: 'star' });
+    expect(apply(content, { ...inActTwo, stats: { fame: 99, skill: 50 } }, reached()).state.act).toBe('band');
+  });
+
+  it('stays in a final act once its goals are reached', () => {
+    const given = barDoes([{ reachGoal: 'headline' }]);
+    const done = play({ ...inPub(given), act: 'star' }, [activate('bar')], given).state;
+    expect(done).toMatchObject({ act: 'star', goals: ['headline'] });
+  });
+
+  it('gates interactions on stats, the act and its goals', () => {
+    const given = barDoes(
+      [{ say: 'Regular.' }],
+      [{ stat: 'fame', atLeast: 10 }, { act: 'one' }, { goal: 'job' }],
+    );
+    const said = (state: GameState) => play(state, [activate('bar')], given).state.saying?.line;
+    const pub = inPub(given);
+    expect(said(pub)).toBe('A bar.');
+    expect(said({ ...pub, stats: { fame: 10, skill: 1 } })).toBe('A bar.');
+    expect(said({ ...pub, stats: { fame: 10, skill: 1 }, goals: ['job'] })).toBe('Regular.');
+    expect(said({ ...pub, stats: { fame: 10, skill: 1 }, goals: ['job'], act: 'two' })).toBe('A bar.');
   });
 });
 

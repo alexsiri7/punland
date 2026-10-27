@@ -461,3 +461,62 @@ body {
   color: var(--label-text);
   cursor: wait;
 }
+
+/* Career stats along the foot of the UI bar (ui/progress.ts), under the hint: label caps, values in UI text. */
+.stats {
+  position: absolute;
+  top: calc((var(--scene-height) + 124px) * var(--s));
+  left: calc(32px * var(--s));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: calc(20px * var(--s));
+  font-size: calc(12px * var(--s));
+  letter-spacing: calc(2px * var(--s));
+  text-transform: uppercase;
+  color: var(--label-text);
+}
+
+.stats-value {
+  color: var(--ui-text);
+}
+
+/* The current act and its goals (ui/progress.ts), in the scene's top-left corner. */
+.goals {
+  position: absolute;
+  top: calc(24px * var(--s));
+  left: calc(24px * var(--s));
+  padding: calc(12px * var(--s)) calc(16px * var(--s));
+  background: var(--ui-ground);
+  border: calc(1px * var(--s)) solid var(--divider);
+  border-radius: calc(10px * var(--s));
+  font-size: calc(13px * var(--s));
+  color: var(--ui-text);
+}
+
+.goals-act {
+  margin: 0 0 calc(6px * var(--s));
+  font-size: calc(12px * var(--s));
+  font-weight: 500;
+  letter-spacing: calc(2px * var(--s));
+  text-transform: uppercase;
+  color: var(--label-text);
+}
+
+.goals-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: calc(4px * var(--s));
+}
+
+.goals-list input {
+  width: calc(13px * var(--s));
+  height: calc(13px * var(--s));
+  margin: 0 calc(6px * var(--s)) 0 0;
+  vertical-align: middle;
+  accent-color: var(--sign-gold);
+}

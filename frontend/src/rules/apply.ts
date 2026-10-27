@@ -1,4 +1,5 @@
 import {
+  type Act,
   type Command,
   type Condition,
   type Content,
@@ -41,6 +42,9 @@ function holds(state: GameState, condition: Condition): boolean {
   if ('pickedUp' in condition) return state.inventory.pickedUp.includes(condition.pickedUp);
   if ('gathered' in condition) return state.journey.gathered.includes(condition.gathered);
   if ('flag' in condition) return state.flags[condition.flag] === (condition.is ?? true);
+  if ('stat' in condition) return (state.stats[condition.stat] ?? 0) >= condition.atLeast;
+  if ('act' in condition) return state.act === condition.act;
+  if ('goal' in condition) return state.goals.includes(condition.goal);
   return !holds(state, condition.not);
 }
 
@@ -62,9 +66,14 @@ function step(content: Content, state: GameState, command: Command, events: Game
       return enterWorld(content, state, command.world, events);
     case 'tick':
       return tick(content, state, command.dtMs, events);
-    case 'dialogueResult':
-      // What a reached goal does comes with acts and goals (#11).
-      return state;
+    case 'dialogueResult': {
+      if (!command.goalReached) return state;
+      const character = Object.hasOwn(content.characters, command.character)
+        ? content.characters[command.character]
+        : undefined;
+      const reaction = character?.onGoal?.find(({ when }) => allHold(state, when));
+      return reaction ? runEffects(content, state, reaction.effects, null, events) : state;
+    }
     default:
       return command satisfies never;
   }
@@ -105,15 +114,33 @@ function interact(
 ): GameState {
   const matches = (interaction: Interaction) =>
     (item === null ? interaction.item === undefined : interaction.verb === 'use' && interaction.item === item) &&
-    (interaction.when?.every((condition) => holds(state, condition)) ?? true);
+    allHold(state, interaction.when);
   const interaction = hotspot.interactions.find(matches);
   if (!interaction) {
     const noUse = item === null ? undefined : content.items[item]?.noUse;
     return noUse === undefined ? state : say(state, noUse, events);
   }
+  return runEffects(content, state, interaction.effects, hotspot, events);
+}
+
+function allHold(state: GameState, conditions: Condition[] | undefined): boolean {
+  return conditions?.every((condition) => holds(state, condition)) ?? true;
+}
+
+/**
+ * The effects in order, of an interaction with `hotspot` or, with none, of a reaction; then
+ * the room's hotspots that came or went, unless the player left the room, and a save.
+ */
+function runEffects(
+  content: Content,
+  state: GameState,
+  effects: readonly Effect[],
+  hotspot: Hotspot | null,
+  events: GameEvent[],
+): GameState {
   const room = roomOf(content, state.room);
   let next = state;
-  for (const effect of interaction.effects) next = run(content, next, effect, hotspot, events);
+  for (const effect of effects) next = run(content, next, effect, hotspot, events);
   if (next.room === state.room) {
     for (const h of room.hotspots) {
       const was = isPresent(state, h);
@@ -124,18 +151,27 @@ function interact(
   return next;
 }
 
-/** One effect of an interaction with `hotspot`. */
-function run(content: Content, state: GameState, effect: Effect, hotspot: Hotspot, events: GameEvent[]): GameState {
+/** One effect of an interaction with `hotspot`, or of a reaction. */
+function run(
+  content: Content,
+  state: GameState,
+  effect: Effect,
+  hotspot: Hotspot | null,
+  events: GameEvent[],
+): GameState {
   if ('say' in effect) return say(state, effect.say, events);
   if ('goTo' in effect) {
     const place = effect.at ? { room: effect.goTo, at: effect.at } : { room: effect.goTo };
     return arrive(content, state, place, events);
   }
-  if ('pickUp' in effect) return pickUp(state, effect.pickUp, hotspot, events);
+  // The content validators keep `pickUp` in hotspots' interactions.
+  if ('pickUp' in effect) return hotspot ? pickUp(state, effect.pickUp, hotspot, events) : state;
   if ('give' in effect) return give(state, effect.give, events);
   if ('take' in effect) return take(state, effect.take, events);
   if ('gather' in effect) return gather(state, effect.gather, events);
   if ('set' in effect) return { ...state, flags: { ...state.flags, [effect.set]: effect.to } };
+  if ('changeStat' in effect) return changeStat(state, effect.changeStat, effect.by, events);
+  if ('reachGoal' in effect) return reachGoal(content, state, effect.reachGoal, events);
   events.push({ type: 'conversationStarted', character: effect.talk });
   return state;
 }
@@ -195,6 +231,28 @@ function gather(state: GameState, material: string, events: GameEvent[]): GameSt
   return { ...state, journey: { ...state.journey, gathered: [...state.journey.gathered, material] } };
 }
 
+function changeStat(state: GameState, stat: string, by: number, events: GameEvent[]): GameState {
+  const value = (state.stats[stat] ?? 0) + by;
+  events.push({ type: 'statChanged', stat, value });
+  return { ...state, stats: { ...state.stats, [stat]: value } };
+}
+
+/**
+ * A goal of the current act; a goal of another act, or one already reached, does nothing.
+ * Reaching the act's last goal starts the first next act whose conditions hold.
+ */
+function reachGoal(content: Content, state: GameState, goal: string, events: GameEvent[]): GameState {
+  const act = actOf(content, state.act);
+  if (!act.goals.some((g) => g.id === goal) || state.goals.includes(goal)) return state;
+  events.push({ type: 'goalReached', goal });
+  const reached = { ...state, goals: [...state.goals, goal] };
+  if (!act.goals.every((g) => reached.goals.includes(g.id))) return reached;
+  const next = act.next?.find(({ when }) => allHold(reached, when));
+  if (!next) return reached;
+  events.push({ type: 'actStarted', act: next.act });
+  return { ...reached, act: next.act, goals: [] };
+}
+
 function walkTo(
   state: GameState,
   target: FloorPoint,
@@ -224,6 +282,12 @@ function hush(state: GameState, events: GameEvent[]): GameState {
 function presentHotspot(content: Content, state: GameState, id: string): Hotspot | undefined {
   const hotspot = roomOf(content, state.room).hotspots.find((h) => h.id === id);
   return hotspot && isPresent(state, hotspot) ? hotspot : undefined;
+}
+
+function actOf(content: Content, id: string): Act {
+  const act = content.acts.find((a) => a.id === id);
+  if (!act) throw new Error(`act "${id}" is not in the content`);
+  return act;
 }
 
 function roomOf(content: Content, id: string): Room {

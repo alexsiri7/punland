@@ -1,6 +1,6 @@
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
-import type { DialogueTurn } from '../../src/domain';
+import type { DialogueTurn, SaveGame } from '../../src/domain';
 import { expect } from './fixtures';
 
 /**
@@ -20,10 +20,10 @@ import { expect } from './fixtures';
  * reader can play too.
  *
  * The room attributes (data-scene, data-player, data-hover, data-say) and the Hotspots group
- * are built (#4), the Inventory list (#5), data-world and the Worlds switcher (#9), and the
- * conversation dialog (#8); the rest is not yet. The issue that builds a piece may settle on a different
- * selector or content name: change it here, in one place, in the PR that removes the test's
- * expected-to-fail marker.
+ * are built (#4), the Inventory list (#5), data-world and the Worlds switcher (#9), the
+ * conversation dialog (#8), and data-act, the Career stats and the Goals (#11). The issue that
+ * builds a piece may settle on a different selector or content name: change it here, in one
+ * place, in the PR that removes the test's expected-to-fail marker.
  */
 
 /** Content the tests rely on: the skeleton's opening rooms and Act 1 placeholders (#4, #5, #11). */
@@ -209,17 +209,8 @@ export async function stubSaves(page: Page, store: Map<string, string>): Promise
   });
 }
 
-/**
- * A saved game, as the title screen's Continue loads it. `version`, `room` and `savedAt` are
- * today's save (src/services/save.ts); the rest is what #10 and #11 add to it.
- */
-export interface Save {
-  room: string;
-  act: string;
-  /** Ids of the reached goals of the current act. */
-  goals: string[];
-  stats: { followers: number; musicians: number; practice: number; instruments: number };
-}
+/** A saved game, as the title screen's Continue loads it, with the fields the tests set; seedSave stamps the rest. */
+export type Save = Required<Pick<SaveGame, 'room' | 'act' | 'goals' | 'stats'>>;
 
 let seeds = 0;
 

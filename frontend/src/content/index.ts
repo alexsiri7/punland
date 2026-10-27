@@ -5,8 +5,8 @@ export type { ContentFiles, ContentIssue } from './validate';
 export { validateContent } from './validate';
 
 /**
- * The content files here (worlds.json, items.json, characters.json, objects.json and
- * rooms/<room>.json), by their path under src/.
+ * The content files here (worlds.json, items.json, characters.json, objects.json, stats.json,
+ * acts.json and rooms/<room>.json), by their path under src/.
  */
 const files: ContentFiles = Object.fromEntries(
   Object.entries(import.meta.glob('./**/*.json', { eager: true, import: 'default' })).map(([path, data]) => [
@@ -16,7 +16,7 @@ const files: ContentFiles = Object.fromEntries(
 );
 
 /**
- * The worlds, rooms, items, characters and objects, checked: the real content files, or `given` in their place.
+ * The worlds, rooms, items, characters, objects, stats and acts, checked: the real content files, or `given` in their place.
  * Content that doesn't hold together throws, listing every problem by file and field.
  */
 export function loadContent(given: ContentFiles = files): Content {

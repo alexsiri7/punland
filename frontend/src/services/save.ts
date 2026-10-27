@@ -44,7 +44,10 @@ function isJourney(value: unknown): value is JourneyState {
 }
 
 const isFlag = (value: unknown): boolean => ['boolean', 'number', 'string'].includes(typeof value);
-const isFlags = (value: unknown): boolean => isObject(value) && !Array.isArray(value) && Object.values(value).every(isFlag);
+const isRecordOf = (value: unknown, ok: (v: unknown) => boolean): boolean =>
+  isObject(value) && !Array.isArray(value) && Object.values(value).every(ok);
+const isFlags = (value: unknown): boolean => isRecordOf(value, isFlag);
+const isStats = (value: unknown): boolean => isRecordOf(value, (v) => typeof v === 'number' && Number.isFinite(v));
 
 /** A save this game can resume. Fields it doesn't know (from a newer game) are ignored. */
 export function isSaveGame(value: unknown): value is SaveGame {
@@ -56,7 +59,10 @@ export function isSaveGame(value: unknown): value is SaveGame {
     (value.at === undefined || isPoint(value.at)) &&
     (value.inventory === undefined || isInventory(value.inventory)) &&
     (value.journey === undefined || isJourney(value.journey)) &&
-    (value.flags === undefined || isFlags(value.flags))
+    (value.flags === undefined || isFlags(value.flags)) &&
+    (value.act === undefined || typeof value.act === 'string') &&
+    (value.goals === undefined || isStrings(value.goals)) &&
+    (value.stats === undefined || isStats(value.stats))
   );
 }
 

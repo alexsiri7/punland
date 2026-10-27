@@ -1,0 +1,8 @@
+{
+  "stats": [
+    { "id": "followers", "name": "Followers", "start": 0 },
+    { "id": "musicians", "name": "Musicians", "start": 0 },
+    { "id": "practice", "name": "Practice", "start": 0 },
+    { "id": "instruments", "name": "Instruments", "start": 1 }
+  ]
+}

@@ -87,7 +87,7 @@ interface FloorPoint { x: number; y: number }
 
 interface World     { id: WorldId; name: string; start: RoomId; locked?: string }
 interface Item      { id: ItemId; name: string; noUse: string; model: ModelId }
-interface Character { id: CharacterId; name: string; model: ModelId }  // the id is also its backend sheet's id
+interface Character { id: CharacterId; name: string; model: ModelId; onGoal?: Reaction[] }  // the id is also its backend sheet's id
 interface Prop      { id: ObjectId; name: string; model: ModelId }  // a reusable prop, e.g. the flyer
 interface Room {
   id: RoomId; world: WorldId; model: ModelId;            // the scene's model (2D layers or 3D glb)
@@ -108,7 +108,9 @@ interface GameState {
   room: RoomId; at: FloorPoint;
   inventory: { carried: ItemId[]; pickedUp: ItemId[] };
   journey: { left: Partial<Record<WorldId, Place>>; gathered: string[] };
-  flags: Record<string, boolean | number | string>;      // puzzle state; #11 adds stats, act and goals beside it
+  flags: Record<string, boolean | number | string>;      // puzzle state
+  stats: Record<StatId, number>;                         // career stats
+  act: ActId; goals: GoalId[];                           // the act being played, and its reached goals
   // transient, never saved:
   selected: ItemId | null;
   walk: { target: FloorPoint; then: { hotspot: HotspotId; item: ItemId | null } | null } | null; // on arrival: the hotspot's interaction, or use `item` on it
@@ -118,9 +120,9 @@ interface GameState {
 
 - **Content shapes today.** `domain/content.ts` holds the content types as the files have them: items keyed by id, and no `model` on items yet. `content/characters.json` lists the characters (`{ id, name, model }`) and the protagonist's display data (`protagonist: { model }`, whose name `loadContent` takes from `content/protagonist.ts`); `content/objects.json` lists the props. `Content` carries them by id (`characters`, `objects`, `protagonist`) beside the start room and items. A `model` (`ModelId`) is an id in the model registry (section 6), such as `character/bartender`; since A8 a room has one too (`scene/<room>`). `ModelId` is a plain string: the content validator can't see the registry, so the asset validators check that each one is there. Since A7 a hotspot has `target`, `interactions` and `presentWhen` as above; `node` is the hotspot's id for now.
 - **Validated content (A6).** `content/validate.ts` checks `worlds.json`, `items.json` and `rooms/<room>.json` (a room's id is its file name) by hand, in the style of `isSaveGame`: the shapes, that every room, item, world, character and object an id names exists (a `talk` names a character, a `target` a character or an object), known verbs, conditions and effects (each condition and effect has exactly one of its kind's keys), an `item` only on a `use` interaction, unique ids for hotspots per room and for characters and objects, a convex floor with the room's `start`, every `walkTo`, every entity's `at` and every `goTo`'s `at` on the right floor, `goTo`s that stay in their world, worlds that start in their own rooms, and a `model` on every room (the asset validators check what it names, section 6). A problem is `{file, field, message}`, with `field` a JSON path such as `hotspots[0].interactions[0].effects[0].goTo`. `validateContent(files)` lists every problem, and `content/index.ts` `loadContent(files?)` builds the `Content` from the real files (or the ones given) or throws, listing them; `app/main.ts` loads it before the title screen. A new game starts in the first world's start room. The ids in a `Content` (`RoomId`, `ItemId`, `WorldId`, `HotspotId`, `CharacterId`, `ObjectId`) are branded by the validator. `GameState`, commands, events and the renderer types still hold plain strings: commands and saves hand ids in unchecked, and the rules look them up in the content.
-- **Save format.** `SaveGame` stays `version: 1` and only grows by optional fields, so old saves still load (architecture spec, "An older save"). `domain/save.ts` holds `SaveGame` (with an optional `at`, the spot the player stood on, and since A7 the optional `flags`), `toSave(state)` and `fromSave(save, content)`, which drops unknown ids the way `game.ts` does today. `toSave` leaves out `savedAt`: the rules read no clock, so whoever writes the save stamps it.
+- **Save format.** `SaveGame` stays `version: 1` and only grows by optional fields, so old saves still load (architecture spec, "An older save"). `domain/save.ts` holds `SaveGame` (with an optional `at`, the spot the player stood on, since A7 the optional `flags`, and since #11 the optional `act`, `goals` and `stats`), `toSave(state)` and `fromSave(save, content)`, which drops unknown ids the way `game.ts` does today: an unknown act resumes at the first act, goals of other acts are dropped, and a stat the save lacks starts at its `start`. `toSave` leaves out `savedAt`: the rules read no clock, so whoever writes the save stamps it.
 - **Hotspot rects.** Since A8 the screen rect of a hotspot is in the room's 2D asset entry (section 6), not in the room content. In 3D it is derived from the projected bounds of the model's hit area.
-- **Stats and acts (#11).** These plug in as `GameState.stats`, `GameState.act` and `GameState.goals`, plus the effects `changeStat` and `reachGoal` and the conditions `stat`, `act` and `goal`. Act definitions go in `content/acts.json`. No other layer needs to change.
+- **Stats and acts (#11).** `content/stats.json` lists the career stats in display order (`{ id, name, start }`: followers, musicians, practice, instruments), and `content/acts.json` the acts (`{ id, name, goals: { id, name }[], next?: { act, when? }[] }`); a new game starts in the first act with each stat at its `start`. Goal ids are unique across acts. `GameState.goals` holds the reached goals of the current act only. An act ends when all its goals are reached, and the first `next` entry whose conditions all hold starts at once, with no goals reached; the validator requires the last entry to have no `when`, so one always does. An act without `next` is final. That is how the last act is chosen from the player's decisions (`flag` and `goal` conditions) and stats (`stat`): Acts 1 and 2 have one `next` each, and Act 3 has one per ending. The effects `changeStat` and `reachGoal` and the conditions `stat`, `act` and `goal` (section 4) are the only way the story reads and changes them. A character's `onGoal` reactions (`{ when?, effects }[]`) are what a conversation that reaches its goal does (section 4, "Dialogue"); the validator keeps `goTo`, `pickUp` and `talk` out of them, since they need a hotspot. Act 1's goals are the placeholders fix the guitar, get the pub job and get the late slot; Acts 2 to 4 are stand-ins until the story has them.
 
 ## 4. Rules (`rules/`): commands, events, interactions
 
@@ -144,12 +146,14 @@ type GameEvent =
   | { type: 'hotspotShown' | 'hotspotHidden'; hotspot: HotspotId }
   | { type: 'conversationStarted'; character: CharacterId }
   | { type: 'gathered'; material: string }
+  | { type: 'statChanged'; stat: StatId; value: number } | { type: 'goalReached'; goal: GoalId }
+  | { type: 'actStarted'; act: ActId }                     // the act ended and this one started
   | { type: 'saved' };                                     // state worth persisting changed
 
 function apply(content: Content, state: GameState, command: Command): { state: GameState; events: GameEvent[] };
 ```
 
-- **Dialogue.** `dialogueResult` and `conversationStarted` arrived with the dialogue panel (#8); A2 has the rest. A `talk` effect starts the conversation, and the panel shows the character's `name` from `characters.json`. `dialogueResult` changes nothing until #11 gives a reached goal its effect.
+- **Dialogue.** `dialogueResult` and `conversationStarted` arrived with the dialogue panel (#8); A2 has the rest. A `talk` effect starts the conversation, and the panel shows the character's `name` from `characters.json`. A `dialogueResult` that reaches the goal runs the effects of the character's first `onGoal` reaction whose conditions hold, then saves (#11); with none, or when the goal isn't reached, it changes nothing.
 - **The rules are pure.** `apply` never mutates its input, reads no clock and no randomness, and needs no DOM. That is how the spec scenario "Playing without a renderer" is tested.
 - **Walking is a tick.** `tick` is the old `RoomScene.update()` at `WALK_SPEED`, and the app's frame loop sends it. The `walk` command clamps its target to the floor with `nearestWalkable`.
 - **Interactions** replace `action` and `uses` (A7):
@@ -161,10 +165,14 @@ function apply(content: Content, state: GameState, command: Command): { state: G
     when?: Condition[];                                // all must hold
     effects: Effect[];                                 // run in order
   }
-  type Condition = { has: ItemId } | { pickedUp: ItemId } | { gathered: string } | { flag: string; is?: boolean | number | string } | { not: Condition }; // `is` is true when left out
+  type Condition = { has: ItemId } | { pickedUp: ItemId } | { gathered: string } | { flag: string; is?: boolean | number | string } // `is` is true when left out
+    | { stat: StatId; atLeast: number } | { act: ActId } | { goal: GoalId }  // `goal`: reached in the current act
+    | { not: Condition };
   type Effect =
     | { say: string } | { goTo: RoomId; at?: FloorPoint } | { pickUp: ItemId } | { give: ItemId } | { take: ItemId }
-    | { gather: string } | { set: string; to: boolean | number | string } | { talk: CharacterId };
+    | { gather: string } | { set: string; to: boolean | number | string } | { talk: CharacterId }
+    | { changeStat: StatId; by: number } | { reachGoal: GoalId };  // a goal of another act, or one reached, does nothing
+  interface Reaction { when?: Condition[]; effects: Effect[] }   // a character's onGoal
   ```
 
   Activating a hotspot with no item selected runs its first interaction without an `item` whose conditions hold; when none holds, nothing happens. With an item selected, it runs the first `use` interaction for that item whose conditions hold, or else says the item's `noUse`. The verb names what an interaction is; the hotspot's `verb` stays the text shown on hover. After the effects, the rules compare each hotspot of the room with its `presentWhen` and send `hotspotShown` or `hotspotHidden` for the ones that changed. `pickUp` records the item as picked up for good (a `presentWhen: [{ not: { pickedUp } }]` hides its hotspot), `give` and `take` only move it in or out of the inventory (`itemAdded`, `itemRemoved`), and `gather` is the dream material that used to be a hotspot's `dreamMaterial`. Adding an effect or condition is a rules change with unit tests. Adding a puzzle that uses existing ones is content only (progress spec, "Adding a puzzle").
@@ -204,7 +212,7 @@ interface Renderer {
 
 ### DOM UI (`presentation/ui/`)
 
-All controls and text are DOM over the canvas: the UI bar (location label, action line, hint), the speech line, hotspot buttons, inventory, the world switcher, and the dialogue panel (#8). They are styled from `style.css` and `theme.ts`, with no inline styles. Setting `element.style.left` and the like from JS is fine under the CSP.
+All controls and text are DOM over the canvas: the UI bar (location label, action line, hint), the speech line, hotspot buttons, inventory, the world switcher, the dialogue panel (#8), and the career stats and the act's goals (#11, `ui/progress.ts`: a `Career stats` list along the foot of the UI bar, and the act's name over a `Goals` list of checkboxes in the scene's top-left corner, checked once reached, re-rendered on `statChanged`, `goalReached` and `actStarted`). They are styled from `style.css` and `theme.ts`, with no inline styles. Setting `element.style.left` and the like from JS is fine under the CSP.
 
 - **Hotspot buttons** get their rects from `renderer.hotspotBounds()` on every layout or camera change. In 2D that is the asset entry's rect. In 3D it is the projected bounds of the hit area.
 - **Speech** is positioned at `renderer.anchor('player', 'head')`.
@@ -216,7 +224,7 @@ This is what lets the renderer be swapped with the same public interface (archit
 
 ### The `#game` mirror (`app/mirror.ts`)
 
-`data-scene`, `data-world`, `data-player` ("x,y" in scene pixels, which is the floor point, so it is the same in 2D and 3D), `data-hover`, `data-say` and, from B5, `data-player-animation` are written from session events in one place. They are not written by renderers. Two of them are what only the view knows, which it reports to the mirror rather than writing them: `data-hover` (the pointer's hotspot, which the DOM UI reports) and when a room is drawn and takes input, which is when `data-scene` and `data-world` change.
+`data-scene`, `data-world`, `data-player` ("x,y" in scene pixels, which is the floor point, so it is the same in 2D and 3D), `data-hover`, `data-say`, `data-act` (#11) and, from B5, `data-player-animation` are written from session events in one place. They are not written by renderers. Two of them are what only the view knows, which it reports to the mirror rather than writing them: `data-hover` (the pointer's hotspot, which the DOM UI reports) and when a room is drawn and takes input, which is when `data-scene` and `data-world` change.
 
 ## 6. Assets: the model registry (`assets/`)
 
@@ -342,4 +350,4 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **B6** ([#41](https://github.com/alexsiri7/punland/issues/41)) | 3 | 3D becomes the default renderer. The whole e2e suite runs against it, and `?renderer=2d` stays as a fallback. |
 | **B7** ([#42](https://github.com/alexsiri7/punland/issues/42)) | 3 | Remove the 2D path: `phaser2d`, the `phaser` dependency, `sprite2d` entries, `scripts/render-art.mjs` and `public/rooms/*` layers. Replace the 2D-specific tests (see Tests). Update CLAUDE.md and STYLE.md's "Scene build" to describe 3D. |
 
-**Status:** design merged (spec change #25); acceptance tests #26 done; phase A done (A1 to A9); B1 done. Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 wait on A7 (#33).
+**Status:** design merged (spec change #25); acceptance tests #26 done; phase A done (A1 to A9); B1 done. Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 are done.

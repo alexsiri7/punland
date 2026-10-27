@@ -1,4 +1,7 @@
 import {
+  type Act,
+  type ActId,
+  type Character,
   type CharacterId,
   type Condition,
   type Content,
@@ -6,6 +9,7 @@ import {
   type Entity,
   type FlagValue,
   type FloorPoint,
+  type GoalId,
   type Hotspot,
   type HotspotId,
   type HotspotTarget,
@@ -15,8 +19,11 @@ import {
   insidePolygon,
   isConvex,
   type ObjectId,
+  type Reaction,
   type Room,
   type RoomId,
+  type Stat,
+  type StatId,
   VERBS,
   type World,
   type WorldId,
@@ -25,8 +32,8 @@ import { PROTAGONIST } from './protagonist';
 
 /**
  * Content checked as it loads (architecture spec, "Validated content"): the shapes of
- * worlds.json, items.json, characters.json, objects.json and rooms/<room>.json, and that they
- * hold together.
+ * worlds.json, items.json, characters.json, objects.json, stats.json, acts.json and
+ * rooms/<room>.json, and that they hold together.
  */
 
 /** A problem in a content file: the file by its path under src/, and the field's JSON path in it. */
@@ -46,6 +53,8 @@ const WORLDS_FILE = 'content/worlds.json';
 const ITEMS_FILE = 'content/items.json';
 const CHARACTERS_FILE = 'content/characters.json';
 const OBJECTS_FILE = 'content/objects.json';
+const STATS_FILE = 'content/stats.json';
+const ACTS_FILE = 'content/acts.json';
 /** A room's id is its file name. */
 const ROOM_FILE = /^content\/rooms\/([^/]+)\.json$/;
 
@@ -69,6 +78,8 @@ export function readContent(files: ContentFiles): ContentResult {
   const itemsFile = file(ITEMS_FILE);
   const charactersFile = file(CHARACTERS_FILE);
   const objectsFile = file(OBJECTS_FILE);
+  const statsFile = file(STATS_FILE);
+  const actsFile = file(ACTS_FILE);
   const itemsById = itemsFile.get('items').value;
   const ids = (list: Field) => new Set(list.elements.map((entry) => entry.get('id').value).filter(isString));
   const known: Known = {
@@ -77,13 +88,21 @@ export function readContent(files: ContentFiles): ContentResult {
     world: ids(worldsFile.get('worlds')),
     character: ids(charactersFile.get('characters')),
     object: ids(objectsFile.get('objects')),
+    stat: ids(statsFile.get('stats')),
+    act: ids(actsFile.get('acts')),
+    goal: new Set(actsFile.get('acts').elements.flatMap((act) => [...ids(act.get('goals'))])),
   };
 
   const worlds = readWorlds(worldsFile, known);
   const { items, start } = readItems(itemsFile, known);
-  const characters = readEntities(charactersFile.get('characters'), 'character');
+  const characters: Record<string, Character> = readEntities(charactersFile.get('characters'), 'character', (entry) => {
+    const onGoal = entry.get('onGoal').optional((field) => field.list((reaction) => readReaction(reaction, known)));
+    return onGoal !== undefined ? { onGoal } : {};
+  });
   const protagonist = { name: PROTAGONIST.name, model: charactersFile.get('protagonist').get('model').text() };
-  const objects = readEntities(objectsFile.get('objects'), 'object');
+  const objects = readEntities(objectsFile.get('objects'), 'object', () => ({}));
+  const stats = readStats(statsFile);
+  const acts = readActs(actsFile, known);
   const read = roomFiles.map(({ id, field }) => ({ id, field, room: readRoom(field, known) }));
   const rooms: Record<string, Room> = Object.fromEntries(read.map(({ id, room }) => [id, room]));
   for (const { field, room } of read) checkExits(field, room, rooms, known);
@@ -97,9 +116,19 @@ export function readContent(files: ContentFiles): ContentResult {
   const startRoom = worlds[0]?.start;
   if (startRoom === undefined && worldsFile.present) worldsFile.get('worlds').problem('must list at least one world');
 
-  if (issues.length > 0 || startRoom === undefined) return { content: null, issues };
+  if (issues.length > 0 || startRoom === undefined || acts.length === 0) return { content: null, issues };
   return {
-    content: { worlds, rooms, items, characters, objects, protagonist, start: { room: startRoom, items: start } },
+    content: {
+      worlds,
+      rooms,
+      items,
+      characters,
+      objects,
+      protagonist,
+      start: { room: startRoom, items: start },
+      stats,
+      acts,
+    },
     issues: [],
   };
 }
@@ -133,17 +162,85 @@ function readItems(file: Field, known: Known): { items: Record<string, Item>; st
   };
 }
 
-/** A list of characters or objects, by id. */
-function readEntities<K extends 'character' | 'object'>(list: Field, kind: K): Record<string, Entity & { id: Ids[K] }> {
+/** A list of characters or objects, by id; `more` reads what else that kind has. */
+function readEntities<K extends 'character' | 'object', T>(
+  list: Field,
+  kind: K,
+  more: (entry: Field) => T,
+): Record<string, Entity & { id: Ids[K] } & T> {
   const seen = new Set<string>();
   const entries = list.list((entry) => {
     const idField = entry.get('id');
     const id = idField.text();
     if (seen.has(id)) idField.problem(`is used by another ${kind}`);
     seen.add(id);
-    return [id, { id: id as Ids[K], name: entry.get('name').text(), model: entry.get('model').text() }] as const;
+    const entity = { id: id as Ids[K], name: entry.get('name').text(), model: entry.get('model').text() };
+    return [id, { ...entity, ...more(entry) }] as const;
   });
   return Object.fromEntries(entries);
+}
+
+/** Effects that move the player, need a hotspot or open a conversation, which a reaction can't. */
+const HOTSPOT_ONLY = ['goTo', 'pickUp', 'talk'] as const;
+
+function readReaction(reaction: Field, known: Known): Reaction {
+  const when = reaction.get('when').optional((field) => conditions(field, known));
+  const effects = reaction.get('effects').list((field) => {
+    const effect = readEffect(field, known);
+    if (HOTSPOT_ONLY.some((kind) => kind in effect)) field.problem("goes only in a hotspot's interactions");
+    return effect;
+  });
+  return { ...(when !== undefined && { when }), effects };
+}
+
+function readStats(file: Field): Stat[] {
+  const seen = new Set<string>();
+  return file.get('stats').list((stat) => {
+    const idField = stat.get('id');
+    const id = idField.text();
+    if (seen.has(id)) idField.problem('is used by another stat');
+    seen.add(id);
+    return { id: id as StatId, name: stat.get('name').text(), start: stat.get('start').number() };
+  });
+}
+
+function readActs(file: Field, known: Known): Act[] {
+  const actIds = new Set<string>();
+  const goalIds = new Set<string>();
+  const unique = (field: Field, seen: Set<string>, kind: string): string => {
+    const id = field.text();
+    if (seen.has(id)) field.problem(`is used by another ${kind}`);
+    seen.add(id);
+    return id;
+  };
+  const list = file.get('acts');
+  const acts = list.list((act): Act => {
+    const goals = act.get('goals').list((goal) => ({
+      id: unique(goal.get('id'), goalIds, 'goal') as GoalId,
+      name: goal.get('name').text(),
+    }));
+    if (Array.isArray(act.get('goals').value) && goals.length === 0) act.get('goals').problem('must list at least one goal');
+    const next = act.get('next').optional((field) => {
+      const entries = field.list((entry) => {
+        const when = entry.get('when').optional((f) => conditions(f, known));
+        return { act: entry.get('act').id('act', known.act), ...(when !== undefined && { when }) };
+      });
+      if (Array.isArray(field.value) && entries.length === 0) field.problem('must list at least one act');
+      const last = entries.length - 1;
+      if (entries[last]?.when !== undefined) {
+        field.get(last).get('when').problem('must be left out of the last entry, so finishing the act always starts one');
+      }
+      return entries;
+    });
+    return {
+      id: unique(act.get('id'), actIds, 'act') as ActId,
+      name: act.get('name').text(),
+      goals,
+      ...(next !== undefined && { next }),
+    };
+  });
+  if (Array.isArray(list.value) && acts.length === 0) list.problem('must list at least one act');
+  return acts;
 }
 
 function readRoom(room: Field, known: Known): Room {
@@ -244,7 +341,7 @@ function conditions(list: Field, known: Known): Condition[] {
   return list.list((condition) => readCondition(condition, known));
 }
 
-const CONDITIONS = kindsOf<Condition>()(['has', 'pickedUp', 'gathered', 'flag', 'not']);
+const CONDITIONS = kindsOf<Condition>()(['has', 'pickedUp', 'gathered', 'flag', 'stat', 'act', 'goal', 'not']);
 
 function readCondition(condition: Field, known: Known): Condition {
   switch (kindOf(condition, CONDITIONS)) {
@@ -258,6 +355,12 @@ function readCondition(condition: Field, known: Known): Condition {
       const is = condition.get('is').optional((field) => field.flagValue());
       return { flag: condition.get('flag').text(), ...(is !== undefined && { is }) };
     }
+    case 'stat':
+      return { stat: condition.get('stat').id('stat', known.stat), atLeast: condition.get('atLeast').number() };
+    case 'act':
+      return { act: condition.get('act').id('act', known.act) };
+    case 'goal':
+      return { goal: condition.get('goal').id('goal', known.goal) };
     case 'not':
       return { not: readCondition(condition.get('not'), known) };
     case undefined:
@@ -265,7 +368,18 @@ function readCondition(condition: Field, known: Known): Condition {
   }
 }
 
-const EFFECTS = kindsOf<Effect>()(['say', 'goTo', 'pickUp', 'give', 'take', 'gather', 'set', 'talk']);
+const EFFECTS = kindsOf<Effect>()([
+  'say',
+  'goTo',
+  'pickUp',
+  'give',
+  'take',
+  'gather',
+  'set',
+  'talk',
+  'changeStat',
+  'reachGoal',
+]);
 
 function readEffect(effect: Field, known: Known): Effect {
   switch (kindOf(effect, EFFECTS)) {
@@ -287,6 +401,10 @@ function readEffect(effect: Field, known: Known): Effect {
       return { set: effect.get('set').text(), to: effect.get('to').flagValue() };
     case 'talk':
       return { talk: effect.get('talk').id('character', known.character) };
+    case 'changeStat':
+      return { changeStat: effect.get('changeStat').id('stat', known.stat), by: effect.get('by').number() };
+    case 'reachGoal':
+      return { reachGoal: effect.get('reachGoal').id('goal', known.goal) };
     case undefined:
       return { say: '' };
   }
@@ -318,6 +436,9 @@ interface Ids {
   world: WorldId;
   character: CharacterId;
   object: ObjectId;
+  act: ActId;
+  goal: GoalId;
+  stat: StatId;
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -409,7 +530,7 @@ class Field {
     return Object.fromEntries(Object.keys(this.value).map((key) => [key, read(this.get(key))]));
   }
 
-  /** The id of a room, item, world, character or object that is in the content. */
+  /** The id of a room, item, world, character, object, act, goal or stat that is in the content. */
   id<K extends keyof Ids>(kind: K, known: ReadonlySet<string>): Ids[K] {
     const id = this.string();
     if (isString(this.value) && !known.has(id)) this.problem(`"${id}" is not a known ${kind}`);

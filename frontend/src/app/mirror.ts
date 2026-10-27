@@ -5,8 +5,9 @@ import type { GameSession } from './session';
 /**
  * What the canvas shows, mirrored on #game for tests and the DOM (tests/e2e/play.ts):
  * data-scene (room id), data-world (its world), data-player ("x,y" in scene pixels),
- * data-hover (the hotspot under the pointer) and data-say (the player's line, empty when
- * silent). The player and their speech follow the session's events. The room follows the
+ * data-hover (the hotspot under the pointer), data-say (the player's line, empty when
+ * silent) and data-act (the act being played). The player, their speech and the act follow
+ * the session's events. The room follows the
  * view, which says when it has drawn it and takes clicks there, and hover follows the UI
  * (presentation/ui), which reports it: it is the pointer's and not the session's.
  */
@@ -33,6 +34,7 @@ export function createMirror(container: HTMLElement, session: GameSession): View
     if (event.type === 'moved') place(event.at);
     else if (event.type === 'said') say(event.line);
     else if (event.type === 'hushed') say('');
+    else if (event.type === 'actStarted') data.act = event.act;
   });
   return {
     shown() {
@@ -40,6 +42,7 @@ export function createMirror(container: HTMLElement, session: GameSession): View
       data.scene = room;
       data.world = session.content.rooms[room]?.world ?? '';
       data.hover = '';
+      data.act = session.state.act;
       place(at);
       say('');
     },

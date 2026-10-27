@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
 import { hotspotRect } from '../../src/assets/registry';
 import { loadContent } from '../../src/content';
-import { type DialogueTurn, newGame } from '../../src/domain';
+import { type DialogueTurn, type GameState, newGame } from '../../src/domain';
 import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
 
 // The DOM UI (presentation/ui, docs/ARCHITECTURE.md section 5): the UI bar, the speech line and
@@ -36,8 +36,8 @@ describe('the DOM UI', () => {
     vi.useRealTimers();
   });
 
-  function mount(head = { x: 560, y: 300 }) {
-    const game = new GameSession(content, newGame(content), { save: async () => {} });
+  function mount(head = { x: 560, y: 300 }, state: GameState = newGame(content)) {
+    const game = new GameSession(content, state, { save: async () => {} });
     const canvas = document.createElement('canvas');
     const renderer = {
       canvas: () => canvas,
@@ -67,6 +67,27 @@ describe('the DOM UI', () => {
     button('Hotspots', 'Open mic board').dispatchEvent(new Event('pointerleave'));
     expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Outside', 'The Three Crows']);
     expect(hovered).toEqual(['Open mic board', '']);
+  });
+
+  it("shows the career stats and the act's goals, and follows them as they change", () => {
+    const { game } = mount(undefined, { ...newGame(content), room: 'pub', goals: ['fix-guitar'] });
+    const stats = () =>
+      [...container.querySelectorAll('[aria-label="Career stats"] li')].map((entry) => entry.textContent);
+    const goals = () =>
+      [...container.querySelectorAll<HTMLInputElement>('[aria-label="Goals"] input')].map(
+        (box) => `${box.checked ? '[x]' : '[ ]'}${box.closest('label')!.textContent}`,
+      );
+    expect(stats()).toEqual(['Followers 0', 'Musicians 0', 'Practice 0', 'Instruments 1']);
+    expect(container.querySelector('.goals-act')?.textContent).toBe('Act 1');
+    expect(goals()).toEqual(['[x] Fix the guitar', '[ ] Get a job at the pub', '[ ] Get the late slot']);
+
+    game.dispatch({ type: 'dialogueResult', character: 'bartender', goalReached: true });
+    expect(stats()).toEqual(['Followers 10', 'Musicians 0', 'Practice 0', 'Instruments 1']);
+    expect(goals()).toEqual(['[x] Fix the guitar', '[x] Get a job at the pub', '[ ] Get the late slot']);
+
+    game.dispatch({ type: 'dialogueResult', character: 'bartender', goalReached: true });
+    expect(container.querySelector('.goals-act')?.textContent).toBe('Act 2');
+    expect(goals()).toEqual(['[ ] Find a band', '[ ] Play a full set']);
   });
 
   it('says what the selected item would be used on', () => {
