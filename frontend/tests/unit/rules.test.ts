@@ -355,7 +355,8 @@ describe('use X on Y', () => {
     expect(activated.state.walk?.then).toEqual({ hotspot: 'bar', item: 'flyer' });
     const { state, events } = walkOn(activated);
     expect(state.inventory.carried).toEqual(['guitar']);
-    expect(events.slice(-3)).toEqual([
+    expect(events.slice(-4)).toEqual([
+      { type: 'used', item: 'flyer', hotspot: 'bar' },
       { type: 'said', line: 'Pinned up.', by: 'player' },
       { type: 'itemRemoved', item: 'flyer' },
       { type: 'saved' },
@@ -367,6 +368,7 @@ describe('use X on Y', () => {
     expect(state.saying?.line).toBe('Not the guitar.');
     expect(state.inventory.carried).toEqual(['guitar', 'flyer']);
     expect(events.at(-1)).toEqual({ type: 'said', line: 'Not the guitar.', by: 'player' });
+    expect(events.map((e) => e.type)).not.toContain('used');
   });
 });
 

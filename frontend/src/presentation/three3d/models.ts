@@ -7,7 +7,8 @@ import { toonMaterial } from './look';
 
 /**
  * The registry's glb files (model3d.file), each loaded once and drawn with the toon look: every
- * material's base colour on a MeshToonMaterial (docs/ARCHITECTURE.md, section 7).
+ * material's base colour on a MeshToonMaterial (docs/ARCHITECTURE.md, section 7). Each copy
+ * carries the file's clips as its `animations`.
  */
 export class Models {
   private readonly loader = new GLTFLoader();
@@ -35,7 +36,9 @@ export class Models {
   }
 }
 
+/** The scene, toon-shaded, carrying the file's clips, which its copies share. */
 function toonScene(gltf: GLTF): Object3D {
+  gltf.scene.animations = gltf.animations;
   gltf.scene.traverse((object) => {
     if (!(object instanceof Mesh)) return;
     const materials: Material | Material[] = object.material;

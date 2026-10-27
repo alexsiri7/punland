@@ -21,6 +21,8 @@ export type GameEvent =
   | { type: 'said'; line: string; by: Speaker }
   | { type: 'hushed' }
   | { type: 'pickedUp'; item: string; hotspot: string }
+  /** The selected item was used on the hotspot: one of its `use` interactions took it. */
+  | { type: 'used'; item: string; hotspot: string }
   /** Into the inventory without being picked up, e.g. a character gives it. */
   | { type: 'itemAdded'; item: string }
   | { type: 'itemRemoved'; item: string }

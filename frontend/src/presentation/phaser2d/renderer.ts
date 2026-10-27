@@ -59,6 +59,7 @@ export class Phaser2dRenderer implements Renderer {
     if (this.drawn) this.scene?.setVisible(hotspot, visible);
   }
 
+  /** The 2D art has no clips: the mirror still shows the player's (app/mirror.ts). */
   play(): void {}
 
   /** Hotspots are picked by their DOM buttons, which take the pointer in 2D: the canvas is all floor. */

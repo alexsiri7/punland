@@ -26,18 +26,19 @@ export interface Ui {
  * stats, the act's goals and the dialogue panel, which talks to `dialogue`. They show the session's events and send it
  * commands; a new part is created here and appended to the overlay's root. The overlay lines up
  * with the renderer's canvas, and the hotspot buttons and speech go where the renderer draws
- * them. The hotspot under the pointer goes to `mirror`.
+ * them, speech following the player's head every frame. The name of the hotspot under the pointer
+ * goes to `on.hover`, and the player leaving a conversation (Leave or Escape) to `on.left`.
  */
 export function mountUi(
   container: HTMLElement,
   session: Session,
-  renderer: Pick<Renderer, 'picksHotspots' | 'canvas' | 'onResize' | 'hotspotBounds' | 'anchor'>,
-  mirror: { hover(name: string): void },
+  renderer: Pick<Renderer, 'picksHotspots' | 'canvas' | 'onResize' | 'hotspotBounds' | 'anchor' | 'frame'>,
+  on: { hover(name: string): void; left(): void },
   dialogue: DialogueBackend,
 ): Ui {
   const doc = container.ownerDocument;
   const overlay = createOverlay(container);
-  const bar = createUiBar(doc, session, mirror);
+  const bar = createUiBar(doc, session, on);
   const inventory = createInventoryBar(doc, session.content.items, {
     hover: (id) => bar.hoverItem(id),
     select: (id) => {
@@ -48,11 +49,14 @@ export function mountUi(
   const speech = createSpeech(doc);
   const conversation = createDialoguePanel(doc, dialogue, {
     goalReached: (character) => session.dispatch({ type: 'dialogueResult', character, goalReached: true }),
+    left: () => on.left(),
   });
   const progress = createProgress(doc, session.content);
   let hotspots: HotspotLayer | null = null;
   let switcher: WorldSwitcher | null = null;
   let drawn = false;
+  /** Whether speech follows the player's head; from the first room shown, once the renderer is mounted. */
+  let following = false;
   /** The hotspot the pointer is over on the canvas, while the renderer picks hotspots. */
   let pointedAt: string | null = null;
   overlay.root.append(
@@ -115,6 +119,7 @@ export function mountUi(
         progress.render(session.state);
         break;
       case 'arrived':
+      case 'used':
       case 'worldChanged':
       case 'gathered':
       case 'saved':
@@ -130,6 +135,13 @@ export function mountUi(
       if (!current) throw new Error(`room "${session.state.room}" is not in the content`);
       drawn = true;
       overlay.follow(renderer);
+      if (!following) {
+        following = true;
+        renderer.frame(() => {
+          const head = drawn && renderer.anchor('player', 'head');
+          if (head) speech.follow(head);
+        });
+      }
       speech.hush();
       bar.show(current);
       hotspots = createHotspotLayer(

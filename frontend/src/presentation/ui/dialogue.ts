@@ -10,7 +10,7 @@ export interface DialoguePanel {
   readonly element: HTMLElement;
   /** Starts a conversation with `character`, shown as `name`. */
   open(character: string, name: string): void;
-  /** Ends the conversation; an answer still on its way is dropped. */
+  /** Ends the conversation; an answer still on its way is dropped. Doesn't call `left`. */
   close(): void;
 }
 
@@ -21,12 +21,13 @@ const REPLY_MAX = 300;
  * The conversation panel (dialogue spec): the character's line, three numbered suggested
  * replies, a field to type one's own, and Leave. The backend answers every turn, with a canned
  * line of the character's when the AI is unavailable or the turn limit is reached; a reply that
- * reaches the conversation's goal goes to `goalReached`. Keys 1 to 3 pick a reply, Escape leaves.
+ * reaches the conversation's goal goes to `goalReached`. Keys 1 to 3 pick a reply, Escape leaves;
+ * leaving, with Escape or Leave, goes to `left`.
  */
 export function createDialoguePanel(
   doc: Document,
   backend: DialogueBackend,
-  on: { goalReached(character: string): void },
+  on: { goalReached(character: string): void; left(): void },
 ): DialoguePanel {
   const panel = doc.createElement('section');
   panel.className = 'dialogue';
@@ -112,9 +113,13 @@ export function createDialoguePanel(
     field.value = '';
     void reply(text);
   });
-  leave.addEventListener('click', close);
+  const leaveConversation = () => {
+    close();
+    on.left();
+  };
+  leave.addEventListener('click', leaveConversation);
   panel.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') close();
+    if (event.key === 'Escape') leaveConversation();
     else if (event.target !== field && /^[1-3]$/.test(event.key)) {
       options.querySelectorAll('button')[Number(event.key) - 1]?.click();
     }

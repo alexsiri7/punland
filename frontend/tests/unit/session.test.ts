@@ -124,6 +124,7 @@ describe('the #game mirror', () => {
       hover: '',
       say: '',
       act: '1',
+      playerAnimation: 'idle',
     });
   });
 

@@ -40,19 +40,25 @@ describe('the DOM UI', () => {
   function mount(head = { x: 560, y: 300 }, state: GameState = newGame(content), picksHotspots = false) {
     const game = new GameSession(content, state, { save: async () => {} });
     const canvas = document.createElement('canvas');
+    const frames: Array<(dtMs: number) => void> = [];
     const renderer = {
       picksHotspots,
       canvas: () => canvas,
       onResize: () => () => {},
+      frame: (callback: (dtMs: number) => void) => {
+        frames.push(callback);
+        return () => {};
+      },
       hotspotBounds: (id: string) => hotspotRect(content.rooms[game.state.room]!.model, id),
       anchor: () => head,
     };
-    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name) }, dialogue);
+    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name), left: () => {} }, dialogue);
     ui.shown();
     const text = (selector: string) => container.querySelector(selector)?.textContent;
     const button = (group: string, name: string) =>
       container.querySelector<HTMLButtonElement>(`[aria-label="${group}"] button[aria-label="${name}"]`)!;
-    return { game, ui, text, button };
+    const frame = () => frames.forEach((callback) => callback(16));
+    return { game, ui, text, button, frame };
   }
 
   it("shows the room's label, place and hint in the UI bar", () => {
@@ -129,6 +135,18 @@ describe('the DOM UI', () => {
     expect([speech.style.left, speech.style.top]).toEqual(['43.75%', '37.5%']);
     vi.advanceTimersByTime(60_000);
     expect(speech.hidden).toBe(true);
+  });
+
+  it("keeps the line over the player's head as it moves", () => {
+    const head = { x: 560, y: 300 };
+    const { game, frame } = mount(head);
+    const speech = container.querySelector<HTMLElement>('.speech')!;
+    game.dispatch({ type: 'activate', hotspot: 'board' });
+    while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
+    head.x = 800;
+    head.y = 320;
+    frame();
+    expect([speech.style.left, speech.style.top]).toEqual(['62.5%', '40%']);
   });
 
   it('keeps a line spoken near the edge of the scene inside it', () => {

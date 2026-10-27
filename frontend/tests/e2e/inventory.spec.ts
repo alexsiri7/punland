@@ -41,6 +41,7 @@ test('A use that works', async ({ page }) => {
   // The step here is an Act 1 placeholder: the bartender takes the Open Mic flyer.
   await newGame(page);
   await clickHotspot(page, content.flyer);
+  await expect(inventoryItem(page, content.flyer)).toBeVisible();
   await enterPub(page);
   await useItemOn(page, content.flyer, content.bartender);
   await expect(inventoryItem(page, content.flyer)).toHaveCount(0);
