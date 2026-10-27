@@ -1,7 +1,6 @@
 /**
- * A glb file read with no dependency (glTF 2.0, binary): the 12-byte header and the JSON chunk,
- * reduced to the parts the asset contract (contract.ts) checks. Triangles are counted from the
- * accessors' `count`, so the binary chunk is never read.
+ * A glb file read with no dependency (glTF 2.0, binary): the 12-byte header, the JSON chunk and
+ * the triangles in the binary chunk, reduced to the parts the asset contract (contract.ts) checks.
  */
 
 export type Vec3 = readonly [number, number, number];
@@ -25,6 +24,20 @@ export interface GlbPrimitive {
   /** Its POSITION accessor's bounds, if it gives them. */
   bounds: { min: Vec3; max: Vec3 } | null;
   attributes: readonly string[];
+  /**
+   * Its triangles' corners, in its node's space, read from the binary chunk: empty unless it is
+   * drawn as triangles from float positions in the file's own buffer.
+   */
+  triangles: readonly Triangle[];
+}
+
+export type Triangle = readonly [Vec3, Vec3, Vec3];
+
+export interface GlbCamera {
+  /** E.g. `perspective`. */
+  type: string;
+  /** A perspective camera's vertical field of view, in radians. */
+  yfov: number | null;
 }
 
 export interface Glb {
@@ -37,8 +50,7 @@ export interface Glb {
   /** The nodes at the root of the default scene. */
   roots: readonly number[];
   meshes: readonly (readonly GlbPrimitive[])[];
-  /** Each camera's type, e.g. `perspective`. */
-  cameras: readonly string[];
+  cameras: readonly GlbCamera[];
   /** Each skin's joints, as node indices. */
   skins: readonly (readonly number[])[];
   /** Each animation's name. */
@@ -49,6 +61,7 @@ export interface Glb {
 
 const MAGIC = 0x46546c67; // "glTF"
 const JSON_CHUNK = 0x4e4f534a; // "JSON"
+const BIN_CHUNK = 0x004e4942; // "BIN"
 
 /** Reads a glb file, or throws an Error saying why it isn't one. */
 export function readGlb(bytes: Uint8Array): Glb {
@@ -69,10 +82,19 @@ export function readGlb(bytes: Uint8Array): Glb {
     throw new Error('has a JSON chunk that is not JSON');
   }
   if (!isObject(json)) throw new Error('has a JSON chunk that is not an object');
-  return { byteLength, ...readGltf(json) };
+  return { byteLength, ...readGltf(json, binChunk(bytes, 20 + jsonLength)) };
 }
 
-function readGltf(json: Record<string, unknown>): Omit<Glb, 'byteLength'> {
+/** The binary chunk that follows the JSON chunk at `at`, if there is one. */
+function binChunk(bytes: Uint8Array, at: number): DataView | null {
+  if (at + 8 > bytes.byteLength) return null;
+  const data = new DataView(bytes.buffer, bytes.byteOffset + at, 8);
+  const length = data.getUint32(0, true);
+  if (data.getUint32(4, true) !== BIN_CHUNK || at + 8 + length > bytes.byteLength) return null;
+  return new DataView(bytes.buffer, bytes.byteOffset + at + 8, length);
+}
+
+function readGltf(json: Record<string, unknown>, bin: DataView | null): Omit<Glb, 'byteLength'> {
   const asset = isObject(json.asset) ? json.asset : {};
   const scenes = objects(json.scenes);
   const scene = scenes[integer(json.scene) ?? 0];
@@ -82,8 +104,8 @@ function readGltf(json: Record<string, unknown>): Omit<Glb, 'byteLength'> {
     extensionsRequired: strings(json.extensionsRequired),
     nodes: objects(json.nodes).map(readNode),
     roots: scene ? integers(scene.nodes) : [],
-    meshes: objects(json.meshes).map((mesh) => objects(mesh.primitives).map((p) => readPrimitive(p, json))),
-    cameras: objects(json.cameras).map((camera) => (typeof camera.type === 'string' ? camera.type : '')),
+    meshes: objects(json.meshes).map((mesh) => objects(mesh.primitives).map((p) => readPrimitive(p, json, bin))),
+    cameras: objects(json.cameras).map(readCamera),
     skins: objects(json.skins).map((skin) => integers(skin.joints)),
     animations: objects(json.animations).map((animation) => (typeof animation.name === 'string' ? animation.name : '')),
     images: objects(json.images).length,
@@ -101,19 +123,86 @@ function readNode(node: Record<string, unknown>): GlbNode {
   };
 }
 
-function readPrimitive(primitive: Record<string, unknown>, json: Record<string, unknown>): GlbPrimitive {
+function readCamera(camera: Record<string, unknown>): GlbCamera {
+  const perspective = isObject(camera.perspective) ? camera.perspective : {};
+  return {
+    type: typeof camera.type === 'string' ? camera.type : '',
+    yfov: isNumber(perspective.yfov) ? perspective.yfov : null,
+  };
+}
+
+const TRIANGLES = 4;
+
+function readPrimitive(
+  primitive: Record<string, unknown>,
+  json: Record<string, unknown>,
+  bin: DataView | null,
+): GlbPrimitive {
   const accessors = objects(json.accessors);
   const attributes = isObject(primitive.attributes) ? primitive.attributes : {};
   const position = accessors[integer(attributes.POSITION) ?? -1];
   const indices = accessors[integer(primitive.indices) ?? -1];
   const min = numbers(position?.min, 3);
   const max = numbers(position?.max, 3);
+  const mode = integer(primitive.mode) ?? TRIANGLES;
   return {
-    mode: integer(primitive.mode) ?? 4,
+    mode,
     vertices: integer((indices ?? position)?.count) ?? 0,
     bounds: min && max ? { min: [min[0]!, min[1]!, min[2]!], max: [max[0]!, max[1]!, max[2]!] } : null,
     attributes: Object.keys(attributes),
+    triangles: mode === TRIANGLES && position && bin ? readTriangles(json, bin, position, indices) : [],
   };
+}
+
+const UNSIGNED_BYTE = 5121;
+const UNSIGNED_SHORT = 5123;
+const UNSIGNED_INT = 5125;
+const FLOAT = 5126;
+const COMPONENT_BYTES: Readonly<Record<number, number>> = {
+  [UNSIGNED_BYTE]: 1,
+  [UNSIGNED_SHORT]: 2,
+  [UNSIGNED_INT]: 4,
+  [FLOAT]: 4,
+};
+
+function readTriangles(
+  json: Record<string, unknown>,
+  bin: DataView,
+  position: Record<string, unknown>,
+  indices: Record<string, unknown> | undefined,
+): Triangle[] {
+  if (position.componentType !== FLOAT || position.type !== 'VEC3') return [];
+  const corners = readAccessor(json, bin, position, 3)?.map(([x, y, z]): Vec3 => [x!, y!, z!]);
+  const order = indices ? readAccessor(json, bin, indices, 1)?.map(([i]) => i!) : corners?.map((_, i) => i);
+  if (!corners || !order) return [];
+  const triangles: Triangle[] = [];
+  for (let i = 0; i + 2 < order.length; i += 3) {
+    const [a, b, c] = [corners[order[i]!], corners[order[i + 1]!], corners[order[i + 2]!]];
+    if (!a || !b || !c) return [];
+    triangles.push([a, b, c]);
+  }
+  return triangles;
+}
+
+/** An accessor's elements, each `size` components, or null if they are not all in the binary chunk. */
+function readAccessor(json: Record<string, unknown>, bin: DataView, accessor: Record<string, unknown>, size: number): number[][] | null {
+  const view = objects(json.bufferViews)[integer(accessor.bufferView) ?? -1];
+  const type = integer(accessor.componentType) ?? -1;
+  const bytes = COMPONENT_BYTES[type];
+  const count = integer(accessor.count);
+  if (!view || bytes === undefined || count === null || (integer(view.buffer) ?? 0) !== 0) return null;
+  const stride = integer(view.byteStride) ?? bytes * size;
+  const start = (integer(view.byteOffset) ?? 0) + (integer(accessor.byteOffset) ?? 0);
+  if (count > 0 && start + stride * (count - 1) + bytes * size > bin.byteLength) return null;
+  const read = (at: number) => {
+    if (type === FLOAT) return bin.getFloat32(at, true);
+    if (type === UNSIGNED_INT) return bin.getUint32(at, true);
+    if (type === UNSIGNED_SHORT) return bin.getUint16(at, true);
+    return bin.getUint8(at);
+  };
+  return Array.from({ length: count }, (_, i) =>
+    Array.from({ length: size }, (_, c) => read(start + i * stride + c * bytes)),
+  );
 }
 
 /** A node's translation, rotation (a unit quaternion) and scale as one matrix. */

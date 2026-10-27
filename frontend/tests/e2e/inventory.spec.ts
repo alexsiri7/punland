@@ -6,7 +6,6 @@ import {
   game,
   hotspot,
   inventoryItem,
-  isThreeD,
   newGame,
   playerPosition,
   scenePixel,
@@ -18,7 +17,6 @@ import {
 test.use({ actionTimeout: 5_000 });
 
 test('Picking up', async ({ page }) => {
-  test.fail(isThreeD(), 'needs B3: the flyer is drawn where its 2D sprite is');
   // Requirement: Picking up items. Items can be picked up from rooms into the inventory.
   await newGame(page);
   await expect.poll(() => playerPosition(page)).not.toBeNull();

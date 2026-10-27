@@ -18,10 +18,9 @@ import {
 
 test.use({ actionTimeout: 5_000 });
 
-const protagonistModel = '/models/characters/paws.glb';
+const protagonistModel = '/models/characters/protagonist.glb';
 
 test('Opening scene in 3D', async ({ page }) => {
-  test.fail(true, 'needs #38');
   // Requirement: 3D rooms. Rooms are drawn in 3D from their scene model, with the player
   // character's model standing on the floor.
   const loaded: string[] = [];
@@ -38,7 +37,6 @@ test('Opening scene in 3D', async ({ page }) => {
 });
 
 test('Replacing a placeholder', async ({ page }) => {
-  test.fail(true, 'needs #38');
   // Requirement: Placeholder models. A placeholder replaced by a model that follows the contract
   // shows the new model, with no code or content change, and hotspots and exits still work.
   let replaced = false;

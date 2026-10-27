@@ -65,8 +65,8 @@ describe('the game, drawn by a renderer', () => {
         room: 'opening',
         model: 'scene/opening',
         entities: [
-          { hotspot: 'door', visible: true },
-          { hotspot: 'board', visible: true },
+          { hotspot: 'door', node: 'door', visible: true },
+          { hotspot: 'board', node: 'board', visible: true },
           { hotspot: 'flyer', model: 'object/flyer', at: { x: 737, y: 545 }, visible: true },
         ],
         player: { model: 'character/protagonist', at: { x: 560, y: 590 } },

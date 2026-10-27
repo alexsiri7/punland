@@ -83,7 +83,6 @@ test('Swapping art', async ({ page }) => {
 });
 
 test('Swapping art (scene model)', async ({ page }) => {
-  test.fail(true, 'needs #38');
   // Requirement: Placeholder art. Replacing a room's scene model needs no change to game logic.
   await page.route(`**${openingSceneModel}`, (route) =>
     route.fulfill({ status: 200, contentType: 'model/gltf-binary', body: Buffer.from(fixtures.magentaScene()) }),

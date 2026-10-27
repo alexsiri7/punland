@@ -1,71 +1,69 @@
-import {
-  Box3,
-  Color,
-  Mesh,
-  type Object3D,
-  PerspectiveCamera,
-  Plane,
-  PlaneGeometry,
-  Raycaster,
-  Scene,
-  Vector2,
-  Vector3,
-} from 'three';
+import { Box3, Color, Mesh, type Object3D, PerspectiveCamera, Raycaster, Scene, Vector2, Vector3 } from 'three';
 import type { FloorPoint, Rect } from '../../domain';
 import type { ScenePoint, SceneView } from '../renderer';
 import { palette, SCENE_HEIGHT, SCENE_WIDTH } from '../theme';
-import { light, toonMaterial } from './look';
+import { light } from './look';
 import type { Models } from './models';
 
-/** The ground: content's floor points are where rays through those scene pixels meet it. */
-const GROUND = new Plane(new Vector3(0, 1, 0), 0);
-
 /**
- * One SceneView in 3D: the player and the placed entities on the floor, seen by the room's camera.
- * Until the scene models of B3 bring their `cam_main` and room shell, every room is the same
- * default room: a ground plane under the dusk sky, and a camera that frames the protagonist about
- * 256 px tall at the front of the walk line (asset contract, "Scale") with the horizon well above
- * every room's floor polygon, so all of the 2D floor points land on the ground.
+ * One SceneView in 3D: the room's scene model seen by its `cam_main`, with the player and the
+ * placed entities standing on its `floor`. Content's floor points are where rays from the camera
+ * through those scene pixels meet the floor (docs/ARCHITECTURE.md, section 7), which the asset
+ * validator checks for every room. A room whose scene model fails to load is the empty dusk sky.
  */
 export class Room {
   readonly scene = new Scene();
   readonly sky = new Color(palette.duskBlue);
-  readonly camera = new PerspectiveCamera(25, SCENE_WIDTH / SCENE_HEIGHT, 0.1, 200);
+  readonly camera: PerspectiveCamera;
   private readonly raycaster = new Raycaster();
-  private readonly ground = new Mesh(new PlaneGeometry(200, 200), toonMaterial(palette.pavement));
+  private readonly floorMesh: Object3D | null;
   private player: Object3D | null = null;
+  /** What each hotspot is drawn as: the model it places, or its scene model's `hit_<node>`. */
+  private readonly hotspots = new Map<string, Object3D>();
   /** The models of the hotspots that place an entity, by hotspot id. */
   private readonly entities = new Map<string, Object3D>();
 
-  private constructor() {
-    // The origin is at the front centre of the walkable area, as in a scene model (asset contract).
-    this.camera.position.set(0, 2.5, 9);
-    this.camera.rotation.x = (-6 * Math.PI) / 180;
-    this.camera.updateMatrixWorld();
-    this.ground.rotation.x = -Math.PI / 2;
-    this.ground.receiveShadow = true;
-    this.scene.add(this.ground);
+  private constructor(model: Object3D | null) {
+    const camera = model?.getObjectByName('cam_main');
+    this.camera = camera instanceof PerspectiveCamera ? camera : new PerspectiveCamera();
+    this.camera.aspect = SCENE_WIDTH / SCENE_HEIGHT;
+    this.camera.updateProjectionMatrix();
+    this.floorMesh = model?.getObjectByName('floor') ?? null;
+    if (model) {
+      model.traverse((object) => {
+        if (object instanceof Mesh) object.receiveShadow = true;
+      });
+      this.scene.add(model);
+    }
+    this.scene.updateMatrixWorld(true);
     light(this.scene);
   }
 
   /** Loads the view's models and stands them on the floor, the player facing the camera. */
   static async build(view: SceneView, models: Models): Promise<Room> {
-    const room = new Room();
-    const [player, ...entities] = await Promise.all([
+    const [scene, player, ...entities] = await Promise.all([
+      models.instance(view.model),
       models.instance(view.player.model),
       ...view.entities.map((e) => (e.model === undefined ? null : models.instance(e.model))),
     ]);
+    const room = new Room(scene);
     if (player) {
       room.player = player;
       room.scene.add(player);
       room.stand(player, view.player.at);
     }
     view.entities.forEach((entity, i) => {
+      if (entity.model === undefined) {
+        const hit = scene?.getObjectByName(`hit_${entity.node}`);
+        if (hit) room.hotspots.set(entity.hotspot, hit);
+        return;
+      }
       const object = entities[i];
-      if (!object || entity.model === undefined) return;
+      if (!object) return;
       room.stand(object, entity.at);
       object.visible = entity.visible;
       room.entities.set(entity.hotspot, object);
+      room.hotspots.set(entity.hotspot, object);
       room.scene.add(object);
     });
     return room;
@@ -90,12 +88,13 @@ export class Room {
     return this.floor(screen) !== null;
   }
 
-  /** The projected bounds of a placed entity's model, or null for a hotspot that places none. */
-  entityBounds(hotspot: string): Rect | null {
-    const entity = this.entities.get(hotspot);
-    if (!entity) return null;
-    entity.updateMatrixWorld(true);
-    const box = new Box3().setFromObject(entity);
+  /** The projected bounds of what a hotspot is drawn as, or null if the room draws it as nothing. */
+  hotspotBounds(hotspot: string): Rect | null {
+    const object = this.hotspots.get(hotspot);
+    if (!object) return null;
+    object.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(object);
+    if (box.isEmpty()) return null;
     const xs: number[] = [];
     const ys: number[] = [];
     for (const x of [box.min.x, box.max.x]) {
@@ -119,23 +118,18 @@ export class Room {
     return node ? this.toScene(node.getWorldPosition(new Vector3())) : null;
   }
 
-  /** Frees the room's own ground; the models' geometry and materials are shared with their cached copies. */
-  dispose(): void {
-    this.ground.geometry.dispose();
-    this.ground.material.dispose();
-  }
-
   private stand(object: Object3D, at: FloorPoint): boolean {
     const world = this.floor(at);
     if (world) object.position.copy(world);
     return world !== null;
   }
 
-  /** The ground under a point of the scene, or null above the horizon. */
+  /** The floor under a point of the scene, or null where the camera sees no floor. */
   private floor(screen: ScenePoint): Vector3 | null {
+    if (!this.floorMesh) return null;
     const ndc = new Vector2((screen.x / SCENE_WIDTH) * 2 - 1, 1 - (screen.y / SCENE_HEIGHT) * 2);
     this.raycaster.setFromCamera(ndc, this.camera);
-    return this.raycaster.ray.intersectPlane(GROUND, new Vector3());
+    return this.raycaster.intersectObject(this.floorMesh)[0]?.point ?? null;
   }
 
   private toScene(world: Vector3): ScenePoint {

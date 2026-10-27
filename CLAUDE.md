@@ -74,9 +74,10 @@ frontend/
                         scene/opening, character/bartender: kind and sprite2d, the room art and hotspot rects of a scene,
                         the actor layer of a character or object; model3d, its glb under public/models/),
                         registry.ts (loads and checks it; sceneSprite, hotspotRect, actorOf), glb.ts (a dependency-free
-                        glb reader), contract.ts (checkModel: one glb against the asset contract), validate.ts
-                        (validateAssets: the registry against the content, the room art and the model files, run in
-                        unit tests)
+                        glb reader), contract.ts (checkModel: one glb against the asset contract; offFloor: floor points
+                        raycast from cam_main onto a scene's floor), validate.ts (validateAssets: the registry against the
+                        content, the room art and the model files, with each room's hit_<node> nodes and floor points,
+                        run in unit tests)
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), dialogue.ts
                         (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
   src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
@@ -90,8 +91,8 @@ frontend/
                         no input)
   src/presentation/three3d/  the only folder that imports three, chosen with ?renderer=3d: renderer.ts (Three3dRenderer
                         implements Renderer; a WebGL canvas sized like the 2D one, the grain overlay, a message on #game
-                        without WebGL), room.ts (one SceneView: the models on the floor, the default room's camera until
-                        B3, floor points <-> the ground), models.ts (the registry's glb files, cached, in toon materials),
+                        without WebGL), room.ts (one SceneView: the room's scene model seen from its cam_main, the models
+                        on its floor, floor points <-> the floor mesh, hotspot bounds from models and hit_<node> nodes), models.ts (the registry's glb files, cached, in toon materials),
                         look.ts (STYLE.md in 3D: the two-step toon ramp and the lights)
   src/app/              main.ts (boot: title screen -> GameSession -> playGame()), game.ts (playGame: the SceneView from the
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
@@ -99,7 +100,8 @@ frontend/
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say/-act on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
-  scripts/make-placeholders.mjs  writes the placeholder models in public/models/ (tests/unit/placeholders.test.ts
+  scripts/make-placeholders.mjs  writes the placeholder models in public/models/, the room shells laid out in their
+                        2D art's scene pixels (tests/unit/placeholders.test.ts
                         checks the committed files match it); scripts/glb-container.mjs is the one glb writer it and
                         the test fixtures share
   public/models/<kind>s/<id>.glb  3D models (placeholders for now), drawn by three3d: the asset contract, ARCHITECTURE.md §8
