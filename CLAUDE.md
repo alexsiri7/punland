@@ -88,16 +88,22 @@ frontend/
   src/presentation/phaser2d/  the only folder that imports phaser: renderer.ts (Phaser2dRenderer implements Renderer),
                         RoomScene.ts (draws one SceneView from the room's art, as the registry has it; no game rules, no text,
                         no input)
+  src/presentation/three3d/  the only folder that imports three, chosen with ?renderer=3d: renderer.ts (Three3dRenderer
+                        implements Renderer; a WebGL canvas sized like the 2D one, the grain overlay, a message on #game
+                        without WebGL), room.ts (one SceneView: the models on the floor, the default room's camera until
+                        B3, floor points <-> the ground), models.ts (the registry's glb files, cached, in toon materials),
+                        look.ts (STYLE.md in 3D: the two-step toon ramp and the lights)
   src/app/              main.ts (boot: title screen -> GameSession -> playGame()), game.ts (playGame: the SceneView from the
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
-                        renderers.ts (chooses the renderer: 2D only), title.ts (Continue only when a save exists),
+                        renderers.ts (chooses the renderer: ?renderer=3d, else 2D; each loads as its own chunk), title.ts (Continue only when a save exists),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say/-act on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
   scripts/make-placeholders.mjs  writes the placeholder models in public/models/ (tests/unit/placeholders.test.ts
                         checks the committed files match it); scripts/glb-container.mjs is the one glb writer it and
                         the test fixtures share
-  public/models/<kind>s/<id>.glb  3D models (placeholders for now), not drawn yet: the asset contract, ARCHITECTURE.md §8
+  public/models/<kind>s/<id>.glb  3D models (placeholders for now), drawn by three3d: the asset contract, ARCHITECTURE.md §8
+  public/textures/grain.svg  the 3D renderer's grain overlay (the 2D art has it baked in)
   public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
   public/_headers       production CSP and security headers (Cloudflare Pages)
   tests/unit/           vitest (jsdom); architecture.test.ts enforces the layers (support/layers.ts holds the layer table);
