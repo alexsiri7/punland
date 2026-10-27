@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BackendSaveStore, isSaveGame, LocalSaveStore, SAVE_KEY, type SaveGame } from '../../src/services/save';
+import type { SaveGame } from '../../src/domain';
+import { BackendSaveStore, isSaveGame, LocalSaveStore, SAVE_KEY } from '../../src/services/save';
 
 const game: SaveGame = { version: 1, room: 'opening', savedAt: '2026-10-24T12:00:00.000Z' };
 

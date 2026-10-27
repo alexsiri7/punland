@@ -1,4 +1,5 @@
-import type { SaveGame, SaveStore } from '../services/save';
+import type { SaveGame } from '../domain';
+import type { SaveStore } from '../services/save';
 
 export interface TitleScreenDeps {
   store: SaveStore;

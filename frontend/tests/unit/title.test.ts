@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SaveGame, SaveStore } from '../../src/services/save';
+import type { SaveGame } from '../../src/domain';
+import type { SaveStore } from '../../src/services/save';
 import { initTitleScreen } from '../../src/app/title';
 
 class MemoryStore implements SaveStore {

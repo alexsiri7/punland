@@ -1,30 +1,17 @@
 /**
  * The layered modules the acceptance tests for spec change #25 use, with the shapes
- * docs/ARCHITECTURE.md gives them (sections 3, 4, 6 and 8). Most don't exist until their
- * migration step lands, so each is loaded when a test asks for it: a missing module fails that
+ * docs/ARCHITECTURE.md gives them (sections 3, 4, 6 and 8). The glb contract doesn't exist until
+ * B1 (#36) lands, so each module is loaded when a test asks for it: a missing module fails that
  * test alone, not the whole file. The step that builds a module may settle on a different
  * path, export or shape: change it here, in one place, in the PR that removes the tests'
  * expected-to-fail markers.
  */
 
 import type { ContentFiles, ContentIssue } from '../../../src/content';
-import type { Content as DomainContent, FloorPoint, GameState, Hotspot, Room } from '../../../src/domain';
+import type { Content, FloorPoint, GameState } from '../../../src/domain';
 import type { Command, GameEvent } from '../../../src/rules';
 
-export type { Command, ContentFiles, FloorPoint, GameEvent, GameState };
-
-/**
- * Content as the domain has it, with the entities A7 (#33) adds: rooms place them through a
- * hotspot's `target`, and `objects` and `characters` name their models. Those three fields are
- * undefined until A7 lands.
- */
-export type Content = Omit<DomainContent, 'rooms'> & {
-  rooms: Readonly<Record<string, Omit<Room, 'hotspots'> & { hotspots: (Hotspot & { target?: EntityTarget })[] }>>;
-  objects: Record<string, { model: string }>;
-  characters: Record<string, { model: string }>;
-};
-
-type EntityTarget = { entity: string; at: FloorPoint } | { node: string };
+export type { Command, Content, ContentFiles, FloorPoint, GameEvent, GameState };
 
 export interface ContractBreach {
   file: string;

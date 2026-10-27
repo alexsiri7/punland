@@ -5,8 +5,6 @@
  * dependencies: TypeScript 7 has no compiler API to parse with, so imports are found in the
  * source text after comments are blanked out.
  */
-import baseline from './layer-baseline.json';
-
 export interface Violation {
   /** The importing file, relative to src/. */
   file: string;
@@ -21,9 +19,6 @@ export const srcFiles: Record<string, string> = Object.fromEntries(
     import.meta.glob<string>(['/src/**/*.ts', '!/src/**/*.d.ts'], { query: '?raw', import: 'default', eager: true }),
   ).map(([path, source]) => [path.replace(/^\/src\//, ''), source]),
 );
-
-/** Known violations the real src/ may still have; each must still occur (a ratchet). */
-export const knownViolations: readonly Violation[] = baseline;
 
 type Layer = 'domain' | 'rules' | 'content' | 'assets' | 'services' | 'presentation' | 'phaser2d' | 'three3d' | 'app';
 
@@ -73,18 +68,6 @@ export function layerViolations(files: Record<string, string>): Violation[] {
     }
   }
   return violations;
-}
-
-/** The violations not in the known list, and the known ones that no longer occur. */
-export function againstBaseline(
-  violations: readonly Violation[],
-  known: readonly Violation[] = knownViolations,
-): { unexpected: Violation[]; gone: Violation[] } {
-  const same = (a: Violation) => (b: Violation) => a.file === b.file && a.import === b.import && a.rule === b.rule;
-  return {
-    unexpected: violations.filter((v) => !known.some(same(v))),
-    gone: known.filter((k) => !violations.some(same(k))),
-  };
 }
 
 export function isEngineRule(rule: string): boolean {
