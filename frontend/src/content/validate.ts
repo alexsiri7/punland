@@ -15,10 +15,8 @@ import {
   insidePolygon,
   isConvex,
   type ObjectId,
-  type Rect,
   type Room,
   type RoomId,
-  SCENE,
   VERBS,
   type World,
   type WorldId,
@@ -150,6 +148,7 @@ function readEntities<K extends 'character' | 'object'>(list: Field, kind: K): R
 
 function readRoom(room: Field, known: Known): Room {
   const world = room.get('world').id('world', known.world);
+  const model = room.get('model').text();
   const label = room.get('label').text();
   const place = room.get('place');
   const verb = place.get('verb').text();
@@ -176,7 +175,6 @@ function readRoom(room: Field, known: Known): Room {
       id: id as HotspotId,
       name: hotspot.get('name').text(),
       verb: hotspot.get('verb').text(),
-      rect: inScene(hotspot.get('rect')),
       target: readTarget(hotspot.get('target'), known, onFloor),
       walkTo: onFloor(hotspot.get('walkTo')),
       interactions: hotspot.get('interactions').list((interaction) => readInteraction(interaction, known)),
@@ -184,15 +182,7 @@ function readRoom(room: Field, known: Known): Room {
     };
   });
 
-  return { world, label, place: { verb, name }, hint, start, walkable: floor ?? [], hotspots };
-}
-
-function inScene(field: Field): Rect {
-  const rect = field.checked((f) => f.rect());
-  if (rect && (rect.x < 0 || rect.y < 0 || rect.x + rect.width > SCENE.width || rect.y + rect.height > SCENE.height)) {
-    field.problem(`must be inside the ${SCENE.width} × ${SCENE.height} scene`);
-  }
-  return rect ?? { ...NOWHERE, width: 0, height: 0 };
+  return { world, model, label, place: { verb, name }, hint, start, walkable: floor ?? [], hotspots };
 }
 
 const TARGETS = kindsOf<HotspotTarget>()(['entity', 'node']);
@@ -403,16 +393,6 @@ class Field {
   point(): FloorPoint {
     if (!this.object()) return NOWHERE;
     return { x: this.get('x').number(), y: this.get('y').number() };
-  }
-
-  rect(): Rect {
-    if (!this.object()) return { ...NOWHERE, width: 0, height: 0 };
-    return {
-      x: this.get('x').number(),
-      y: this.get('y').number(),
-      width: this.get('width').number(),
-      height: this.get('height').number(),
-    };
   }
 
   list<T>(read: (field: Field) => T): T[] {

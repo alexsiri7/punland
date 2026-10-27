@@ -55,7 +55,7 @@ const PATHS: Record<keyof Modules, string> = {
   rules: '../../../src/rules',
   content: '../../../src/content',
   save: '../../../src/domain/save',
-  assets: '../../../src/assets',
+  assets: '../../../src/assets/registry',
   contract: '../../../src/assets/contract',
 };
 

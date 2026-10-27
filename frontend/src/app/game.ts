@@ -1,4 +1,3 @@
-import { PROTAGONIST } from '../content/protagonist';
 import type { FloorPoint } from '../domain';
 import type { Renderer, SceneView } from '../presentation/renderer';
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../presentation/theme';
@@ -8,18 +7,18 @@ import type { GameSession } from './session';
 
 /** What the renderer draws for the session's state: its room, the room's hotspots and the player. */
 export function sceneView(session: GameSession): SceneView {
-  const { room, at } = session.state;
-  const current = session.content.rooms[room];
-  if (!current) throw new Error(`room "${room}" is not in the content`);
+  const { content, state } = session;
+  const current = content.rooms[state.room];
+  if (!current) throw new Error(`room "${state.room}" is not in the content`);
   return {
-    room,
-    entities: current.hotspots.map((h) => ({
-      hotspot: h.id,
-      model: h.id,
-      rect: h.rect,
-      visible: session.isPresent(h),
-    })),
-    player: { model: PROTAGONIST.actor, at },
+    room: state.room,
+    model: current.model,
+    entities: current.hotspots.map((h) => {
+      const placed = 'entity' in h.target ? h.target.entity : undefined;
+      const entity = placed === undefined ? undefined : (content.characters[placed] ?? content.objects[placed]);
+      return { hotspot: h.id, ...(entity && { model: entity.model }), visible: session.isPresent(h) };
+    }),
+    player: { model: content.protagonist.model, at: state.at },
   };
 }
 

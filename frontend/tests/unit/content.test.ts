@@ -105,11 +105,11 @@ describe('content validation', () => {
       message: /convex/,
     },
     {
-      problem: 'a rect out of the scene',
+      problem: 'a room without a model',
       file: OPENING,
-      edit: (room) => (hotspot(room, 'board').rect.x = 1200),
-      field: 'hotspots[1].rect',
-      message: /inside the 1280 × 640 scene/,
+      edit: (room) => delete room.model,
+      field: 'model',
+      message: /is missing/,
     },
     {
       problem: 'an unknown effect',

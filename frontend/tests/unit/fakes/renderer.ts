@@ -1,3 +1,4 @@
+import { hotspotRect } from '../../../src/assets/registry';
 import type { FloorPoint, Rect } from '../../../src/domain';
 import type { AnimationName, Pick, Renderer, ScenePoint, SceneView } from '../../../src/presentation/renderer';
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../../../src/presentation/theme';
@@ -55,7 +56,7 @@ export class FakeRenderer implements Renderer {
   }
 
   hotspotBounds(hotspot: string): Rect | null {
-    return this.view?.entities.find((e) => e.hotspot === hotspot)?.rect ?? null;
+    return this.view && hotspotRect(this.view.model, hotspot);
   }
 
   /** The player's head is 200 scene px over their feet. */

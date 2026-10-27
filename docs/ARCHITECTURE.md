@@ -116,10 +116,10 @@ interface GameState {
 }
 ```
 
-- **Content shapes today.** `domain/content.ts` holds the content types as the files have them: items keyed by id, and no `model` on items and rooms until the registry (A8). `content/characters.json` lists the characters (`{ id, name, model }`) and the protagonist's display data (`protagonist: { model }`, whose name `loadContent` takes from `content/protagonist.ts`); `content/objects.json` lists the props. `Content` carries them by id (`characters`, `objects`, `protagonist`) beside the start room and items. A `model` is a registry id such as `character/bartender` that A8 fills in. Since A7 a hotspot has `target`, `interactions` and `presentWhen` as above; `node` is the hotspot's id for now.
-- **Validated content (A6).** `content/validate.ts` checks `worlds.json`, `items.json` and `rooms/<room>.json` (a room's id is its file name) by hand, in the style of `isSaveGame`: the shapes, that every room, item, world, character and object an id names exists (a `talk` names a character, a `target` a character or an object), known verbs, conditions and effects (each condition and effect has exactly one of its kind's keys), an `item` only on a `use` interaction, unique ids for hotspots per room and for characters and objects, a convex floor with the room's `start`, every `walkTo`, every entity's `at` and every `goTo`'s `at` on the right floor, `goTo`s that stay in their world, worlds that start in their own rooms, and hotspot rects inside the 1280 × 640 scene. A problem is `{file, field, message}`, with `field` a JSON path such as `hotspots[0].interactions[0].effects[0].goTo`. `validateContent(files)` lists every problem, and `content/index.ts` `loadContent(files?)` builds the `Content` from the real files (or the ones given) or throws, listing them; `app/main.ts` loads it before the title screen. A new game starts in the first world's start room. The ids in a `Content` (`RoomId`, `ItemId`, `WorldId`, `HotspotId`, `CharacterId`, `ObjectId`) are branded by the validator. `GameState`, commands, events and the renderer types still hold plain strings: commands and saves hand ids in unchecked, and the rules look them up in the content.
+- **Content shapes today.** `domain/content.ts` holds the content types as the files have them: items keyed by id, and no `model` on items yet. `content/characters.json` lists the characters (`{ id, name, model }`) and the protagonist's display data (`protagonist: { model }`, whose name `loadContent` takes from `content/protagonist.ts`); `content/objects.json` lists the props. `Content` carries them by id (`characters`, `objects`, `protagonist`) beside the start room and items. A `model` (`ModelId`) is an id in the model registry (section 6), such as `character/bartender`; since A8 a room has one too (`scene/<room>`). `ModelId` is a plain string: the content validator can't see the registry, so the asset validators check that each one is there. Since A7 a hotspot has `target`, `interactions` and `presentWhen` as above; `node` is the hotspot's id for now.
+- **Validated content (A6).** `content/validate.ts` checks `worlds.json`, `items.json` and `rooms/<room>.json` (a room's id is its file name) by hand, in the style of `isSaveGame`: the shapes, that every room, item, world, character and object an id names exists (a `talk` names a character, a `target` a character or an object), known verbs, conditions and effects (each condition and effect has exactly one of its kind's keys), an `item` only on a `use` interaction, unique ids for hotspots per room and for characters and objects, a convex floor with the room's `start`, every `walkTo`, every entity's `at` and every `goTo`'s `at` on the right floor, `goTo`s that stay in their world, worlds that start in their own rooms, and a `model` on every room (the asset validators check what it names, section 6). A problem is `{file, field, message}`, with `field` a JSON path such as `hotspots[0].interactions[0].effects[0].goTo`. `validateContent(files)` lists every problem, and `content/index.ts` `loadContent(files?)` builds the `Content` from the real files (or the ones given) or throws, listing them; `app/main.ts` loads it before the title screen. A new game starts in the first world's start room. The ids in a `Content` (`RoomId`, `ItemId`, `WorldId`, `HotspotId`, `CharacterId`, `ObjectId`) are branded by the validator. `GameState`, commands, events and the renderer types still hold plain strings: commands and saves hand ids in unchecked, and the rules look them up in the content.
 - **Save format.** `SaveGame` stays `version: 1` and only grows by optional fields, so old saves still load (architecture spec, "An older save"). `domain/save.ts` holds `SaveGame` (with an optional `at`, the spot the player stood on, and since A7 the optional `flags`), `toSave(state)` and `fromSave(save, content)`, which drops unknown ids the way `game.ts` does today. `toSave` leaves out `savedAt`: the rules read no clock, so whoever writes the save stamps it.
-- **Hotspot rects.** The screen `rect` of a hotspot moves out of the room content into the room's 2D asset entry (A8). In 3D it is derived from the projected bounds of the model's hit area.
+- **Hotspot rects.** Since A8 the screen rect of a hotspot is in the room's 2D asset entry (section 6), not in the room content. In 3D it is derived from the projected bounds of the model's hit area.
 - **Stats and acts (#11).** These plug in as `GameState.stats`, `GameState.act` and `GameState.goals`, plus the effects `changeStat` and `reachGoal` and the conditions `stat`, `act` and `goal`. Act definitions go in `content/acts.json`. No other layer needs to change.
 
 ## 4. Rules (`rules/`): commands, events, interactions
@@ -176,8 +176,8 @@ function apply(content: Content, state: GameState, command: Command): { state: G
 
 ```ts
 interface SceneView {                              // what to draw, built by the app from content + state
-  room: RoomId; model: ModelId;
-  entities: { hotspot: HotspotId; model: ModelId; at?: FloorPoint; node?: string; visible: boolean }[];
+  room: RoomId; model: ModelId;                    // the room's scene model
+  entities: { hotspot: HotspotId; model?: ModelId; visible: boolean }[]; // model: the entity a hotspot places
   player: { model: ModelId; at: FloorPoint };
 }
 type Pick = { kind: 'hotspot'; hotspot: HotspotId } | { kind: 'floor'; at: FloorPoint } | { kind: 'none' };
@@ -199,7 +199,7 @@ interface Renderer {
 ```
 
 - **Renderers draw. They decide nothing.** Input goes `canvas pointer → renderer.pick → app → session.dispatch`. A fake renderer (`tests/unit/fakes/renderer.ts`) lets the app and session be tested in jsdom.
-- **What A5 built.** `presentation/renderer.ts` has these types with the ids still plain strings, until A6 brands them. Until the model registry (A8) a `ModelId` is the name of an actor layer in the room's art (the hotspot id, or the protagonist's `actor`), and so `SceneView` has no room `model` and no entity `at` or `node` yet. Each entity carries its hotspot's `rect` instead, which is what `hotspotBounds` returns in 2D until A8 moves it into the asset entry. `onResize` is new: the overlay lines up again whenever the canvas is resized or moved. `app/game.ts` (`playGame`) builds the `SceneView` from the session, shows it on `roomChanged`, calls `setPlayer` on `moved` and `setVisible` on `hotspotShown` and `hotspotHidden` (A7: a hotspot shown in the room no longer redraws it, so a line or conversation from the same interaction stays up), sends `tick` from `frame`, and turns canvas pointer presses into `walk` through `pick`. `phaser2d/renderer.ts` (`Phaser2dRenderer`) implements it with one `RoomScene` that restarts for each view: `pick` returns a floor point above the UI bar (the hotspot buttons take the pointer in 2D) and `none` while no room is drawn, and `play` is a no-op.
+- **What A5 built.** `presentation/renderer.ts` has these types with the ids still plain strings, until A6 brands them. Since A8 every `ModelId` is a registry id (section 6): the view carries the room's scene model, the model of each entity a hotspot places (a `node` hotspot has none), and the protagonist's model, and the renderer looks up how each one looks in the registry. An entity's `at` and `node` come when the 3D renderer needs them (B2). `onResize` is new: the overlay lines up again whenever the canvas is resized or moved. `app/game.ts` (`playGame`) builds the `SceneView` from the session, shows it on `roomChanged`, calls `setPlayer` on `moved` and `setVisible` on `hotspotShown` and `hotspotHidden` (A7: a hotspot shown in the room no longer redraws it, so a line or conversation from the same interaction stays up), sends `tick` from `frame`, and turns canvas pointer presses into `walk` through `pick`. `phaser2d/renderer.ts` (`Phaser2dRenderer`) implements it with one `RoomScene` that restarts for each view. The scene loads the layers its scene model's `sprite2d` names and finds the player's and each entity's sprite by its model's actor, and `hotspotBounds` is the hotspot's rect in the scene model. `pick` returns a floor point above the UI bar (the hotspot buttons take the pointer in 2D) and `none` while no room is drawn, and `play` is a no-op.
 - **Renderer choice.** The app picks the renderer: `?renderer=2d|3d` while both exist (B2 to B6), with 3D the default from B6 and 2D removed in B7.
 
 ### DOM UI (`presentation/ui/`)
@@ -225,26 +225,30 @@ Each scene, character and object is one registry entry, keyed by a `ModelId` tha
 ```jsonc
 // frontend/src/assets/models.json
 {
-  "models": {
-    "scene/opening":   { "kind": "scene",
-                         "sprite2d": { "layers": "rooms/opening/art.json", "hotspots": { "door": {"x":..,"y":..,"width":..,"height":..}, "board": {..} } },
-                         "model3d":  { "file": "models/scenes/opening.glb", "placeholder": true } },
-    "character/paws":  { "kind": "character",
-                         "sprite2d": { "actor": "cat" },
-                         "model3d":  { "file": "models/characters/paws.glb", "placeholder": true, "height": 1.5 } },
-    "object/flyer":    { "kind": "object", "sprite2d": { "actor": "flyer" },
-                         "model3d":  { "file": "models/objects/flyer.glb", "placeholder": true } }
-  }
+  "models": [
+    { "id": "scene/opening", "kind": "scene",
+      "sprite2d": { "layers": "rooms/opening/art.json", "hotspots": { "door": {"x":..,"y":..,"width":..,"height":..}, "board": {..}, "flyer": {..} } },
+      "model3d":  { "file": "models/scenes/opening.glb", "placeholder": true } },
+    { "id": "character/protagonist", "kind": "character",
+      "sprite2d": { "actor": "cat" },
+      "model3d":  { "file": "models/characters/protagonist.glb", "placeholder": true, "height": 1.5 } },
+    { "id": "object/flyer", "kind": "object", "sprite2d": { "actor": "flyer" },
+      "model3d":  { "file": "models/objects/flyer.glb", "placeholder": true } }
+  ]
 }
 ```
 
+- **What A8 built.** `assets/models.json` lists the entries, like the content files list theirs, so a second entry with the same id is a problem the validator reports rather than a key `JSON.parse` silently drops. `assets/registry.ts` checks the file's shape as it loads (or throws, listing the problems) and holds the `models` by id, with the 2D lookups `sceneSprite`, `hotspotRect` and `actorOf`. A scene's `sprite2d` names its room art under `public/` and holds the rect of every hotspot of its room, by hotspot id: the parts of the scene and the placed entities, whose rect is per room. A character's or object's `sprite2d` names the actor layer that draws it in each room's art. Only those actors are shown and hidden, so only a hotspot that places an entity may have `presentWhen`; a part of the scene has no actor in `sprite2d`, and the validator reports one that comes and goes. The protagonist's entry is `character/protagonist`, so nothing hangs on his placeholder name.
 - **Variants.** `sprite2d` is filled in A8 and removed in B7. `model3d` is filled from B1.
 - **The registry holds no logic.** It never says what a thing does, only how it looks and where its anchors and hit areas are.
-- **Validators** (`assets/validate.ts`, run in unit tests) check four things:
-  - every `model` id in content has an entry of the right kind;
-  - every file exists;
+- **Validators** (`assets/validate.ts`, run in unit tests: the browser can't see which files are under `public/`) check five things:
+  - every `model` id in content has an entry of the right kind, and every entry's id is used once;
+  - every file exists: a scene's room art, with the actor of the protagonist and of every entity its room places;
   - every `hotspots`/`node` a room uses exists, as a 2D rect or a 3D `hit_*` node;
+  - a `node`-targeted hotspot has no `presentWhen`: a part of the scene has no actor in `sprite2d` to show or hide it;
   - every 3D file meets the [asset contract](#8-asset-contract-for-the-designer). The glb is parsed in the test with no dependency: read its JSON chunk and inspect it.
+
+  A problem is `{file, field, message}` as in the content validator, with a model named by its id in the field (`models[id=scene/opening].sprite2d.hotspots`).
 
 ## 7. 3D: the engine decision
 
@@ -267,7 +271,7 @@ Every model file must follow this. A placeholder model follows it too, so a desi
 | Topic | Rule |
 | --- | --- |
 | Format ✓ | glTF 2.0 binary, `.glb`, one file per registry entry. No `extensionsRequired`. No `KHR_draco_mesh_compression`, `EXT_meshopt_compression`, `KHR_texture_basisu` (the CSP blocks their wasm decoders). |
-| Location and naming ✓ | `frontend/public/models/<kind>/<id>.glb`, where kind is `scenes`, `characters` or `objects` and the id is lowercase kebab-case matching the registry (`characters/paws.glb`, `objects/broken-guitar.glb`, `scenes/opening.glb` for the registry entry `scene/opening`). |
+| Location and naming ✓ | `frontend/public/models/<kind>/<id>.glb`, where kind is `scenes`, `characters` or `objects` and the id is lowercase kebab-case matching the registry (`characters/protagonist.glb`, `objects/broken-guitar.glb`, `scenes/opening.glb` for the registry entry `scene/opening`). |
 | Units and axes ✓ | Metres, +Y up, the model faces +Z (glTF default), right-handed. Apply all transforms (scale 1, no negative scale) before export. |
 | Origin ✓ | **Characters:** between the feet, on the ground (`y = 0`). **Objects:** the centre of their resting base. **Scenes:** the floor at `y = 0`, with the origin at the front centre of the walkable area. |
 | Scale | The protagonist is about 1.5 m tall including ears (about 5.5 heads). Other animals scale from him. At the front of the walk line, `cam_main` frames him about 256 px tall in the 1280 × 640 view (STYLE.md). |
@@ -327,7 +331,7 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **A5** ([#31](https://github.com/alexsiri7/punland/issues/31)), done | 5 | `presentation/renderer.ts` plus `presentation/phaser2d` (the only `phaser` import), with picking through `renderer.pick` and a fake renderer for unit tests. `game.ts`/`RoomScene` are folded into the 2D renderer and the app. |
 | **A6** ([#32](https://github.com/alexsiri7/punland/issues/32)), done | 3 | Content validators: every content file is checked at load and in tests, ids are branded, and errors name the file and the field. |
 | **A7** ([#33](https://github.com/alexsiri7/punland/issues/33)), done | 5 | Entities and interactions as data: `characters.json` and `objects.json`, rooms place entities, `interactions` with verbs, conditions and effects replace `action` and `uses`, the `talk` effect, and the four rooms migrated. |
-| **A8** ([#34](https://github.com/alexsiri7/punland/issues/34)) | 3 | Model registry (`assets/models.json`) with the `sprite2d` variants. Hotspot rects and actor/layer mapping move out of room content. Registry validators. |
+| **A8** ([#34](https://github.com/alexsiri7/punland/issues/34)), done | 3 | Model registry (`assets/models.json`) with the `sprite2d` variants. Hotspot rects and actor/layer mapping move out of room content. Registry validators. |
 | **A9** ([#35](https://github.com/alexsiri7/punland/issues/35)) | 2 | Phase A gate: remove leftover shims, check that every layer matches this document, and update the status line below. Every phase-B step waits on this one. |
 | **B1** ([#36](https://github.com/alexsiri7/punland/issues/36)) | 5 | The 3D asset contract in code: `model3d` registry entries, the glb contract validator (unit tests), and `make-placeholders.mjs` with committed placeholders for the protagonist, bartender, flyer and broken guitar. |
 | **B2** ([#37](https://github.com/alexsiri7/punland/issues/37)) | 5 | `presentation/three3d`: renderer behind `?renderer=3d`. Proves WebGL in CI. Fixed `cam_main` camera, the toon look, floor raycast ↔ floor points, projected hotspot bounds and anchors, and the grain overlay. Adds the `three` dependency. |
@@ -337,4 +341,4 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **B6** ([#41](https://github.com/alexsiri7/punland/issues/41)) | 3 | 3D becomes the default renderer. The whole e2e suite runs against it, and `?renderer=2d` stays as a fallback. |
 | **B7** ([#42](https://github.com/alexsiri7/punland/issues/42)) | 3 | Remove the 2D path: `phaser2d`, the `phaser` dependency, `sprite2d` entries, `scripts/render-art.mjs` and `public/rooms/*` layers. Replace the 2D-specific tests (see Tests). Update CLAUDE.md and STYLE.md's "Scene build" to describe 3D. |
 
-**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 to A7 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 wait on A7 (#33).
+**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 to A8 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 wait on A7 (#33).

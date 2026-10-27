@@ -1,4 +1,5 @@
 {
+  "model": "scene/dream",
   "world": "dream",
   "label": "TUNE STORY · THE DREAM",
   "place": { "verb": "Dreaming of", "name": "The stage" },
@@ -15,7 +16,6 @@
       "id": "stage",
       "name": "Dream stage",
       "verb": "Look at",
-      "rect": { "x": 600, "y": 316, "width": 440, "height": 136 },
       "target": { "node": "stage" },
       "walkTo": { "x": 820, "y": 560 },
       "interactions": [
@@ -29,7 +29,6 @@
       "id": "flyer",
       "name": "Dream of the open mic flyer",
       "verb": "Write about",
-      "rect": { "x": 780, "y": 222, "width": 92, "height": 92 },
       "target": { "entity": "flyer", "at": { "x": 826, "y": 545 } },
       "walkTo": { "x": 820, "y": 560 },
       "interactions": [

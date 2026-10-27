@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { hotspotRect } from '../../assets/registry';
 import type { FloorPoint, Rect } from '../../domain';
 import type { Pick, Renderer, SceneView, ScenePoint } from '../renderer';
 import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
@@ -67,7 +68,7 @@ export class Phaser2dRenderer implements Renderer {
   }
 
   hotspotBounds(hotspot: string): Rect | null {
-    return this.view?.entities.find((e) => e.hotspot === hotspot)?.rect ?? null;
+    return this.view && hotspotRect(this.view.model, hotspot);
   }
 
   anchor(who: string, name: 'head' | 'hand_r'): ScenePoint | null {

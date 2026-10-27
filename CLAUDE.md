@@ -63,10 +63,15 @@ frontend/
   src/content/          content data: rooms/<room>.json, items.json, worlds.json, characters.json, objects.json,
                         protagonist.ts; validate.ts checks the files
                         ({file, field, message} problems, branded ids); index.ts loadContent() builds Content or throws
-  src/content/rooms/<room>.json  room content: floor, start point, hotspots: a target (a placed character or object, or
-                        a scene node), interactions (verb, item, `when` conditions, effects such as say, goTo, pickUp,
-                        talk) and `presentWhen` conditions
-  src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
+  src/content/rooms/<room>.json  room content: its scene model, floor, start point, hotspots: a target (a placed
+                        character or object, or a scene node), interactions (verb, item, `when` conditions, effects such
+                        as say, goTo, pickUp, talk) and `presentWhen` conditions. No screen rects or art names.
+  src/content/protagonist.ts  the protagonist's (placeholder) name, the one place it lives in code
+  src/assets/           the model registry: models.json (every scene, character and object by model id, e.g.
+                        scene/opening, character/bartender: kind and sprite2d, the room art and hotspot rects of a scene,
+                        the actor layer of a character or object), registry.ts (loads and checks it; sceneSprite,
+                        hotspotRect, actorOf), validate.ts (validateAssets: the registry against the content and the
+                        room art, run in unit tests)
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), dialogue.ts
                         (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
   src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
@@ -76,7 +81,8 @@ frontend/
                         (lines it up with the renderer's canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts,
                         inventory.ts, worlds.ts, dialogue.ts (the conversation panel)
   src/presentation/phaser2d/  the only folder that imports phaser: renderer.ts (Phaser2dRenderer implements Renderer),
-                        RoomScene.ts (draws one SceneView from the room's art; no game rules, no text, no input)
+                        RoomScene.ts (draws one SceneView from the room's art, as the registry has it; no game rules, no text,
+                        no input)
   src/app/              main.ts (boot: title screen -> GameSession -> playGame()), game.ts (playGame: the SceneView from the
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
                         renderers.ts (chooses the renderer: 2D only), title.ts (Continue only when a save exists),

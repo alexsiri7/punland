@@ -63,13 +63,13 @@ describe('the game, drawn by a renderer', () => {
       method: 'show',
       view: {
         room: 'opening',
-        entities: content.rooms.opening!.hotspots.map((h) => ({
-          hotspot: h.id,
-          model: h.id,
-          rect: h.rect,
-          visible: true,
-        })),
-        player: { model: 'cat', at: { x: 560, y: 590 } },
+        model: 'scene/opening',
+        entities: [
+          { hotspot: 'door', visible: true },
+          { hotspot: 'board', visible: true },
+          { hotspot: 'flyer', model: 'object/flyer', visible: true },
+        ],
+        player: { model: 'character/protagonist', at: { x: 560, y: 590 } },
       },
     });
   });
