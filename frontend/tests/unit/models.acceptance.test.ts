@@ -33,7 +33,7 @@ describe('Asset contract', () => {
   // Requirement: Asset contract. A model file that breaks the contract (a missing node or
   // animation, a forbidden glTF extension, a texture, over its budget) fails the unit tests,
   // naming the file and the rule it breaks.
-  it.fails('A model that breaks the contract (needs #36)', async () => {
+  it('A model that breaks the contract', async () => {
     const { checkModel } = await load('contract');
     expect(checkModel(fixtures.character(), 'character', 'characters/valid.glb')).toEqual([]);
     expect(checkModel(fixtures.scene(), 'scene', 'scenes/valid.glb')).toEqual([]);
@@ -42,6 +42,7 @@ describe('Asset contract', () => {
       expect(checkModel(breach.glb(), 'character', breach.file), breach.file).toContainEqual({
         file: breach.file,
         rule: expect.stringMatching(breach.rule),
+        message: expect.any(String),
       });
     }
   });

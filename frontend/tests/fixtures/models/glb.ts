@@ -5,6 +5,8 @@
  * never drift from this file.
  */
 
+import { concat, container, pad, srgbToLinear } from '../../../scripts/glb-container.mjs';
+
 type Vec3 = [number, number, number];
 
 interface Box {
@@ -14,21 +16,31 @@ interface Box {
   size: Vec3;
   color: string;
   material: string;
+  /** Its node's scale, left unapplied. */
+  scale?: Vec3;
 }
 
-interface Model {
+export interface Model {
   boxes: Box[];
   /** Empty nodes: anchors, and the scene's spawn points. */
   empties?: { name: string; at: Vec3 }[];
-  camera?: { name: string; at: Vec3 };
+  camera?: { name: string; at: Vec3; type?: 'perspective' | 'orthographic' };
   clips?: string[];
+  version?: string;
   extensions?: string[];
+  extensionsRequired?: string[];
   texture?: boolean;
   /** Extra triangles in one more mesh, to go over a budget. */
   bulk?: number;
+  /** Extra unused bytes in the binary chunk, to go over a budget. */
+  filler?: number;
+  /** Empty nodes in one skin. */
+  joints?: number;
+  /** Joint influences per vertex on every box, in sets of four. */
+  influences?: number;
 }
 
-const CHARACTER: Model = {
+export const CHARACTER: Model = {
   boxes: [
     { name: 'legs', from: [-0.15, 0, -0.1], size: [0.3, 0.6, 0.2], color: '#2E3A4F', material: 'jeans' },
     { name: 'body', from: [-0.2, 0.6, -0.12], size: [0.4, 0.5, 0.24], color: '#C8553D', material: 'hoodie' },
@@ -47,7 +59,7 @@ const CHARACTER: Model = {
  * The opening room's shape: a floor whose front centre is the origin, the street's back wall,
  * the door and the board as hit boxes, and the camera framing the floor from the front.
  */
-function scene(backdrop: string): Model {
+export function scene(backdrop = '#5A4E7C'): Model {
   return {
     boxes: [
       { name: 'floor', from: [-8, 0, -5], size: [16, 0, 5], color: '#3B3A4A', material: 'pavement' },
@@ -63,7 +75,7 @@ export const fixtures = {
   /** A contract-valid character, unlike the placeholder protagonist. */
   character: () => glb(CHARACTER),
   /** A contract-valid opening scene. */
-  scene: () => glb(scene('#5A4E7C')),
+  scene: () => glb(scene()),
   /** The opening scene with one large #FF00FF backdrop behind everything. */
   magentaScene: () => glb(scene('#FF00FF')),
 };
@@ -94,7 +106,7 @@ const PNG = Uint8Array.from(
 const FLOAT = 5126;
 const UNSIGNED_SHORT = 5123;
 
-function glb(model: Model): Uint8Array {
+export function glb(model: Model): Uint8Array {
   const chunks: Uint8Array[] = [];
   let length = 0;
   const bufferViews: object[] = [];
@@ -107,8 +119,12 @@ function glb(model: Model): Uint8Array {
     length += bytes.byteLength;
     return bufferViews.length - 1;
   };
-  const accessor = (data: Float32Array | Uint16Array, type: 'SCALAR' | 'VEC2' | 'VEC3', minMax = false): number => {
-    const size = { SCALAR: 1, VEC2: 2, VEC3: 3 }[type];
+  const accessor = (
+    data: Float32Array | Uint16Array,
+    type: 'SCALAR' | 'VEC2' | 'VEC3' | 'VEC4',
+    minMax = false,
+  ): number => {
+    const size = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 }[type];
     const entry: Record<string, unknown> = {
       bufferView: view(new Uint8Array(data.buffer)),
       componentType: data instanceof Float32Array ? FLOAT : UNSIGNED_SHORT,
@@ -156,6 +172,10 @@ function glb(model: Model): Uint8Array {
         new Float32Array(48).map((_, i) => [0, 0, 1, 0, 1, 1, 0, 1][i % 8]!),
         'VEC2',
       );
+    for (let set = 0; set < (model.influences ?? 0) / 4; set++) {
+      attributes[`JOINTS_${set}`] = accessor(new Uint16Array(96), 'VEC4');
+      attributes[`WEIGHTS_${set}`] = accessor(new Float32Array(96), 'VEC4');
+    }
     meshes.push({
       name: box.name,
       primitives: [
@@ -166,7 +186,7 @@ function glb(model: Model): Uint8Array {
         },
       ],
     });
-    nodes.push({ name: box.name, mesh: meshes.length - 1 });
+    nodes.push({ name: box.name, mesh: meshes.length - 1, ...(box.scale ? { scale: box.scale } : {}) });
   }
   if (model.bulk) {
     const positions = Float32Array.of(0, 0, 0, 0.01, 0, 0, 0, 0.01, 0);
@@ -182,9 +202,21 @@ function glb(model: Model): Uint8Array {
   for (const empty of model.empties ?? []) nodes.push({ name: empty.name, translation: empty.at });
   const cameras: object[] = [];
   if (model.camera) {
-    cameras.push({ type: 'perspective', perspective: { aspectRatio: 2, yfov: 0.7, znear: 0.1, zfar: 100 } });
+    cameras.push(
+      model.camera.type === 'orthographic'
+        ? { type: 'orthographic', orthographic: { xmag: 8, ymag: 4, znear: 0.1, zfar: 100 } }
+        : { type: 'perspective', perspective: { aspectRatio: 2, yfov: 0.7, znear: 0.1, zfar: 100 } },
+    );
     nodes.push({ name: model.camera.name, camera: 0, translation: model.camera.at });
   }
+
+  const skins: object[] = [];
+  if (model.joints) {
+    const first = nodes.length;
+    for (let j = 0; j < model.joints; j++) nodes.push({ name: `joint_${j}` });
+    skins.push({ joints: [...Array(model.joints).keys()].map((j) => first + j) });
+  }
+  if (model.filler) view(new Uint8Array(model.filler));
 
   // Each clip bobs the first box up and down in place, over one second.
   const animations = (model.clips ?? []).map((name) => ({
@@ -199,7 +231,7 @@ function glb(model: Model): Uint8Array {
   }));
 
   const gltf: Record<string, unknown> = {
-    asset: { version: '2.0', generator: 'punland acceptance-test fixtures' },
+    asset: { version: model.version ?? '2.0', generator: 'punland acceptance-test fixtures' },
     scene: 0,
     scenes: [{ nodes: nodes.map((_, i) => i) }],
     nodes,
@@ -210,6 +242,7 @@ function glb(model: Model): Uint8Array {
     buffers: [{ byteLength: 0 }],
   };
   if (cameras.length) gltf.cameras = cameras;
+  if (skins.length) gltf.skins = skins;
   if (animations.length) gltf.animations = animations;
   if (model.texture) {
     gltf.images = [{ bufferView: view(PNG), mimeType: 'image/png' }];
@@ -217,16 +250,10 @@ function glb(model: Model): Uint8Array {
     gltf.textures = [{ source: 0, sampler: 0 }];
   }
   if (model.extensions) gltf.extensionsUsed = model.extensions;
+  if (model.extensionsRequired) gltf.extensionsRequired = model.extensionsRequired;
   const bin = pad(concat(chunks), 0);
   (gltf.buffers as { byteLength: number }[])[0]!.byteLength = bin.byteLength;
-  const json = pad(new TextEncoder().encode(JSON.stringify(gltf)), 0x20);
-  return concat([
-    header(0x46546c67, 2, 12 + 8 + json.byteLength + 8 + bin.byteLength),
-    header(json.byteLength, 0x4e4f534a),
-    json,
-    header(bin.byteLength, 0x004e4942),
-    bin,
-  ]);
+  return container(gltf, bin);
 }
 
 function boxGeometry(from: Vec3, size: Vec3) {
@@ -294,28 +321,4 @@ function boxGeometry(from: Vec3, size: Vec3) {
     normals: Float32Array.from(faces.flatMap(([normal]) => [normal, normal, normal, normal].flat())),
     indices: Uint16Array.from(faces.flatMap((_, f) => [0, 1, 2, 0, 2, 3].map((i) => f * 4 + i))),
   };
-}
-
-function srgbToLinear(c: number): number {
-  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-}
-
-function header(...words: number[]): Uint8Array {
-  return new Uint8Array(Uint32Array.from(words).buffer);
-}
-
-function pad(bytes: Uint8Array, fill: number): Uint8Array {
-  const padded = new Uint8Array(Math.ceil(bytes.byteLength / 4) * 4).fill(fill);
-  padded.set(bytes);
-  return padded;
-}
-
-function concat(parts: Uint8Array[]): Uint8Array {
-  const all = new Uint8Array(parts.reduce((n, part) => n + part.byteLength, 0));
-  let at = 0;
-  for (const part of parts) {
-    all.set(part, at);
-    at += part.byteLength;
-  }
-  return all;
 }

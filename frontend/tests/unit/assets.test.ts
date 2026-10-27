@@ -4,6 +4,7 @@ import { validateAssets } from '../../src/assets/validate';
 import { loadContent } from '../../src/content';
 import type { FloorPoint } from '../../src/domain';
 import registryFile from '../../src/assets/models.json';
+import { modelFiles } from './support/files';
 
 // The model registry (docs/ARCHITECTURE.md, section 6) checked against the content and the room
 // art: each problem names the file and the field it is in.
@@ -31,7 +32,7 @@ function broken(id: string, edit: (model: Json) => void): Json {
 
 describe('the model registry', () => {
   it('passes today’s models, content and art', () => {
-    expect(validateAssets(registryFile, content, art)).toEqual([]);
+    expect(validateAssets(registryFile, content, art, modelFiles)).toEqual([]);
   });
 
   it('has the protagonist in every room, standing on their feet', () => {
@@ -51,7 +52,14 @@ describe('the model registry', () => {
     expect(hotspotRect('object/flyer', 'flyer')).toBeNull();
   });
 
-  it.each<{ problem: string; registry: Json; file: string; field: string; message: RegExp }>([
+  it.each<{
+    problem: string;
+    registry: Json;
+    files?: Record<string, Uint8Array>;
+    file: string;
+    field: string;
+    message: RegExp;
+  }>([
     {
       problem: 'a duplicate id',
       registry: broken('object/flyer', (model) => (model.id = 'character/bartender')),
@@ -125,8 +133,52 @@ describe('the model registry', () => {
       field: 'models[id=scene/opening].sprite2d.hotspots',
       message: /no rect for "door"/,
     },
-  ])('reports $problem by file and field', ({ registry, file, field, message }) => {
-    expect(validateAssets(registry, content, art)).toContainEqual({
+    {
+      problem: 'a placed object with no 2D variant',
+      registry: broken('object/flyer', (model) => delete model.sprite2d),
+      file: 'assets/models.json',
+      field: 'models[id=object/flyer].sprite2d',
+      message: /is needed to draw the hotspot "flyer"/,
+    },
+    {
+      problem: 'a model with no variant',
+      registry: broken('object/broken-guitar', (model) => delete model.model3d),
+      file: 'assets/models.json',
+      field: 'models[7]',
+      message: /must have a sprite2d, a model3d or both/,
+    },
+    {
+      problem: 'a model file not named after its id',
+      registry: broken('object/flyer', (model) => (model.model3d.file = 'models/objects/Flyer.glb')),
+      file: 'assets/models.json',
+      field: 'models[id=object/flyer].model3d.file',
+      message: /must be "models\/objects\/flyer.glb"/,
+    },
+    {
+      problem: 'a missing model file',
+      registry: registryFile,
+      files: Object.fromEntries(Object.entries(modelFiles).filter(([path]) => !path.endsWith('broken-guitar.glb'))),
+      file: 'assets/models.json',
+      field: 'models[id=object/broken-guitar].model3d.file',
+      message: /"models\/objects\/broken-guitar.glb" is not under public/,
+    },
+    {
+      problem: 'a model file that breaks the asset contract',
+      registry: registryFile,
+      files: { ...modelFiles, 'models/characters/bartender.glb': modelFiles['models/objects/flyer.glb']! },
+      file: 'public/models/characters/bartender.glb',
+      field: 'nodes: anchor_head',
+      message: /has no node "anchor_head"/,
+    },
+    {
+      problem: "a character far from the registry's height",
+      registry: broken('character/protagonist', (model) => (model.model3d.height = 2.5)),
+      file: 'public/models/characters/protagonist.glb',
+      field: 'origin: height',
+      message: /the registry says about 2.5 m/,
+    },
+  ])('reports $problem by file and field', ({ registry, files = modelFiles, file, field, message }) => {
+    expect(validateAssets(registry, content, art, files)).toContainEqual({
       file,
       field,
       message: expect.stringMatching(message),
@@ -136,7 +188,7 @@ describe('the model registry', () => {
   it('reports a part of the scene that comes and goes, which the 2D art cannot show or hide', () => {
     const given = structuredClone(content);
     given.rooms.opening!.hotspots.find((h) => h.id === 'door')!.presentWhen = [{ flag: 'lit' }];
-    expect(validateAssets(registryFile, given, art)).toEqual([
+    expect(validateAssets(registryFile, given, art, modelFiles)).toEqual([
       {
         file: 'content/rooms/opening.json',
         field: 'hotspots[id=door].presentWhen',
