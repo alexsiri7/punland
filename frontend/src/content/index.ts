@@ -1,9 +1,24 @@
 import type { Content } from '../domain/content';
-import { items, START_ITEMS } from './items';
-import { rooms, START_ROOM } from './rooms';
-import { worlds } from './worlds';
+import { type ContentFiles, readContent } from './validate';
 
-/** Today's worlds, rooms and items as one Content. */
-export function loadContent(): Content {
-  return { worlds, rooms, items, start: { room: START_ROOM, items: START_ITEMS } };
+export type { ContentFiles, ContentIssue } from './validate';
+export { validateContent } from './validate';
+
+/** The content files here (worlds.json, items.json, rooms/<room>.json), by their path under src/. */
+const files: ContentFiles = Object.fromEntries(
+  Object.entries(import.meta.glob('./**/*.json', { eager: true, import: 'default' })).map(([path, data]) => [
+    path.replace(/^\.\//, 'content/'),
+    data,
+  ]),
+);
+
+/**
+ * The worlds, rooms and items, checked: the real content files, or `given` in their place.
+ * Content that doesn't hold together throws, listing every problem by file and field.
+ */
+export function loadContent(given: ContentFiles = files): Content {
+  const { content, issues } = readContent(given);
+  if (content) return content;
+  const problems = issues.map(({ file, field, message }) => `  ${file}${field ? ` ${field}` : ''}: ${message}`);
+  throw new Error(`The content doesn't hold together:\n${problems.join('\n')}`);
 }

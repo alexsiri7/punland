@@ -17,7 +17,7 @@ function withEdit(path: string, edit: (file: Json) => void): ContentFiles {
 describe('Validated content', () => {
   // Requirement: Validated content. Content data is checked against its schema, and content
   // that does not hold together is reported with the file and the field.
-  it.fails('A broken content file (needs #32)', async () => {
+  it('A broken content file', async () => {
     const { validateContent } = await load('content');
     expect(validateContent(contentFiles)).toEqual([]);
 

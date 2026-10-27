@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { type Content, type GameState, newGame } from '../../src/domain';
+import { loadContent } from '../../src/content';
+import { type GameState, newGame } from '../../src/domain';
 import { apply, type Command, type GameEvent } from '../../src/rules';
 
 const floor = [
@@ -12,119 +13,129 @@ const floor = [
 const rect = { x: 0, y: 0, width: 10, height: 10 };
 const place = { verb: 'Look at', name: 'it' };
 
-const content: Content = {
-  worlds: [
-    { id: 'street', name: 'Street', start: 'street' },
-    { id: 'online', name: 'Online', start: 'feed', locked: 'Not yet.' },
-    { id: 'dream', name: 'Dream', start: 'dream' },
-  ],
-  rooms: {
-    street: {
-      world: 'street',
-      label: 'STREET',
-      place,
-      hint: '',
-      start: { x: 100, y: 550 },
-      walkable: floor,
-      hotspots: [
-        {
-          id: 'door',
-          name: 'Door',
-          verb: 'Go in',
-          rect,
-          walkTo: { x: 500, y: 550 },
-          action: { type: 'exit', room: 'pub' },
-        },
-        {
-          id: 'flyer',
-          name: 'Flyer',
-          verb: 'Pick up',
-          rect,
-          walkTo: { x: 200, y: 550 },
-          action: { type: 'pickup', item: 'flyer' },
-          dreamMaterial: 'open-mic',
-        },
-        {
-          id: 'sign',
-          name: 'Sign',
-          verb: 'Look at',
-          rect,
-          walkTo: { x: 420, y: 550 },
-          action: { type: 'say', line: 'A sign.' },
-        },
-        {
-          id: 'echo',
-          name: 'Echo',
-          verb: 'Listen to',
-          rect,
-          walkTo: { x: 300, y: 550 },
-          action: { type: 'say', line: 'Nine o\'clock.' },
-          shownWith: 'open-mic',
-        },
-      ],
-    },
-    pub: {
-      world: 'street',
-      label: 'PUB',
-      place,
-      hint: '',
-      start: { x: 300, y: 550 },
-      walkable: floor,
-      hotspots: [
-        {
-          id: 'door',
-          name: 'Door',
-          verb: 'Go out',
-          rect,
-          walkTo: { x: 100, y: 550 },
-          action: { type: 'exit', room: 'street', at: { x: 510, y: 560 } },
-        },
-        {
-          id: 'bar',
-          name: 'Bar',
-          verb: 'Look at',
-          rect,
-          walkTo: { x: 800, y: 550 },
-          action: { type: 'say', line: 'A bar.' },
-          uses: [{ item: 'flyer', say: 'Pinned up.', removes: 'flyer' }],
-        },
-        {
-          id: 'keeper',
-          name: 'Keeper',
-          verb: 'Talk to',
-          rect,
-          walkTo: { x: 700, y: 550 },
-          action: { type: 'talk', character: 'keeper' },
-        },
-      ],
-    },
-    feed: { world: 'online', label: 'FEED', place, hint: '', start: { x: 100, y: 550 }, walkable: floor, hotspots: [] },
-    dream: {
-      world: 'dream',
-      label: 'DREAM',
-      place,
-      hint: '',
-      start: { x: 600, y: 550 },
-      walkable: floor,
-      hotspots: [
-        {
-          id: 'flyer',
-          name: 'Flyer',
-          verb: 'Look at',
-          rect,
-          walkTo: { x: 700, y: 550 },
-          action: { type: 'say', line: 'Open mic.' },
-          shownWith: 'open-mic',
-        },
-      ],
+const content = loadContent({
+  'content/worlds.json': {
+    worlds: [
+      { id: 'street', name: 'Street', start: 'street' },
+      { id: 'online', name: 'Online', start: 'feed', locked: 'Not yet.' },
+      { id: 'dream', name: 'Dream', start: 'dream' },
+    ],
+  },
+  'content/items.json': {
+    start: ['guitar'],
+    items: {
+      guitar: { name: 'Guitar', noUse: 'Not the guitar.' },
+      flyer: { name: 'Flyer', noUse: 'Not the flyer.' },
     },
   },
-  items: {
-    guitar: { name: 'Guitar', noUse: 'Not the guitar.' },
-    flyer: { name: 'Flyer', noUse: 'Not the flyer.' },
+  'content/rooms/street.json': {
+    world: 'street',
+    label: 'STREET',
+    place,
+    hint: '',
+    start: { x: 100, y: 550 },
+    walkable: floor,
+    hotspots: [
+      {
+        id: 'door',
+        name: 'Door',
+        verb: 'Go in',
+        rect,
+        walkTo: { x: 500, y: 550 },
+        action: { type: 'exit', room: 'pub' },
+      },
+      {
+        id: 'flyer',
+        name: 'Flyer',
+        verb: 'Pick up',
+        rect,
+        walkTo: { x: 200, y: 550 },
+        action: { type: 'pickup', item: 'flyer' },
+        dreamMaterial: 'open-mic',
+      },
+      {
+        id: 'sign',
+        name: 'Sign',
+        verb: 'Look at',
+        rect,
+        walkTo: { x: 420, y: 550 },
+        action: { type: 'say', line: 'A sign.' },
+      },
+      {
+        id: 'echo',
+        name: 'Echo',
+        verb: 'Listen to',
+        rect,
+        walkTo: { x: 300, y: 550 },
+        action: { type: 'say', line: 'Nine o\'clock.' },
+        shownWith: 'open-mic',
+      },
+    ],
   },
-  start: { room: 'street', items: ['guitar'] },
-};
+  'content/rooms/pub.json': {
+    world: 'street',
+    label: 'PUB',
+    place,
+    hint: '',
+    start: { x: 300, y: 550 },
+    walkable: floor,
+    hotspots: [
+      {
+        id: 'door',
+        name: 'Door',
+        verb: 'Go out',
+        rect,
+        walkTo: { x: 100, y: 550 },
+        action: { type: 'exit', room: 'street', at: { x: 510, y: 560 } },
+      },
+      {
+        id: 'bar',
+        name: 'Bar',
+        verb: 'Look at',
+        rect,
+        walkTo: { x: 800, y: 550 },
+        action: { type: 'say', line: 'A bar.' },
+        uses: [{ item: 'flyer', say: 'Pinned up.', removes: 'flyer' }],
+      },
+      {
+        id: 'keeper',
+        name: 'Keeper',
+        verb: 'Talk to',
+        rect,
+        walkTo: { x: 700, y: 550 },
+        action: { type: 'talk', character: 'keeper' },
+      },
+    ],
+  },
+  'content/rooms/feed.json': {
+    world: 'online',
+    label: 'FEED',
+    place,
+    hint: '',
+    start: { x: 100, y: 550 },
+    walkable: floor,
+    hotspots: [],
+  },
+  'content/rooms/dream.json': {
+    world: 'dream',
+    label: 'DREAM',
+    place,
+    hint: '',
+    start: { x: 600, y: 550 },
+    walkable: floor,
+    hotspots: [
+      {
+        id: 'flyer',
+        name: 'Flyer',
+        verb: 'Look at',
+        rect,
+        walkTo: { x: 700, y: 550 },
+        action: { type: 'say', line: 'Open mic.' },
+        shownWith: 'open-mic',
+      },
+    ],
+  },
+});
 
 const activate = (hotspot: string): Command => ({ type: 'activate', hotspot });
 const select = (item: string | null): Command => ({ type: 'select', item });

@@ -7,6 +7,9 @@ export interface FloorPoint {
   y: number;
 }
 
+/** The scene in scene pixels: room art, floors and hotspot rects are laid out on it. */
+export const SCENE = { width: 1280, height: 640 } as const;
+
 export interface Rect {
   x: number;
   y: number;
@@ -22,6 +25,22 @@ export function insidePolygon(p: FloorPoint, poly: readonly FloorPoint[]): boole
     if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
   }
   return inside;
+}
+
+/** Whether the polygon is convex: walking in straight lines only stays on a convex floor. */
+export function isConvex(poly: readonly FloorPoint[]): boolean {
+  if (poly.length < 3) return false;
+  let sign = 0;
+  for (const [i, a] of poly.entries()) {
+    const b = poly[(i + 1) % poly.length];
+    const c = poly[(i + 2) % poly.length];
+    if (!b || !c) return false;
+    const cross = Math.sign((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x));
+    if (cross === 0) continue;
+    if (sign !== 0 && cross !== sign) return false;
+    sign = cross;
+  }
+  return true;
 }
 
 /**
