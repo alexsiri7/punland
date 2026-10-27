@@ -241,10 +241,11 @@ Each scene, character and object is one registry entry, keyed by a `ModelId` tha
 - **What A8 built.** `assets/models.json` lists the entries, like the content files list theirs, so a second entry with the same id is a problem the validator reports rather than a key `JSON.parse` silently drops. `assets/registry.ts` checks the file's shape as it loads (or throws, listing the problems) and holds the `models` by id, with the 2D lookups `sceneSprite`, `hotspotRect` and `actorOf`. A scene's `sprite2d` names its room art under `public/` and holds the rect of every hotspot of its room, by hotspot id: the parts of the scene and the placed entities, whose rect is per room. A character's or object's `sprite2d` names the actor layer that draws it in each room's art. Only those actors are shown and hidden, so only a hotspot that places an entity may have `presentWhen`; a part of the scene has no actor in `sprite2d`, and the validator reports one that comes and goes. The protagonist's entry is `character/protagonist`, so nothing hangs on his placeholder name.
 - **Variants.** `sprite2d` is filled in A8 and removed in B7. `model3d` is filled from B1.
 - **The registry holds no logic.** It never says what a thing does, only how it looks and where its anchors and hit areas are.
-- **Validators** (`assets/validate.ts`, run in unit tests: the browser can't see which files are under `public/`) check four things:
+- **Validators** (`assets/validate.ts`, run in unit tests: the browser can't see which files are under `public/`) check five things:
   - every `model` id in content has an entry of the right kind, and every entry's id is used once;
   - every file exists: a scene's room art, with the actor of the protagonist and of every entity its room places;
   - every `hotspots`/`node` a room uses exists, as a 2D rect or a 3D `hit_*` node;
+  - a `node`-targeted hotspot has no `presentWhen`: a part of the scene has no actor in `sprite2d` to show or hide it;
   - every 3D file meets the [asset contract](#8-asset-contract-for-the-designer). The glb is parsed in the test with no dependency: read its JSON chunk and inspect it.
 
   A problem is `{file, field, message}` as in the content validator, with a model named by its id in the field (`models[id=scene/opening].sprite2d.hotspots`).
