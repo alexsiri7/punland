@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { insidePolygon, nearestWalkable } from '../../src/domain/geometry';
+import { insidePolygon, isConvex, nearestWalkable } from '../../src/domain/geometry';
 
 const floor = [
   { x: 100, y: 500 },
@@ -15,6 +15,15 @@ describe('insidePolygon', () => {
     expect(insidePolygon({ x: 950, y: 550 }, floor)).toBe(false);
     expect(insidePolygon({ x: 500, y: 500 }, floor)).toBe(true);
     expect(insidePolygon({ x: 100, y: 600 }, floor)).toBe(true);
+  });
+});
+
+describe('isConvex', () => {
+  it('takes a corner on a straight edge, and refuses a dent or fewer than three corners', () => {
+    expect(isConvex(floor)).toBe(true);
+    expect(isConvex([...floor.slice(0, 2), { x: 900, y: 550 }, ...floor.slice(2)])).toBe(true);
+    expect(isConvex([...floor.slice(0, 2), { x: 500, y: 550 }, ...floor.slice(2)])).toBe(false);
+    expect(isConvex(floor.slice(0, 2))).toBe(false);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { againstBaseline, isEngineRule, layerViolations, srcFiles } from './support/layers';
+import { isEngineRule, layerViolations, srcFiles } from './support/layers';
 
 // Acceptance tests for openspec/specs/architecture/spec.md, requirement "Layered code".
 // The layers and what each may import are in docs/ARCHITECTURE.md, section 2.
@@ -44,8 +44,8 @@ describe('An import that breaks the layering', () => {
     ]);
   });
 
-  it('does not occur in src/ beyond the known violations', () => {
-    expect(againstBaseline(layerViolations(srcFiles))).toEqual({ unexpected: [], gone: [] });
+  it('does not occur in src/', () => {
+    expect(layerViolations(srcFiles)).toEqual([]);
   });
 });
 
@@ -67,7 +67,6 @@ describe('One engine per renderer', () => {
   });
 
   it('holds in src/', () => {
-    const { unexpected, gone } = againstBaseline(layerViolations(srcFiles));
-    expect([...unexpected, ...gone].filter((v) => isEngineRule(v.rule))).toEqual([]);
+    expect(layerViolations(srcFiles).filter((v) => isEngineRule(v.rule))).toEqual([]);
   });
 });

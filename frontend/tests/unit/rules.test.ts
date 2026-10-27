@@ -417,6 +417,28 @@ describe('interactions as data', () => {
     expect(play(state, [activate('bartender')], given).events.slice(-1)).toEqual([{ type: 'saved' }]);
   });
 
+  it('picks up an item the player already carries without carrying it twice', () => {
+    const given = editedRoom('pub', (room) =>
+      bartender(room).interactions.unshift({ verb: 'talk', effects: [{ give: 'flyer' }, { pickUp: 'flyer' }] }),
+    );
+    const once = play(inPub(given), [activate('bartender')], given).state;
+    expect(once.inventory).toEqual({ carried: ['guitar', 'flyer'], pickedUp: ['flyer'] });
+    const { state, events } = play(once, [activate('bartender')], given);
+    expect(state.inventory).toEqual(once.inventory);
+    expect(events.slice(-2)).toEqual([{ type: 'pickedUp', item: 'flyer', hotspot: 'bartender' }, { type: 'saved' }]);
+  });
+
+  it('gathers dream material only once', () => {
+    const given = editedRoom('street', (room) => {
+      room.hotspots.find((h: { id: string }) => h.id === 'sign').interactions[0].effects.push({ gather: 'open-mic' });
+    });
+    const once = play(newGame(given), [activate('sign')], given).state;
+    expect(once.journey.gathered).toEqual(['open-mic']);
+    const { state, events } = play(once, [activate('sign')], given);
+    expect(state.journey.gathered).toEqual(['open-mic']);
+    expect(events).not.toContainEqual({ type: 'gathered', material: 'open-mic' });
+  });
+
   it("shows and hides the room's hotspots as their conditions change", () => {
     const given = editedRoom('pub', (room) => {
       bartender(room).presentWhen = [{ flag: 'open' }];
