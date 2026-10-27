@@ -12,8 +12,6 @@ import type { SaveGame } from '../domain/save';
 import { playerId } from './player';
 import { safeLocalStorage } from './storage';
 
-export type { SaveGame } from '../domain/save';
-
 export interface SaveStore {
   load(): Promise<SaveGame | null>;
   save(game: SaveGame): Promise<void>;
