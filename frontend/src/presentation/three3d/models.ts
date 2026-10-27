@@ -13,7 +13,10 @@ export class Models {
   private readonly loader = new GLTFLoader();
   private readonly loaded = new Map<ModelId, Promise<Object3D>>();
 
-  /** A new copy of the model to place, or null when it has no 3D variant. */
+  /**
+   * A new copy of the model to place, or null when it has no 3D variant or its file failed to
+   * load: one missing model leaves the rest of the room standing, and the next room tries again.
+   */
   async instance(model: ModelId): Promise<Object3D | null> {
     const file = model3dFile(model);
     if (file === null) return null;
@@ -22,7 +25,13 @@ export class Models {
       template = this.loader.loadAsync(file).then(toonScene);
       this.loaded.set(model, template);
     }
-    return clone(await template);
+    try {
+      return clone(await template);
+    } catch (error) {
+      if (this.loaded.get(model) === template) this.loaded.delete(model);
+      console.warn(`Couldn't load ${file}:`, error);
+      return null;
+    }
   }
 }
 
