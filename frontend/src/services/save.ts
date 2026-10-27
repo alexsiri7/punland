@@ -44,11 +44,10 @@ function isJourney(value: unknown): value is JourneyState {
 }
 
 const isFlag = (value: unknown): boolean => ['boolean', 'number', 'string'].includes(typeof value);
-const isFlags = (value: unknown): boolean => isObject(value) && !Array.isArray(value) && Object.values(value).every(isFlag);
-const isStats = (value: unknown): boolean =>
-  isObject(value) &&
-  !Array.isArray(value) &&
-  Object.values(value).every((v) => typeof v === 'number' && Number.isFinite(v));
+const isRecordOf = (value: unknown, ok: (v: unknown) => boolean): boolean =>
+  isObject(value) && !Array.isArray(value) && Object.values(value).every(ok);
+const isFlags = (value: unknown): boolean => isRecordOf(value, isFlag);
+const isStats = (value: unknown): boolean => isRecordOf(value, (v) => typeof v === 'number' && Number.isFinite(v));
 
 /** A save this game can resume. Fields it doesn't know (from a newer game) are ignored. */
 export function isSaveGame(value: unknown): value is SaveGame {
