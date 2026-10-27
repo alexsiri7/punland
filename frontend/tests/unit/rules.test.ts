@@ -10,7 +10,6 @@ const floor = [
   { x: 1000, y: 600 },
   { x: 0, y: 600 },
 ];
-const rect = { x: 0, y: 0, width: 10, height: 10 };
 const place = { verb: 'Look at', name: 'it' };
 
 const files: Record<string, any> = {
@@ -34,6 +33,7 @@ const files: Record<string, any> = {
   },
   'content/objects.json': { objects: [{ id: 'flyer', name: 'Flyer', model: 'object/flyer' }] },
   'content/rooms/street.json': {
+    model: 'scene/street',
     world: 'street',
     label: 'STREET',
     place,
@@ -45,7 +45,6 @@ const files: Record<string, any> = {
         id: 'door',
         name: 'Door',
         verb: 'Go in',
-        rect,
         target: { node: 'door' },
         walkTo: { x: 500, y: 550 },
         interactions: [{ verb: 'go', effects: [{ goTo: 'pub' }] }],
@@ -54,7 +53,6 @@ const files: Record<string, any> = {
         id: 'flyer',
         name: 'Flyer',
         verb: 'Pick up',
-        rect,
         target: { entity: 'flyer', at: { x: 200, y: 520 } },
         walkTo: { x: 200, y: 550 },
         interactions: [{ verb: 'pickup', effects: [{ gather: 'open-mic' }, { pickUp: 'flyer' }] }],
@@ -64,7 +62,6 @@ const files: Record<string, any> = {
         id: 'sign',
         name: 'Sign',
         verb: 'Look at',
-        rect,
         target: { node: 'sign' },
         walkTo: { x: 420, y: 550 },
         interactions: [{ verb: 'look', effects: [{ say: 'A sign.' }] }],
@@ -73,7 +70,6 @@ const files: Record<string, any> = {
         id: 'echo',
         name: 'Echo',
         verb: 'Listen to',
-        rect,
         target: { node: 'echo' },
         walkTo: { x: 300, y: 550 },
         interactions: [{ verb: 'look', effects: [{ say: "Nine o'clock." }] }],
@@ -82,6 +78,7 @@ const files: Record<string, any> = {
     ],
   },
   'content/rooms/pub.json': {
+    model: 'scene/pub',
     world: 'street',
     label: 'PUB',
     place,
@@ -93,7 +90,6 @@ const files: Record<string, any> = {
         id: 'door',
         name: 'Door',
         verb: 'Go out',
-        rect,
         target: { node: 'door' },
         walkTo: { x: 100, y: 550 },
         interactions: [{ verb: 'go', effects: [{ goTo: 'street', at: { x: 510, y: 560 } }] }],
@@ -102,7 +98,6 @@ const files: Record<string, any> = {
         id: 'bar',
         name: 'Bar',
         verb: 'Look at',
-        rect,
         target: { node: 'bar' },
         walkTo: { x: 800, y: 550 },
         interactions: [
@@ -114,7 +109,6 @@ const files: Record<string, any> = {
         id: 'bartender',
         name: 'Bartender',
         verb: 'Talk to',
-        rect,
         target: { entity: 'bartender', at: { x: 700, y: 520 } },
         walkTo: { x: 700, y: 550 },
         interactions: [{ verb: 'talk', effects: [{ talk: 'bartender' }] }],
@@ -122,6 +116,7 @@ const files: Record<string, any> = {
     ],
   },
   'content/rooms/feed.json': {
+    model: 'scene/feed',
     world: 'online',
     label: 'FEED',
     place,
@@ -131,6 +126,7 @@ const files: Record<string, any> = {
     hotspots: [],
   },
   'content/rooms/dream.json': {
+    model: 'scene/dream',
     world: 'dream',
     label: 'DREAM',
     place,
@@ -142,7 +138,6 @@ const files: Record<string, any> = {
         id: 'flyer',
         name: 'Flyer',
         verb: 'Look at',
-        rect,
         target: { entity: 'flyer', at: { x: 700, y: 520 } },
         walkTo: { x: 700, y: 550 },
         interactions: [{ verb: 'look', effects: [{ say: 'Open mic.' }] }],

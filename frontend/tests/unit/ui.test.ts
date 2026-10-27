@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
+import { hotspotRect } from '../../src/assets/registry';
 import { loadContent } from '../../src/content';
 import { type DialogueTurn, newGame } from '../../src/domain';
 import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
@@ -41,7 +42,7 @@ describe('the DOM UI', () => {
     const renderer = {
       canvas: () => canvas,
       onResize: () => () => {},
-      hotspotBounds: (id: string) => content.rooms[game.state.room]?.hotspots.find((h) => h.id === id)?.rect ?? null,
+      hotspotBounds: (id: string) => hotspotRect(content.rooms[game.state.room]!.model, id),
       anchor: () => head,
     };
     const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name) }, dialogue);

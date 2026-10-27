@@ -14,6 +14,7 @@ export {
   type Interaction,
   type Item,
   type ItemId,
+  type ModelId,
   type ObjectId,
   type Prop,
   type Room,

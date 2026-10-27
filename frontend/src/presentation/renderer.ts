@@ -1,10 +1,4 @@
-import type { FloorPoint, Rect } from '../domain';
-
-/**
- * How a thing looks, by the name the renderer knows it by. Until the model registry (A8), that
- * is its art: the id of an actor layer in the room's art (art/<room>/scene.svg).
- */
-export type ModelId = string;
+import type { FloorPoint, ModelId, Rect } from '../domain';
 
 /** A point in scene pixels (1280 x 640 for the room, with the UI bar under it). */
 export interface ScenePoint {
@@ -12,11 +6,16 @@ export interface ScenePoint {
   y: number;
 }
 
-/** What to draw, built by the app from content and state. */
+/**
+ * What to draw, built by the app from content and state. Models are ids in the model registry
+ * (src/assets), which says how each one looks to each renderer.
+ */
 export interface SceneView {
   room: string;
-  /** The room's hotspots. `rect` is its hit area in scene pixels, until the model registry holds it (A8). */
-  entities: { hotspot: string; model: ModelId; rect: Rect; visible: boolean }[];
+  /** The room's scene model: its art and its hotspots' hit areas. */
+  model: ModelId;
+  /** The room's hotspots, with the model of the character or object each one places, if it places one. */
+  entities: { hotspot: string; model?: ModelId; visible: boolean }[];
   player: { model: ModelId; at: FloorPoint };
 }
 

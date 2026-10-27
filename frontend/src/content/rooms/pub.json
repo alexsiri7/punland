@@ -1,4 +1,5 @@
 {
+  "model": "scene/pub",
   "world": "street",
   "label": "PUNLAND · THE THREE CROWS",
   "place": { "verb": "Inside", "name": "The Three Crows" },
@@ -15,7 +16,6 @@
       "id": "door",
       "name": "Street door",
       "verb": "Go out",
-      "rect": { "x": 60, "y": 138, "width": 162, "height": 332 },
       "target": { "node": "door" },
       "walkTo": { "x": 150, "y": 550 },
       "interactions": [{ "verb": "go", "effects": [{ "goTo": "opening", "at": { "x": 705, "y": 590 } }] }]
@@ -24,7 +24,6 @@
       "id": "bartender",
       "name": "Bartender",
       "verb": "Talk to",
-      "rect": { "x": 940, "y": 164, "width": 140, "height": 192 },
       "target": { "entity": "bartender", "at": { "x": 1010, "y": 535 } },
       "walkTo": { "x": 880, "y": 560 },
       "interactions": [

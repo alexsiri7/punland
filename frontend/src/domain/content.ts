@@ -1,4 +1,4 @@
-import type { FloorPoint, Rect } from './geometry';
+import type { FloorPoint } from './geometry';
 
 /**
  * Ids of things that are in the content. Only the content validators (src/content/validate.ts)
@@ -12,6 +12,12 @@ export type HotspotId = string & { readonly __brand: 'HotspotId' };
 /** A character's id is also the id of its sheet in the backend (backend/src/punland_api/content/characters). */
 export type CharacterId = string & { readonly __brand: 'CharacterId' };
 export type ObjectId = string & { readonly __brand: 'ObjectId' };
+/**
+ * A model's id in the model registry (src/assets/models.json), e.g. `character/bartender`: how a
+ * room, character or object looks. Unbranded: the content can't see the registry, so the asset
+ * validators (src/assets/validate.ts) check that each one is there.
+ */
+export type ModelId = string;
 
 /**
  * The game's content as the rules read it (progress spec, "Story as content"): the shapes of
@@ -48,8 +54,8 @@ export interface World {
 export interface Entity {
   /** Accessible name. */
   name: string;
-  /** Its model's id in the registry (A8 fills the registry in), e.g. `character/bartender`. */
-  model: string;
+  /** E.g. `character/bartender`. */
+  model: ModelId;
 }
 
 export interface Character extends Entity {
@@ -129,7 +135,6 @@ export interface Hotspot {
   name: string;
   /** Shown before the name in the UI bar's action line on hover, e.g. "Go in". */
   verb: string;
-  rect: Rect;
   target: HotspotTarget;
   /** Where the player walks to before an interaction runs; inside the walkable area. */
   walkTo: FloorPoint;
@@ -146,6 +151,8 @@ export interface Hotspot {
 export interface Room {
   /** The world the room is in. */
   world: WorldId;
+  /** Its scene model, e.g. `scene/opening`: the room's art and its hotspots' hit areas. */
+  model: ModelId;
   /** UI bar location label, e.g. "PUNLAND · HIGH STREET". */
   label: string;
   /** UI bar action line when nothing is hovered. */

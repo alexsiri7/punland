@@ -18,7 +18,7 @@ function placedModels(content: Content, room: string): string[] {
 describe('One model per entity', () => {
   // Requirement: One model per entity. Each entity has exactly one registry entry, and content
   // refers to models only by that entry's id, so a model is reused in every room it appears in.
-  it.fails('The same model in two rooms (needs #38)', async () => {
+  it('The same model in two rooms', async () => {
     const [{ loadContent }, { models }] = await Promise.all([load('content'), load('assets')]);
     const content = loadContent();
     expect(placedModels(content, 'opening')).toContain('object/flyer');

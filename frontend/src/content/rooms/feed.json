@@ -1,4 +1,5 @@
 {
+  "model": "scene/feed",
   "world": "online",
   "label": "TUNE STORY · THE BAND'S PAGE",
   "place": { "verb": "Scrolling", "name": "The band's page" },
@@ -15,7 +16,6 @@
       "id": "page",
       "name": "Band page",
       "verb": "Look at",
-      "rect": { "x": 400, "y": 40, "width": 480, "height": 460 },
       "target": { "node": "page" },
       "walkTo": { "x": 640, "y": 585 },
       "interactions": [
@@ -26,7 +26,6 @@
       "id": "likes",
       "name": "Likes",
       "verb": "Look at",
-      "rect": { "x": 960, "y": 430, "width": 80, "height": 90 },
       "target": { "node": "likes" },
       "walkTo": { "x": 1000, "y": 585 },
       "interactions": [{ "verb": "look", "effects": [{ "say": "Zero likes. Even my mum hasn't found us yet." }] }]

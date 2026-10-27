@@ -9,6 +9,4 @@
 export const PROTAGONIST = {
   name: 'Paws Anka',
   placeholderName: true,
-  /** The id of his <g> in each room's layer-actors (art/<room>/scene.svg): the sprite the player moves. */
-  actor: 'cat',
 } as const;
