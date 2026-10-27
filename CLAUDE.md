@@ -49,7 +49,7 @@ CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the
 
 ## Architecture: read docs/ARCHITECTURE.md before changing frontend/src
 
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) is the target structure (specs: `openspec/specs/architecture`, `openspec/specs/models`). It splits the code into a pure domain and rules layer (commands to state and events), content and a model registry validated by schemas, and presentation behind a renderer interface (Phaser 2D now, Three.js 3D from phase B). It also holds the 3D asset contract for model files. The refactor lands as issues `A1`…`A9`, then the 3D work as `B1`…`B7`. Until they land, the layout below is the current code. Each step updates both this file and ARCHITECTURE.md. Layering is enforced by `tests/unit/architecture.test.ts` (from A1), not by a linter: TypeScript 7 has no JS compiler API for typescript-eslint or dependency-cruiser.
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) is the target structure (specs: `openspec/specs/architecture`, `openspec/specs/models`). It splits the code into a pure domain and rules layer (commands to state and events), content and a model registry validated by schemas, and presentation behind a renderer interface (Phaser 2D now, Three.js 3D from phase B). It also holds the 3D asset contract for model files. The refactor landed as issues `A1`…`A9` (phase A is done), and the 3D work lands as `B1`…`B7`. The layout below is the current code. Each step updates both this file and ARCHITECTURE.md. Layering is enforced by `tests/unit/architecture.test.ts` (from A1), not by a linter: TypeScript 7 has no JS compiler API for typescript-eslint or dependency-cruiser.
 
 ## Layout
 
@@ -58,7 +58,7 @@ frontend/
   index.html            title screen markup (Tune Story, New game, Continue); loads src/app/main.ts
   src/domain/           pure model: floor geometry (FloorPoint, walking on a convex floor), content types (content.ts),
                         GameState and newGame (state.ts), Command and GameEvent (commands.ts), SaveGame with toSave/fromSave
-                        (save.ts), inventory/journey save state
+                        (save.ts), inventory/journey save state, DialogueTurn (dialogue.ts); index.ts exports it all
   src/rules/            pure rules: apply(content, state, command) -> {state, events}, running interactions; isPresent
   src/content/          content data: rooms/<room>.json, items.json, worlds.json, characters.json, objects.json,
                         protagonist.ts; validate.ts checks the files
@@ -72,7 +72,7 @@ frontend/
                         the actor layer of a character or object), registry.ts (loads and checks it; sceneSprite,
                         hotspotRect, actorOf), validate.ts (validateAssets: the registry against the content and the
                         room art, run in unit tests)
-  src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), dialogue.ts
+  src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), dialogue.ts
                         (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
   src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
                         theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
@@ -91,8 +91,8 @@ frontend/
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
   public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
   public/_headers       production CSP and security headers (Cloudflare Pages)
-  tests/unit/           vitest (jsdom); architecture.test.ts enforces the layers, support/layer-baseline.json lists the known
-                        violations (none left); fakes/renderer.ts is a Renderer that records calls, for app tests
+  tests/unit/           vitest (jsdom); architecture.test.ts enforces the layers (support/layers.ts holds the layer table);
+                        fakes/renderer.ts is a Renderer that records calls, for app tests
   tests/e2e/            Playwright; fixtures.ts fails any test on page errors, console errors, CSP violations
   tests/serve.mjs       local stand-in for Pages: serves dist/ with _headers, 404.html for unknown paths
 backend/
