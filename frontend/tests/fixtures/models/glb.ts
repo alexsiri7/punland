@@ -5,6 +5,8 @@
  * never drift from this file.
  */
 
+import { concat, container, pad, srgbToLinear } from '../../../scripts/glb-container.mjs';
+
 type Vec3 = [number, number, number];
 
 interface Box {
@@ -251,14 +253,7 @@ export function glb(model: Model): Uint8Array {
   if (model.extensionsRequired) gltf.extensionsRequired = model.extensionsRequired;
   const bin = pad(concat(chunks), 0);
   (gltf.buffers as { byteLength: number }[])[0]!.byteLength = bin.byteLength;
-  const json = pad(new TextEncoder().encode(JSON.stringify(gltf)), 0x20);
-  return concat([
-    header(0x46546c67, 2, 12 + 8 + json.byteLength + 8 + bin.byteLength),
-    header(json.byteLength, 0x4e4f534a),
-    json,
-    header(bin.byteLength, 0x004e4942),
-    bin,
-  ]);
+  return container(gltf, bin);
 }
 
 function boxGeometry(from: Vec3, size: Vec3) {
@@ -326,28 +321,4 @@ function boxGeometry(from: Vec3, size: Vec3) {
     normals: Float32Array.from(faces.flatMap(([normal]) => [normal, normal, normal, normal].flat())),
     indices: Uint16Array.from(faces.flatMap((_, f) => [0, 1, 2, 0, 2, 3].map((i) => f * 4 + i))),
   };
-}
-
-function srgbToLinear(c: number): number {
-  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-}
-
-function header(...words: number[]): Uint8Array {
-  return new Uint8Array(Uint32Array.from(words).buffer);
-}
-
-function pad(bytes: Uint8Array, fill: number): Uint8Array {
-  const padded = new Uint8Array(Math.ceil(bytes.byteLength / 4) * 4).fill(fill);
-  padded.set(bytes);
-  return padded;
-}
-
-function concat(parts: Uint8Array[]): Uint8Array {
-  const all = new Uint8Array(parts.reduce((n, part) => n + part.byteLength, 0));
-  let at = 0;
-  for (const part of parts) {
-    all.set(part, at);
-    at += part.byteLength;
-  }
-  return all;
 }

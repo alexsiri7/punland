@@ -92,7 +92,8 @@ frontend/
                         mirror.ts (data-scene/-world/-player/-hover/-say on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
   scripts/make-placeholders.mjs  writes the placeholder models in public/models/ (tests/unit/placeholders.test.ts
-                        checks the committed files match it)
+                        checks the committed files match it); scripts/glb-container.mjs is the one glb writer it and
+                        the test fixtures share
   public/models/<kind>s/<id>.glb  3D models (placeholders for now), not drawn yet: the asset contract, ARCHITECTURE.md §8
   public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
   public/_headers       production CSP and security headers (Cloudflare Pages)

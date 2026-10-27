@@ -13,6 +13,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { concat, container, srgbToLinear } from './glb-container.mjs';
 
 // Base tones from docs/design/STYLE.md: the protagonist's table (board 2), the palette's
 // accents and city, and the pub art's bartender (art/pub/scene.svg).
@@ -367,43 +368,12 @@ function glb(model) {
     bufferViews,
     buffers: [{ byteLength: bin.byteLength }],
   };
-  const json = pad(new TextEncoder().encode(JSON.stringify(gltf)), 0x20);
-  return concat([
-    words(0x46546c67, 2, 12 + 8 + json.byteLength + 8 + bin.byteLength),
-    words(json.byteLength, 0x4e4f534a),
-    json,
-    words(bin.byteLength, 0x004e4942),
-    bin,
-  ]);
+  return container(gltf, bin);
 }
 
 /** To 0.1 mm, so the files don't hang on the last bits of floating point. */
 function round(value) {
   return Math.round(value * 1e4) / 1e4 + 0;
-}
-
-function srgbToLinear(c) {
-  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-}
-
-function words(...values) {
-  return new Uint8Array(Uint32Array.from(values).buffer);
-}
-
-function pad(bytes, fill) {
-  const padded = new Uint8Array(Math.ceil(bytes.byteLength / 4) * 4).fill(fill);
-  padded.set(bytes);
-  return padded;
-}
-
-function concat(parts) {
-  const all = new Uint8Array(parts.reduce((n, part) => n + part.byteLength, 0));
-  let at = 0;
-  for (const part of parts) {
-    all.set(part, at);
-    at += part.byteLength;
-  }
-  return all;
 }
 
 // The placeholders to write, leaving out any file the registry marks a designer's (`placeholder: false`).
