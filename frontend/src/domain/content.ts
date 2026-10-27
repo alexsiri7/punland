@@ -68,8 +68,10 @@ export interface Item {
   noUse: string;
 }
 
+export const VERBS = ['look', 'use', 'talk', 'pickup', 'go'] as const;
+
 /** A verb an interaction answers to; `use` with an `item` is "use X on Y". */
-export type Verb = 'look' | 'use' | 'talk' | 'pickup' | 'go';
+export type Verb = (typeof VERBS)[number];
 
 /** What a hotspot does for one verb: if every condition in `when` holds, its effects run in order. */
 export interface Interaction {

@@ -119,6 +119,13 @@ describe('content validation', () => {
       message: /must have exactly one of say, goTo/,
     },
     {
+      problem: 'an effect with two kinds',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'board').interactions[0].effects[0] = { say: 'Hm.', goTo: 'pub' }),
+      field: 'hotspots[1].interactions[0].effects[0]',
+      message: /must have exactly one of say, goTo/,
+    },
+    {
       problem: 'an unknown verb',
       file: OPENING,
       edit: (room) => (hotspot(room, 'board').interactions[0].verb = 'dance'),
@@ -131,6 +138,13 @@ describe('content validation', () => {
       edit: (room) => (hotspot(room, 'board').interactions[0].item = 'flyer'),
       field: 'hotspots[1].interactions[0].item',
       message: /only with the use verb/,
+    },
+    {
+      problem: 'a use without an item',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'board').interactions[0].verb = 'use'),
+      field: 'hotspots[1].interactions[0].item',
+      message: /is missing/,
     },
     {
       problem: 'a talk with an unknown character',

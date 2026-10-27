@@ -19,7 +19,7 @@ import {
   type Room,
   type RoomId,
   SCENE,
-  type Verb,
+  VERBS,
   type World,
   type WorldId,
 } from '../domain';
@@ -195,8 +195,10 @@ function inScene(field: Field): Rect {
   return rect ?? { ...NOWHERE, width: 0, height: 0 };
 }
 
+const TARGETS = kindsOf<HotspotTarget>()(['entity', 'node']);
+
 function readTarget(target: Field, known: Known, onFloor: (field: Field) => FloorPoint): HotspotTarget {
-  const kind = kindOf(target, ['entity', 'node']);
+  const kind = kindOf(target, TARGETS);
   if (kind !== 'entity') return { node: kind === 'node' ? target.get('node').text() : '' };
   const entity = target.get('entity');
   const id = entity.text();
@@ -206,14 +208,13 @@ function readTarget(target: Field, known: Known, onFloor: (field: Field) => Floo
   return { entity: id as CharacterId | ObjectId, at: onFloor(target.get('at')) };
 }
 
-const VERBS: readonly Verb[] = ['look', 'use', 'talk', 'pickup', 'go'];
-
 function readInteraction(interaction: Field, known: Known): Interaction {
   const verbField = interaction.get('verb');
   const verb = VERBS.find((v) => v === verbField.value);
   if (!verb) verbField.problem(verbField.present ? `must be ${VERBS.join(', ')}` : 'is missing');
   const item = interaction.get('item').optional((field) => field.id('item', known.item));
   if (item !== undefined && verb !== 'use') interaction.get('item').problem('goes only with the use verb');
+  if (item === undefined && verb === 'use') interaction.get('item').problem('is missing');
   const when = interaction.get('when').optional((field) => conditions(field, known));
   return {
     verb: verb ?? 'look',
@@ -221,6 +222,22 @@ function readInteraction(interaction: Field, known: Known): Interaction {
     ...(when !== undefined && { when }),
     effects: interaction.get('effects').list((effect) => readEffect(effect, known)),
   };
+}
+
+/** Every key of every member of the union `U`. */
+type KeyOf<U> = U extends unknown ? keyof U : never;
+/** The members of the union `U` with none of the keys `K`. */
+type Unnamed<U, K> = U extends unknown ? (Extract<keyof U, K> extends never ? U : never) : never;
+
+/**
+ * `kinds`, the keys that tell the members of the union `U` apart in content JSON, checked against
+ * it: while a member has none of them, the call fails to compile and names that member.
+ */
+function kindsOf<U>() {
+  return <const K extends KeyOf<U>>(
+    kinds: readonly K[],
+    ..._: [Unnamed<U, K>] extends [never] ? [] : [missing: Unnamed<U, K>]
+  ): readonly K[] => kinds;
 }
 
 /** The one key from `kinds` that says what a target, condition or effect is. */
@@ -237,7 +254,7 @@ function conditions(list: Field, known: Known): Condition[] {
   return list.list((condition) => readCondition(condition, known));
 }
 
-const CONDITIONS = ['has', 'pickedUp', 'gathered', 'flag', 'not'] as const;
+const CONDITIONS = kindsOf<Condition>()(['has', 'pickedUp', 'gathered', 'flag', 'not']);
 
 function readCondition(condition: Field, known: Known): Condition {
   switch (kindOf(condition, CONDITIONS)) {
@@ -258,7 +275,7 @@ function readCondition(condition: Field, known: Known): Condition {
   }
 }
 
-const EFFECTS = ['say', 'goTo', 'pickUp', 'give', 'take', 'gather', 'set', 'talk'] as const;
+const EFFECTS = kindsOf<Effect>()(['say', 'goTo', 'pickUp', 'give', 'take', 'gather', 'set', 'talk']);
 
 function readEffect(effect: Field, known: Known): Effect {
   switch (kindOf(effect, EFFECTS)) {
