@@ -28,8 +28,8 @@ export function sceneView(session: GameSession): SceneView {
 /**
  * Plays the session in `container`: `renderer` draws it, the DOM UI (presentation/ui) lies over
  * it and the #game mirror follows it. The renderer is told what to draw from the session's
- * events, its canvas's clicks become commands through `renderer.pick`, and its frames tick the
- * walk. Resolves once the first room is shown.
+ * events, its canvas's clicks become commands and its pointer the hovered hotspot through
+ * `renderer.pick`, and its frames tick the walk. Resolves once the first room is shown.
  */
 export async function playGame(
   container: HTMLElement,
@@ -64,16 +64,28 @@ export async function playGame(
   });
 
   const canvas = renderer.canvas();
-  canvas.addEventListener('pointerdown', (event) => {
+  const pick = (event: PointerEvent) => {
     const box = canvas.getBoundingClientRect();
-    const pick = renderer.pick({
+    return renderer.pick({
       x: ((event.clientX - box.left) * SCENE_WIDTH) / box.width,
       y: ((event.clientY - box.top) * (SCENE_HEIGHT + UI_BAR_HEIGHT)) / box.height,
     });
-    if (pick.kind !== 'floor') return;
-    session.dispatch({ type: 'walk', to: pick.at });
-    ui.walked();
+  };
+  canvas.addEventListener('pointerdown', (event) => {
+    const picked = pick(event);
+    if (picked.kind === 'hotspot') {
+      session.dispatch({ type: 'activate', hotspot: picked.hotspot });
+    } else if (picked.kind === 'floor') {
+      session.dispatch({ type: 'walk', to: picked.at });
+      ui.walked();
+    }
   });
+  canvas.addEventListener('pointermove', (event) => {
+    const picked = pick(event);
+    ui.pointed(picked.kind === 'hotspot' ? picked.hotspot : null);
+    canvas.style.cursor = picked.kind === 'hotspot' ? 'pointer' : '';
+  });
+  canvas.addEventListener('pointerleave', () => ui.pointed(null));
   renderer.frame((dtMs) => {
     if (session.state.walk) session.dispatch({ type: 'tick', dtMs });
   });

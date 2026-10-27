@@ -115,7 +115,7 @@ export async function newGame(page: Page, renderer = projectRenderer()): Promise
 }
 
 export async function enterPub(page: Page): Promise<void> {
-  await hotspot(page, content.pubDoor).click();
+  await clickHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-scene', content.pubInterior);
 }
 
@@ -181,7 +181,7 @@ export async function playerPosition(page: Page): Promise<{ x: number; y: number
 /** Selects an inventory item, then clicks a hotspot with it. */
 export async function useItemOn(page: Page, item: string | RegExp, target: string | RegExp): Promise<void> {
   await inventoryItem(page, item).click();
-  await hotspot(page, target).click();
+  await clickHotspot(page, target);
 }
 
 /**

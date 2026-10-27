@@ -41,8 +41,7 @@ test('Walking', async ({ page }) => {
 test('Hovering a hotspot', async ({ page }) => {
   // Requirement: Hotspots. Hotspots show their name on hover.
   await newGame(page);
-  const door = hotspot(page, content.pubDoor);
-  await door.hover();
+  await pointAtHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
 });
 
@@ -50,7 +49,7 @@ test('Clicking a hotspot', async ({ page }) => {
   // Requirement: Hotspots. Clicking one walks the character to it and its action happens.
   await newGame(page);
   const start = await playerPosition(page);
-  await hotspot(page, content.board).click();
+  await clickHotspot(page, content.board);
   await expect(game(page)).toHaveAttribute('data-say', /\S/);
   expect(await playerPosition(page)).not.toEqual(start);
 });
@@ -60,7 +59,7 @@ test('Entering the pub', async ({ page }) => {
   await newGame(page);
   await enterPub(page);
   await expect.poll(() => playerPosition(page)).toEqual(content.pubEntrance);
-  await hotspot(page, content.pubDoor).click();
+  await clickHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
   await expect.poll(() => playerPosition(page)).toEqual(content.outsidePub);
 });
@@ -77,7 +76,7 @@ test('Swapping art', async ({ page }) => {
   );
   await newGame(page);
   await expect.poll(() => scenePixel(page, { x: 40, y: 300 })).toEqual([255, 0, 255]);
-  await hotspot(page, content.pubDoor).hover();
+  await pointAtHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
   await enterPub(page);
 });

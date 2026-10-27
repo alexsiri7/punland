@@ -40,6 +40,7 @@ describe('the DOM UI', () => {
     const game = new GameSession(content, state, { save: async () => {} });
     const canvas = document.createElement('canvas');
     const renderer = {
+      picksHotspots: false,
       canvas: () => canvas,
       onResize: () => () => {},
       hotspotBounds: (id: string) => hotspotRect(content.rooms[game.state.room]!.model, id),

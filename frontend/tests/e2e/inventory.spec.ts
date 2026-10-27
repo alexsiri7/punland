@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures';
 import {
+  clickHotspot,
   clickScene,
   content,
   enterPub,
@@ -21,7 +22,7 @@ test('Picking up', async ({ page }) => {
   await newGame(page);
   await expect.poll(() => playerPosition(page)).not.toBeNull();
   const flyer = await scenePixel(page, content.flyerSprite);
-  await hotspot(page, content.flyer).click();
+  await clickHotspot(page, content.flyer);
   await expect(hotspot(page, content.flyer)).toHaveCount(0);
   await expect(inventoryItem(page, content.flyer)).toBeVisible();
   // The flyer leaves the room's art too, not just its hotspot.
@@ -39,7 +40,7 @@ test('A use that works', async ({ page }) => {
   // Requirement: Using items. Using an item on a hotspot that accepts it runs the puzzle step.
   // The step here is an Act 1 placeholder: the bartender takes the Open Mic flyer.
   await newGame(page);
-  await hotspot(page, content.flyer).click();
+  await clickHotspot(page, content.flyer);
   await enterPub(page);
   await useItemOn(page, content.flyer, content.bartender);
   await expect(inventoryItem(page, content.flyer)).toHaveCount(0);

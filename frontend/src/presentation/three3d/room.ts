@@ -22,6 +22,8 @@ export class Room {
   private readonly hotspots = new Map<string, Object3D>();
   /** The models of the hotspots that place an entity, by hotspot id. */
   private readonly entities = new Map<string, Object3D>();
+  /** The hotspots that are not in the room now: they are not drawn or picked. */
+  private readonly hidden = new Set<string>();
 
   private constructor(model: Object3D | null) {
     const camera = model?.getObjectByName('cam_main');
@@ -53,6 +55,7 @@ export class Room {
       room.stand(player, view.player.at);
     }
     view.entities.forEach((entity, i) => {
+      if (!entity.visible) room.hidden.add(entity.hotspot);
       if (entity.model === undefined) {
         const hit = scene?.getObjectByName(`hit_${entity.node}`);
         if (hit) room.hotspots.set(entity.hotspot, hit);
@@ -79,6 +82,8 @@ export class Room {
   }
 
   setVisible(hotspot: string, visible: boolean): void {
+    if (visible) this.hidden.delete(hotspot);
+    else this.hidden.add(hotspot);
     const entity = this.entities.get(hotspot);
     if (entity) entity.visible = visible;
   }
@@ -86,6 +91,18 @@ export class Room {
   /** Whether a point of the scene is on the floor. */
   isFloor(screen: ScenePoint): boolean {
     return this.floor(screen) !== null;
+  }
+
+  /** The hotspot in the room whose hit area is nearest the camera at a point of the scene, if any. */
+  hotspotAt(screen: ScenePoint): string | null {
+    this.aim(screen);
+    let nearest: { hotspot: string; distance: number } | null = null;
+    for (const [hotspot, object] of this.hotspots) {
+      if (this.hidden.has(hotspot)) continue;
+      const hit = this.raycaster.intersectObjects(this.hitArea(hotspot, object), true)[0];
+      if (hit && (!nearest || hit.distance < nearest.distance)) nearest = { hotspot, distance: hit.distance };
+    }
+    return nearest?.hotspot ?? null;
   }
 
   /** The projected bounds of what a hotspot is drawn as, or null if the room draws it as nothing. */
@@ -118,6 +135,21 @@ export class Room {
     return node ? this.toScene(node.getWorldPosition(new Vector3())) : null;
   }
 
+  /**
+   * What a ray has to meet to pick a hotspot: a part of the scene's `hit_<node>`, or an entity's
+   * `hit` proxy if its model has one (asset contract), else its visible meshes.
+   */
+  private hitArea(hotspot: string, object: Object3D): Object3D[] {
+    if (!this.entities.has(hotspot)) return [object];
+    const proxy = object.getObjectByName('hit');
+    if (proxy) return [proxy];
+    const meshes: Object3D[] = [];
+    object.traverseVisible((child) => {
+      if (child instanceof Mesh) meshes.push(child);
+    });
+    return meshes;
+  }
+
   private stand(object: Object3D, at: FloorPoint): boolean {
     const world = this.floor(at);
     if (world) object.position.copy(world);
@@ -127,9 +159,14 @@ export class Room {
   /** The floor under a point of the scene, or null where the camera sees no floor. */
   private floor(screen: ScenePoint): Vector3 | null {
     if (!this.floorMesh) return null;
+    this.aim(screen);
+    return this.raycaster.intersectObject(this.floorMesh)[0]?.point ?? null;
+  }
+
+  /** Points the raycaster from the camera through a point of the scene. */
+  private aim(screen: ScenePoint): void {
     const ndc = new Vector2((screen.x / SCENE_WIDTH) * 2 - 1, 1 - (screen.y / SCENE_HEIGHT) * 2);
     this.raycaster.setFromCamera(ndc, this.camera);
-    return this.raycaster.intersectObject(this.floorMesh)[0]?.point ?? null;
   }
 
   private toScene(world: Vector3): ScenePoint {

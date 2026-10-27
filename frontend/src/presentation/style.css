@@ -244,6 +244,11 @@ body {
   pointer-events: auto;
 }
 
+/* The renderer picks hotspots on the canvas (3D): the buttons are for the keyboard and screen readers. */
+.hotspots.pointer-through button {
+  pointer-events: none;
+}
+
 .hotspots button:focus-visible {
   outline: 2px dashed var(--sign-gold);
   outline-offset: 2px;

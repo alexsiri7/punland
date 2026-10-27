@@ -50,6 +50,11 @@ export type AnimationName =
  * up with its canvas and places its controls and speech from its bounds and anchors.
  */
 export interface Renderer {
+  /**
+   * Whether `pick` finds hotspots: the hotspot buttons then leave the pointer to the canvas and
+   * stay for the keyboard and screen readers. Otherwise they take it, and the canvas is all floor.
+   */
+  readonly picksHotspots: boolean;
   /** Creates its canvas inside `container`. */
   mount(container: HTMLElement): Promise<void>;
   /** Loads the view's assets (cached) and draws the room; resolves once it is drawn. */

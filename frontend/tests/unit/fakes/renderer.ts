@@ -18,6 +18,7 @@ export type RendererCall =
  */
 export class FakeRenderer implements Renderer {
   readonly calls: RendererCall[] = [];
+  readonly picksHotspots = false;
   private element: HTMLCanvasElement | null = null;
   private view: SceneView | null = null;
   private at: FloorPoint = { x: 0, y: 0 };
