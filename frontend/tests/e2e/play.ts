@@ -77,20 +77,20 @@ export const conversation = (page: Page): Locator => page.getByRole('dialog');
 
 /**
  * The renderers while both exist (docs/ARCHITECTURE.md, "Renderer choice"): `?renderer=2d`
- * draws the room's art layers, `?renderer=3d` its models. Without one, the game's default.
+ * draws the room's art layers, `?renderer=3d` its models. Without one, the game's default, 3D.
  */
 export type Renderer = '2d' | '3d';
 
 /**
  * The renderer the running Playwright project plays with (playwright.config.ts): the suite runs
- * once in the default renderer and once in 3D.
+ * once in the default renderer, 3D, and once in 2D.
  */
 function projectRenderer(): Renderer | undefined {
-  return test.info().project.metadata.renderer === '3d' ? '3d' : undefined;
+  return test.info().project.metadata.renderer === '2d' ? '2d' : undefined;
 }
 
-/** Whether this run plays in 3D, for tests that need a later 3D step: `test.fail(isThreeD(), 'needs B3')`. */
-export const isThreeD = (): boolean => projectRenderer() === '3d';
+/** Whether this run plays in 3D, for tests that need a later 3D step: `test.fail(isThreeD(), 'needs B7')`. */
+export const isThreeD = (): boolean => projectRenderer() !== '2d';
 
 /** The opening room's scene model, which the 3D renderer draws it from (models spec). */
 export const openingSceneModel = '/models/scenes/opening.glb';
@@ -104,12 +104,13 @@ function gamePage(renderer = projectRenderer()): string {
 }
 
 export async function newGame(page: Page, renderer = projectRenderer()): Promise<void> {
+  const threeD = renderer !== '2d';
   const requested: string[] = [];
-  if (renderer === '3d') page.on('request', (request) => requested.push(new URL(request.url()).pathname));
+  if (threeD) page.on('request', (request) => requested.push(new URL(request.url()).pathname));
   await page.goto(gamePage(renderer));
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
-  if (renderer === '3d') {
+  if (threeD) {
     await expect.poll(() => requested, 'the 3D renderer loads the player model').toContain(playerModel);
   }
 }

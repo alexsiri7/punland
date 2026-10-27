@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { isThreeD, newGame } from './play';
 
 // docs/design/STYLE.md: the Tune Story look. Fonts are self-hosted (the CSP allows fonts
 // from 'self' only) and the opening room's art comes from its layer files.
@@ -15,13 +16,12 @@ test('the title screen uses the sign font for the title and the UI font for the 
 });
 
 test('the opening scene loads its art layers', async ({ page }) => {
+  test.fail(isThreeD(), 'loads the 2D art layers: B7 replaces it with the scene models');
   const art: string[] = [];
   page.on('response', (res) => {
     if (res.url().includes('/rooms/opening/') && res.ok()) art.push(new URL(res.url()).pathname);
   });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'New game' }).click();
-  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'opening');
+  await newGame(page);
   await expect
     .poll(() => art.sort())
     .toEqual(

@@ -86,10 +86,10 @@ frontend/
   src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, renderer, on, dialogue), overlay.ts
                         (lines it up with the renderer's canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts,
                         inventory.ts, worlds.ts, dialogue.ts (the conversation panel), progress.ts (career stats, the act's goals)
-  src/presentation/phaser2d/  the only folder that imports phaser: renderer.ts (Phaser2dRenderer implements Renderer),
+  src/presentation/phaser2d/  the only folder that imports phaser, chosen with ?renderer=2d: renderer.ts (Phaser2dRenderer implements Renderer),
                         RoomScene.ts (draws one SceneView from the room's art, as the registry has it; no game rules, no text,
                         no input)
-  src/presentation/three3d/  the only folder that imports three, chosen with ?renderer=3d: renderer.ts (Three3dRenderer
+  src/presentation/three3d/  the only folder that imports three, the default renderer: renderer.ts (Three3dRenderer
                         implements Renderer; a WebGL canvas sized like the 2D one, the grain overlay, a message on #game
                         without WebGL), room.ts (one SceneView: the room's scene model seen from its cam_main, the models
                         on its floor, floor points <-> the floor mesh, hotspot bounds from models and hit_<node> nodes, picking hotspots then the floor by raycast), actor.ts (a placed model's clips: one AnimationMixer
@@ -97,7 +97,7 @@ frontend/
                         look.ts (STYLE.md in 3D: the two-step toon ramp and the lights)
   src/app/              main.ts (boot: title screen -> GameSession -> playGame()), game.ts (playGame: the SceneView from the
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
-                        renderers.ts (chooses the renderer: ?renderer=3d, else 2D; each loads as its own chunk), title.ts (Continue only when a save exists),
+                        renderers.ts (chooses the renderer: ?renderer=2d, else 3D; each loads as its own chunk), title.ts (Continue only when a save exists),
                         animation.ts (animate: session events -> the clip each character plays, for renderer.play and the mirror),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation on #game)
