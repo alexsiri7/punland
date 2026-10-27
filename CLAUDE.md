@@ -8,7 +8,7 @@ Every new scene, character, prop or piece of UI follows [`docs/design/STYLE.md`]
 
 - Indie dusk palette. Two tones per material, light from the upper left, hard flat shadows, no outlines on characters, and a grain overlay.
 - Bebas Neue for in-world signs and titles, Inter for the UI. Both are self-hosted, never Google Fonts, because of the CSP.
-- Each room is one layered 1280 × 640 SVG in `frontend/art/<room>/scene.svg`, rendered with `node scripts/render-art.mjs` to `public/rooms/<room>/`. The UI bar is 160 px under it.
+- Each room is one 3D scene model, `frontend/public/models/scenes/<room>.glb`, seen from its `cam_main` in a 1280 × 640 view, with the UI bar 160 px under it. Every model file follows the asset contract in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 8. The room SVGs in `docs/design/rooms/` are the 2D reference art the placeholder rooms are laid out from.
 
 Take colours from `src/presentation/theme.ts` and the CSS variables, not new hex values. The opening pub is **The Three Crows**. The protagonist is **Paws Anka**, a placeholder name chosen 2026-10-24 that may change: it lives only in `frontend/src/content/protagonist.ts`, so read it from there and don't build anything that depends on the exact name.
 
@@ -16,7 +16,7 @@ Take colours from `src/presentation/theme.ts` and the CSS variables, not new hex
 
 | Part | Tech | Hosted |
 | --- | --- | --- |
-| `frontend/` | Phaser 4 + Vite + TypeScript. Title screen is DOM; rooms are Phaser scenes in a `#game` container. | Cloudflare Pages project `punland`, git-connected: every push to `main` deploys https://punland.interstellarai.net, and PR branches get preview URLs (`<branch>.punland.pages.dev`). Root dir `frontend`, build `npm run build`, output `dist`. |
+| `frontend/` | Three.js + Vite + TypeScript. Title screen is DOM; rooms are drawn in 3D on a canvas in a `#game` container, with a DOM UI over it. | Cloudflare Pages project `punland`, git-connected: every push to `main` deploys https://punland.interstellarai.net, and PR branches get preview URLs (`<branch>.punland.pages.dev`). Root dir `frontend`, build `npm run build`, output `dist`. |
 | `backend/` | Python 3.12, FastAPI, uvicorn. | Railway project `punland`, service `api`, root dir `/backend`, deploys `main` from GitHub (Dockerfile + `railway.toml`, healthcheck `/health`). Public at https://punland-api.interstellarai.net. |
 | Database (from #10) | Postgres on the shared Supabase projects, one schema + role per app: `punland` on Prod (`goxtnasdisqkfrldtbej`), `punland_staging` on Staging (`xhcfolmrdctmtqgqqxec`). Accessed only by the backend, never from the browser. | — |
 | AI dialogue (from #6) | Requesty (OpenAI-compatible router), called only by the backend. | — |
@@ -49,7 +49,7 @@ CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the
 
 ## Architecture: read docs/ARCHITECTURE.md before changing frontend/src
 
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) is the target structure (specs: `openspec/specs/architecture`, `openspec/specs/models`). It splits the code into a pure domain and rules layer (commands to state and events), content and a model registry validated by schemas, and presentation behind a renderer interface (Phaser 2D now, Three.js 3D from phase B). It also holds the 3D asset contract for model files. The refactor landed as issues `A1`…`A9` (phase A is done), and the 3D work lands as `B1`…`B7`. The layout below is the current code. Each step updates both this file and ARCHITECTURE.md. Layering is enforced by `tests/unit/architecture.test.ts` (from A1), not by a linter: TypeScript 7 has no JS compiler API for typescript-eslint or dependency-cruiser.
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) is the target structure (specs: `openspec/specs/architecture`, `openspec/specs/models`). It splits the code into a pure domain and rules layer (commands to state and events), content and a model registry validated by schemas, and presentation behind a renderer interface (Three.js 3D; the Phaser 2D renderer was removed in B7). It also holds the 3D asset contract for model files. The refactor landed as issues `A1`…`A9` and the 3D work as `B1`…`B7`; both phases are done. The layout below is the current code. Each step updates both this file and ARCHITECTURE.md. Layering is enforced by `tests/unit/architecture.test.ts` (from A1), not by a linter: TypeScript 7 has no JS compiler API for typescript-eslint or dependency-cruiser.
 
 ## Layout
 
@@ -71,12 +71,11 @@ frontend/
                         rects or art names.
   src/content/protagonist.ts  the protagonist's (placeholder) name, the one place it lives in code
   src/assets/           the model registry: models.json (every scene, character and object by model id, e.g.
-                        scene/opening, character/bartender: kind and sprite2d, the room art and hotspot rects of a scene,
-                        the actor layer of a character or object; model3d, its glb under public/models/),
-                        registry.ts (loads and checks it; sceneSprite, hotspotRect, actorOf), glb.ts (a dependency-free
+                        scene/opening, character/bartender: kind and model3d, its glb under public/models/),
+                        registry.ts (loads and checks it; model3dFile), glb.ts (a dependency-free
                         glb reader), contract.ts (checkModel: one glb against the asset contract; offFloor: floor points
                         raycast from cam_main onto a scene's floor), validate.ts (validateAssets: the registry against the
-                        content, the room art and the model files, with each room's hit_<node> nodes and floor points,
+                        content and the model files, with each room's hit_<node> nodes and floor points,
                         run in unit tests)
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), dialogue.ts
                         (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
@@ -86,32 +85,29 @@ frontend/
   src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, renderer, on, dialogue), overlay.ts
                         (lines it up with the renderer's canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts,
                         inventory.ts, worlds.ts, dialogue.ts (the conversation panel), progress.ts (career stats, the act's goals)
-  src/presentation/phaser2d/  the only folder that imports phaser, chosen with ?renderer=2d: renderer.ts (Phaser2dRenderer implements Renderer),
-                        RoomScene.ts (draws one SceneView from the room's art, as the registry has it; no game rules, no text,
-                        no input)
-  src/presentation/three3d/  the only folder that imports three, the default renderer: renderer.ts (Three3dRenderer
-                        implements Renderer; a WebGL canvas sized like the 2D one, the grain overlay, a message on #game
+  src/presentation/three3d/  the only folder that imports three, the game's renderer: renderer.ts (Three3dRenderer
+                        implements Renderer; a WebGL canvas with the scene over the UI bar, the grain overlay, a message on #game
                         without WebGL), room.ts (one SceneView: the room's scene model seen from its cam_main, the models
                         on its floor, floor points <-> the floor mesh, hotspot bounds from models and hit_<node> nodes, picking hotspots then the floor by raycast), actor.ts (a placed model's clips: one AnimationMixer
                         each, cross-faded, idle for a missing clip), models.ts (the registry's glb files, cached, in toon materials, with their clips),
                         look.ts (STYLE.md in 3D: the two-step toon ramp and the lights)
   src/app/              main.ts (boot: title screen -> GameSession -> playGame()), game.ts (playGame: the SceneView from the
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
-                        renderers.ts (chooses the renderer: ?renderer=2d, else 3D; each loads as its own chunk), title.ts (Continue only when a save exists),
+                        renderers.ts (loads the 3D renderer as its own chunk, after the title screen), title.ts (Continue only when a save exists),
                         animation.ts (animate: session events -> the clip each character plays, for renderer.play and the mirror),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation on #game)
-  art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
-  scripts/make-placeholders.mjs  writes the placeholder models in public/models/, the room shells laid out in their
-                        2D art's scene pixels (tests/unit/placeholders.test.ts
+  scripts/make-placeholders.mjs  writes the placeholder models in public/models/, the room shells laid out in the
+                        scene pixels of their reference art, docs/design/rooms/<room>.svg (tests/unit/placeholders.test.ts
                         checks the committed files match it); scripts/glb-container.mjs is the one glb writer it and
                         the test fixtures share
   public/models/<kind>s/<id>.glb  3D models (placeholders for now), drawn by three3d: the asset contract, ARCHITECTURE.md §8
-  public/textures/grain.svg  the 3D renderer's grain overlay (the 2D art has it baked in)
-  public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
+  public/textures/grain.svg  the 3D renderer's grain overlay
+  public/title/poster.jpg  the title screen's backdrop (style.css)
   public/_headers       production CSP and security headers (Cloudflare Pages)
   tests/unit/           vitest (jsdom); architecture.test.ts enforces the layers (support/layers.ts holds the layer table);
-                        fakes/renderer.ts is a Renderer that records calls, for app tests
+                        fakes/renderer.ts is a Renderer that records calls, for app tests; renderer.acceptance.test.ts
+                        swaps two renderers behind the interface
   tests/e2e/            Playwright; fixtures.ts fails any test on page errors, console errors, CSP violations
   tests/serve.mjs       local stand-in for Pages: serves dist/ with _headers, 404.html for unknown paths
 backend/
@@ -119,7 +115,7 @@ backend/
   src/punland_api/config.py  settings from env vars
   tests/                     pytest
 openspec/specs/         the specs (source of truth for behaviour)
-docs/design/            STYLE.md (the look) + canvas/ (the owner's design boards)
+docs/design/            STYLE.md (the look) + canvas/ (the owner's design boards) + rooms/ (each room's 2D reference art)
 ```
 
 ## Acceptance tests
