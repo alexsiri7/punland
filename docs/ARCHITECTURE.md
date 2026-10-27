@@ -231,14 +231,14 @@ Each scene, character and object is one registry entry, keyed by a `ModelId` tha
       "model3d":  { "file": "models/scenes/opening.glb", "placeholder": true } },
     { "id": "character/protagonist", "kind": "character",
       "sprite2d": { "actor": "cat" },
-      "model3d":  { "file": "models/characters/paws.glb", "placeholder": true, "height": 1.5 } },
+      "model3d":  { "file": "models/characters/protagonist.glb", "placeholder": true, "height": 1.5 } },
     { "id": "object/flyer", "kind": "object", "sprite2d": { "actor": "flyer" },
       "model3d":  { "file": "models/objects/flyer.glb", "placeholder": true } }
   ]
 }
 ```
 
-- **What A8 built.** `assets/models.json` lists the entries, like the content files list theirs, so a second entry with the same id is a problem the validator reports rather than a key `JSON.parse` silently drops. `assets/registry.ts` checks the file's shape as it loads (or throws, listing the problems) and holds the `models` by id, with the 2D lookups `sceneSprite`, `hotspotRect` and `actorOf`. A scene's `sprite2d` names its room art under `public/` and holds the rect of every hotspot of its room, by hotspot id: the parts of the scene and the placed entities, whose rect is per room. A character's or object's `sprite2d` names the actor layer that draws it in each room's art. The protagonist's entry is `character/protagonist`, so nothing hangs on his placeholder name.
+- **What A8 built.** `assets/models.json` lists the entries, like the content files list theirs, so a second entry with the same id is a problem the validator reports rather than a key `JSON.parse` silently drops. `assets/registry.ts` checks the file's shape as it loads (or throws, listing the problems) and holds the `models` by id, with the 2D lookups `sceneSprite`, `hotspotRect` and `actorOf`. A scene's `sprite2d` names its room art under `public/` and holds the rect of every hotspot of its room, by hotspot id: the parts of the scene and the placed entities, whose rect is per room. A character's or object's `sprite2d` names the actor layer that draws it in each room's art. Only those actors are shown and hidden, so only a hotspot that places an entity may have `presentWhen`; a part of the scene has no actor in `sprite2d`, and the validator reports one that comes and goes. The protagonist's entry is `character/protagonist`, so nothing hangs on his placeholder name.
 - **Variants.** `sprite2d` is filled in A8 and removed in B7. `model3d` is filled from B1.
 - **The registry holds no logic.** It never says what a thing does, only how it looks and where its anchors and hit areas are.
 - **Validators** (`assets/validate.ts`, run in unit tests: the browser can't see which files are under `public/`) check four things:
@@ -270,7 +270,7 @@ Every model file must follow this. A placeholder model follows it too, so a desi
 | Topic | Rule |
 | --- | --- |
 | Format ✓ | glTF 2.0 binary, `.glb`, one file per registry entry. No `extensionsRequired`. No `KHR_draco_mesh_compression`, `EXT_meshopt_compression`, `KHR_texture_basisu` (the CSP blocks their wasm decoders). |
-| Location and naming ✓ | `frontend/public/models/<kind>/<id>.glb`, where kind is `scenes`, `characters` or `objects` and the id is lowercase kebab-case matching the registry (`characters/paws.glb`, `objects/broken-guitar.glb`, `scenes/opening.glb` for the registry entry `scene/opening`). |
+| Location and naming ✓ | `frontend/public/models/<kind>/<id>.glb`, where kind is `scenes`, `characters` or `objects` and the id is lowercase kebab-case matching the registry (`characters/protagonist.glb`, `objects/broken-guitar.glb`, `scenes/opening.glb` for the registry entry `scene/opening`). |
 | Units and axes ✓ | Metres, +Y up, the model faces +Z (glTF default), right-handed. Apply all transforms (scale 1, no negative scale) before export. |
 | Origin ✓ | **Characters:** between the feet, on the ground (`y = 0`). **Objects:** the centre of their resting base. **Scenes:** the floor at `y = 0`, with the origin at the front centre of the walkable area. |
 | Scale | The protagonist is about 1.5 m tall including ears (about 5.5 heads). Other animals scale from him. At the front of the walk line, `cam_main` frames him about 256 px tall in the 1280 × 640 view (STYLE.md). |

@@ -132,4 +132,16 @@ describe('the model registry', () => {
       message: expect.stringMatching(message),
     });
   });
+
+  it('reports a part of the scene that comes and goes, which the 2D art cannot show or hide', () => {
+    const given = structuredClone(content);
+    given.rooms.opening!.hotspots.find((h) => h.id === 'door')!.presentWhen = [{ flag: 'lit' }];
+    expect(validateAssets(registryFile, given, art)).toEqual([
+      {
+        file: 'content/rooms/opening.json',
+        field: 'hotspots[id=door].presentWhen',
+        message: expect.stringMatching(/no actor to show or hide it/),
+      },
+    ]);
+  });
 });

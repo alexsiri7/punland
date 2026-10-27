@@ -12,7 +12,8 @@ export type ArtFiles = Readonly<Record<string, unknown>>;
 /**
  * Every problem in models.json (`json`, parsed) and in how `content` uses it: every model id in
  * the content is in the registry with the right kind, every scene's art is in `art` and has the
- * actors of the protagonist and of everything its room places, and every hotspot has a rect.
+ * actors of the protagonist and of everything its room places, every hotspot has a rect, and
+ * only placed entities come and go (`presentWhen`): a part of the scene has no actor of its own.
  * A model is named by its id in a field, e.g. `models[id=scene/opening].sprite2d.hotspots`.
  */
 export function validateAssets(json: unknown, content: Content, art: ArtFiles): AssetIssue[] {
@@ -51,7 +52,13 @@ export function validateAssets(json: unknown, content: Content, art: ArtFiles): 
       if (!Object.hasOwn(hotspots, hotspot.id)) {
         issues.push({ file: MODELS_FILE, field: `${field}.hotspots`, message: `has no rect for "${hotspot.id}"` });
       }
-      if (!('entity' in hotspot.target)) continue;
+      if (!('entity' in hotspot.target)) {
+        if (hotspot.presentWhen !== undefined) {
+          const message = 'is part of the scene, and sprite2d has no actor to show or hide it';
+          issues.push({ file: `content/rooms/${id}.json`, field: `hotspots[id=${hotspot.id}].presentWhen`, message });
+        }
+        continue;
+      }
       const entity = content.characters[hotspot.target.entity] ?? content.objects[hotspot.target.entity];
       if (entity && Object.hasOwn(registry, entity.model)) drawn(registry[entity.model], `the hotspot "${hotspot.id}"`);
     }
