@@ -75,7 +75,6 @@ test('Typing a reply', async ({ page }) => {
 });
 
 test('Reaching the goal', async ({ page }) => {
-  test.fail(true, 'needs #11');
   // Requirement: Conversation goals. A reply that reaches the goal runs the related puzzle step.
   await stubDialogue(page, (body) =>
     body.reply ? reply('Fine. Start Friday.', { options: [], goal_reached: true, ended: true }) : reply('Evening.'),

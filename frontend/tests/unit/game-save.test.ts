@@ -5,10 +5,12 @@ import { fromSave, newGame, toSave } from '../../src/domain';
 const content = loadContent();
 
 describe('toSave', () => {
-  it('saves the room, the spot, the inventory, the journey and the flags, and nothing transient', () => {
+  it('saves the room, the spot, the inventory, the journey, the flags and the progress, and nothing transient', () => {
     const state = {
       ...newGame(content),
       flags: { 'pinned-flyer': true },
+      goals: ['fix-guitar'],
+      stats: { followers: 10, musicians: 0, practice: 0, instruments: 1 },
       room: 'pub',
       at: { x: 300, y: 580 },
       selected: 'flyer',
@@ -21,6 +23,9 @@ describe('toSave', () => {
       inventory: { items: ['broken-guitar'], pickedUp: [] },
       journey: { left: {}, gathered: [] },
       flags: { 'pinned-flyer': true },
+      act: '1',
+      goals: ['fix-guitar'],
+      stats: { followers: 10, musicians: 0, practice: 0, instruments: 1 },
     });
   });
 });
@@ -31,6 +36,32 @@ describe('fromSave', () => {
     expect(state.at).toEqual(content.rooms.pub?.start);
     expect(state.inventory).toEqual(newGame(content).inventory);
     expect(state.flags).toEqual({});
+    expect(state.act).toBe(content.acts[0]?.id);
+    expect(state.goals).toEqual([]);
+    expect(state.stats).toEqual({ followers: 0, musicians: 0, practice: 0, instruments: 1 });
+  });
+
+  it('resumes the act, its reached goals and the stats', () => {
+    const state = fromSave(
+      { version: 1, room: 'pub', act: '3', goals: ['act3-first'], stats: { followers: 5000, instruments: 2 } },
+      content,
+    );
+    expect(state.act).toBe('3');
+    expect(state.goals).toEqual(['act3-first']);
+    expect(state.stats).toEqual({ followers: 5000, musicians: 0, practice: 0, instruments: 2 });
+  });
+
+  it('drops acts, goals and stats the content no longer has', () => {
+    const gone = fromSave({ version: 1, room: 'pub', act: 'gone', goals: ['fix-guitar'] }, content);
+    expect(gone.act).toBe(content.acts[0]?.id);
+    expect(gone.goals).toEqual([]);
+    const state = fromSave(
+      { version: 1, room: 'pub', act: '1', goals: ['fix-guitar', 'act3-first', 'gone'], stats: { fame: 3 } },
+      content,
+    );
+    expect(state.act).toBe('1');
+    expect(state.goals).toEqual(['fix-guitar']);
+    expect(state.stats).toEqual({ followers: 0, musicians: 0, practice: 0, instruments: 1 });
   });
 
   it('drops items and rooms the content no longer has, and keeps the flags', () => {

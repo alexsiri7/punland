@@ -60,12 +60,15 @@ frontend/
                         GameState and newGame (state.ts), Command and GameEvent (commands.ts), SaveGame with toSave/fromSave
                         (save.ts), inventory/journey save state, DialogueTurn (dialogue.ts); index.ts exports it all
   src/rules/            pure rules: apply(content, state, command) -> {state, events}, running interactions; isPresent
-  src/content/          content data: rooms/<room>.json, items.json, worlds.json, characters.json, objects.json,
-                        protagonist.ts; validate.ts checks the files
-                        ({file, field, message} problems, branded ids); index.ts loadContent() builds Content or throws
+  src/content/          content data: rooms/<room>.json, items.json, worlds.json, characters.json (with each
+                        character's onGoal: what a conversation reaching its goal does), objects.json, stats.json
+                        (career stats), acts.json (acts, their goals and which act comes next), protagonist.ts;
+                        validate.ts checks the files ({file, field, message} problems, branded ids); index.ts
+                        loadContent() builds Content or throws
   src/content/rooms/<room>.json  room content: its scene model, floor, start point, hotspots: a target (a placed
                         character or object, or a scene node), interactions (verb, item, `when` conditions, effects such
-                        as say, goTo, pickUp, talk) and `presentWhen` conditions. No screen rects or art names.
+                        as say, goTo, pickUp, talk, changeStat, reachGoal) and `presentWhen` conditions. No screen
+                        rects or art names.
   src/content/protagonist.ts  the protagonist's (placeholder) name, the one place it lives in code
   src/assets/           the model registry: models.json (every scene, character and object by model id, e.g.
                         scene/opening, character/bartender: kind and sprite2d, the room art and hotspot rects of a scene,
@@ -81,7 +84,7 @@ frontend/
                         session.ts (the Session interface the UI sees)
   src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, renderer, mirror, dialogue), overlay.ts
                         (lines it up with the renderer's canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts,
-                        inventory.ts, worlds.ts, dialogue.ts (the conversation panel)
+                        inventory.ts, worlds.ts, dialogue.ts (the conversation panel), progress.ts (career stats, the act's goals)
   src/presentation/phaser2d/  the only folder that imports phaser: renderer.ts (Phaser2dRenderer implements Renderer),
                         RoomScene.ts (draws one SceneView from the room's art, as the registry has it; no game rules, no text,
                         no input)
@@ -89,7 +92,7 @@ frontend/
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
                         renderers.ts (chooses the renderer: 2D only), title.ts (Continue only when a save exists),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
-                        mirror.ts (data-scene/-world/-player/-hover/-say on #game)
+                        mirror.ts (data-scene/-world/-player/-hover/-say/-act on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
   scripts/make-placeholders.mjs  writes the placeholder models in public/models/ (tests/unit/placeholders.test.ts
                         checks the committed files match it); scripts/glb-container.mjs is the one glb writer it and

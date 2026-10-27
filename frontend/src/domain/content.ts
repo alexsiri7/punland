@@ -12,6 +12,10 @@ export type HotspotId = string & { readonly __brand: 'HotspotId' };
 /** A character's id is also the id of its sheet in the backend (backend/src/punland_api/content/characters). */
 export type CharacterId = string & { readonly __brand: 'CharacterId' };
 export type ObjectId = string & { readonly __brand: 'ObjectId' };
+export type ActId = string & { readonly __brand: 'ActId' };
+/** Unique across all acts. */
+export type GoalId = string & { readonly __brand: 'GoalId' };
+export type StatId = string & { readonly __brand: 'StatId' };
 /**
  * A model's id in the model registry (src/assets/models.json), e.g. `character/bartender`: how a
  * room, character or object looks. Unbranded: the content can't see the registry, so the asset
@@ -38,6 +42,43 @@ export interface Content {
   protagonist: Entity;
   /** Where a new game starts, and what it carries. */
   start: { room: RoomId; items: readonly ItemId[] };
+  /** The career stats, in display order. */
+  stats: readonly Stat[];
+  /** The first is where a new game starts. */
+  acts: readonly Act[];
+}
+
+/** A career stat (progress spec, "Career stats"), e.g. followers. */
+export interface Stat {
+  id: StatId;
+  name: string;
+  /** Its value in a new game. */
+  start: number;
+}
+
+/** A part of the story (progress spec, "Acts"): it ends when all its goals are reached. */
+export interface Act {
+  id: ActId;
+  /** Shown over its goals. */
+  name: string;
+  goals: Goal[];
+  /**
+   * The act that starts when this one ends: the first whose conditions all hold. The last
+   * entry has none, so one always does. A final act leaves it out.
+   */
+  next?: { act: ActId; when?: Condition[] }[];
+}
+
+export interface Goal {
+  id: GoalId;
+  /** Shown in the act's goal list. */
+  name: string;
+}
+
+/** Effects that run when something happens, if every condition in `when` holds. */
+export interface Reaction {
+  when?: Condition[];
+  effects: Effect[];
 }
 
 export interface World {
@@ -60,6 +101,11 @@ export interface Entity {
 
 export interface Character extends Entity {
   id: CharacterId;
+  /**
+   * When a conversation with the character reaches its goal, the effects of the first reaction
+   * whose conditions hold run. No `goTo`, `pickUp` or `talk`: those go only in a hotspot's interactions.
+   */
+  onGoal?: Reaction[];
 }
 
 /** A reusable prop, e.g. the flyer. */
@@ -91,7 +137,7 @@ export interface Interaction {
 /** A flag's value in `GameState.flags`. */
 export type FlagValue = boolean | number | string;
 
-/** Something about the game that holds or not. Stats, acts and goals (#11) add theirs here. */
+/** Something about the game that holds or not. */
 export type Condition =
   /** The item is in the inventory. */
   | { has: ItemId }
@@ -101,9 +147,15 @@ export type Condition =
   | { gathered: string }
   /** The flag is `is`, true when left out. */
   | { flag: string; is?: FlagValue }
+  /** The stat is at least `atLeast`. */
+  | { stat: StatId; atLeast: number }
+  /** The act is being played. */
+  | { act: ActId }
+  /** The goal of the current act is reached. */
+  | { goal: GoalId }
   | { not: Condition };
 
-/** One thing an interaction does. Stats and goals (#11) add theirs here. */
+/** One thing an interaction does. */
 export type Effect =
   /** The player says the line. */
   | { say: string }
@@ -119,7 +171,14 @@ export type Effect =
   | { gather: string }
   | { set: string; to: FlagValue }
   /** A conversation with the character: the dialogue panel takes over. */
-  | { talk: CharacterId };
+  | { talk: CharacterId }
+  /** Adds `by` to the stat; `by` may be negative. */
+  | { changeStat: StatId; by: number }
+  /**
+   * The goal is reached, if it is the current act's. Reaching the act's last goal ends the act and
+   * starts the next at once, so effects after this one run in the new act.
+   */
+  | { reachGoal: GoalId };
 
 /** What a hotspot is in the scene: a placed character or object, or a part of the scene itself. */
 export type HotspotTarget =

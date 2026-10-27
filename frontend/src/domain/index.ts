@@ -1,6 +1,8 @@
 export type { Command, GameEvent } from './commands';
 export type { DialogueTurn } from './dialogue';
 export {
+  type Act,
+  type ActId,
   type Character,
   type CharacterId,
   type Condition,
@@ -8,6 +10,8 @@ export {
   type Effect,
   type Entity,
   type FlagValue,
+  type Goal,
+  type GoalId,
   type Hotspot,
   type HotspotId,
   type HotspotTarget,
@@ -17,8 +21,11 @@ export {
   type ModelId,
   type ObjectId,
   type Prop,
+  type Reaction,
   type Room,
   type RoomId,
+  type Stat,
+  type StatId,
   type Verb,
   VERBS,
   type World,

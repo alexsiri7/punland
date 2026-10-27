@@ -25,12 +25,19 @@ const OPENING = 'content/rooms/opening.json';
 const PUB = 'content/rooms/pub.json';
 const CHARACTERS = 'content/characters.json';
 const OBJECTS = 'content/objects.json';
+const STATS = 'content/stats.json';
+const ACTS = 'content/acts.json';
 const hotspot = (room: Json, id: string): Json => room.hotspots.find((h: Json) => h.id === id);
 
 describe('content validation', () => {
   it('passes today’s content', () => {
     expect(validateContent(files)).toEqual([]);
     expect(loadContent().start).toEqual({ room: 'opening', items: ['broken-guitar'] });
+  });
+
+  it('needs an act to start a new game in', () => {
+    const content = broken(ACTS, (file) => (file.acts = []));
+    expect(validateContent(content)).toContainEqual({ file: ACTS, field: 'acts', message: 'must list at least one act' });
   });
 
   it.each<{ problem: string; file: string; edit: (file: Json) => void; field: string; message: RegExp }>([
@@ -222,6 +229,69 @@ describe('content validation', () => {
       edit: (file) => (file.items.flyer.noUse = ' '),
       field: 'items.flyer.noUse',
       message: /is empty/,
+    },
+    {
+      problem: 'an unknown goal to reach',
+      file: CHARACTERS,
+      edit: (file) => (file.characters[0].onGoal[0].effects[1].reachGoal = 'encore'),
+      field: 'characters[0].onGoal[0].effects[1].reachGoal',
+      message: /"encore" is not a known goal/,
+    },
+    {
+      problem: 'an unknown stat to change',
+      file: CHARACTERS,
+      edit: (file) => (file.characters[0].onGoal[0].effects[0].changeStat = 'fame'),
+      field: 'characters[0].onGoal[0].effects[0].changeStat',
+      message: /"fame" is not a known stat/,
+    },
+    {
+      problem: 'a pickup when a conversation reaches its goal',
+      file: CHARACTERS,
+      edit: (file) => (file.characters[0].onGoal[0].effects[0] = { pickUp: 'flyer' }),
+      field: 'characters[0].onGoal[0].effects[0]',
+      message: /goes only in a hotspot's interactions/,
+    },
+    {
+      problem: 'an unknown act to start next',
+      file: ACTS,
+      edit: (file) => (file.acts[0].next[0].act = '5'),
+      field: 'acts[0].next[0].act',
+      message: /"5" is not a known act/,
+    },
+    {
+      problem: 'an unknown stat to choose the next act by',
+      file: ACTS,
+      edit: (file) => (file.acts[2].next[0].when[0].stat = 'fame'),
+      field: 'acts[2].next[0].when[0].stat',
+      message: /"fame" is not a known stat/,
+    },
+    {
+      problem: 'a next act that may not start',
+      file: ACTS,
+      edit: (file) => (file.acts[2].next[1].when = [{ stat: 'practice', atLeast: 1 }]),
+      field: 'acts[2].next[1].when',
+      message: /left out of the last entry/,
+    },
+    {
+      problem: 'a goal id in two acts',
+      file: ACTS,
+      edit: (file) => (file.acts[1].goals[0].id = 'fix-guitar'),
+      field: 'acts[1].goals[0].id',
+      message: /another goal/,
+    },
+    {
+      problem: 'an act without goals',
+      file: ACTS,
+      edit: (file) => (file.acts[3].goals = []),
+      field: 'acts[3].goals',
+      message: /at least one goal/,
+    },
+    {
+      problem: 'a duplicate stat id',
+      file: STATS,
+      edit: (file) => (file.stats[1].id = 'followers'),
+      field: 'stats[1].id',
+      message: /another stat/,
     },
   ])('reports $problem with its file and field', ({ file, edit, field, message }) => {
     expect(validateContent(broken(file, edit))).toEqual([{ file, field, message: expect.stringMatching(message) }]);

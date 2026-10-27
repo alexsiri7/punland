@@ -31,5 +31,9 @@ export type GameEvent =
   | { type: 'gathered'; material: string }
   /** The player talks to a character: the dialogue panel takes over. */
   | { type: 'conversationStarted'; character: string }
+  | { type: 'statChanged'; stat: string; value: number }
+  | { type: 'goalReached'; goal: string }
+  /** The current act ended and this one started, with none of its goals reached. */
+  | { type: 'actStarted'; act: string }
   /** State worth persisting changed. */
   | { type: 'saved' };

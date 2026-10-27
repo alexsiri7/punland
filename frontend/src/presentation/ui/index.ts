@@ -4,6 +4,7 @@ import { createDialoguePanel, type DialogueBackend } from './dialogue';
 import { createHotspotLayer, type HotspotLayer } from './hotspots';
 import { createInventoryBar } from './inventory';
 import { createOverlay } from './overlay';
+import { createProgress } from './progress';
 import { createSpeech } from './speech';
 import { createUiBar } from './uiBar';
 import { createWorldSwitcher, type WorldSwitcher } from './worlds';
@@ -19,8 +20,8 @@ export interface Ui {
 
 /**
  * All of the game's text and controls, as DOM over the canvas (docs/ARCHITECTURE.md, section 5):
- * the UI bar, the speech line, the hotspot buttons, the inventory, the world switcher and the
- * dialogue panel, which talks to `dialogue`. They show the session's events and send it
+ * the UI bar, the speech line, the hotspot buttons, the inventory, the world switcher, the career
+ * stats, the act's goals and the dialogue panel, which talks to `dialogue`. They show the session's events and send it
  * commands; a new part is created here and appended to the overlay's root. The overlay lines up
  * with the renderer's canvas, and the hotspot buttons and speech go where the renderer draws
  * them. The hotspot under the pointer goes to `mirror`.
@@ -46,10 +47,19 @@ export function mountUi(
   const conversation = createDialoguePanel(doc, dialogue, {
     goalReached: (character) => session.dispatch({ type: 'dialogueResult', character, goalReached: true }),
   });
+  const progress = createProgress(doc, session.content);
   let hotspots: HotspotLayer | null = null;
   let switcher: WorldSwitcher | null = null;
   let drawn = false;
-  overlay.root.append(bar.element, inventory.element, speech.element, conversation.element);
+  overlay.root.append(
+    progress.goals,
+    bar.element,
+    progress.stats,
+    inventory.element,
+    speech.element,
+    conversation.element,
+  );
+  progress.render(session.state);
 
   const characterName = (character: string) => session.content.characters[character]?.name ?? character;
   const renderInventory = () => inventory.render(session.state.inventory.carried, session.state.selected);
@@ -93,6 +103,11 @@ export function mountUi(
         switcher?.destroy();
         hotspots = null;
         switcher = null;
+        break;
+      case 'statChanged':
+      case 'goalReached':
+      case 'actStarted':
+        progress.render(session.state);
         break;
       case 'arrived':
       case 'worldChanged':

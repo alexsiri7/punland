@@ -20,10 +20,10 @@ import { expect } from './fixtures';
  * reader can play too.
  *
  * The room attributes (data-scene, data-player, data-hover, data-say) and the Hotspots group
- * are built (#4), the Inventory list (#5), data-world and the Worlds switcher (#9), and the
- * conversation dialog (#8); the rest is not yet. The issue that builds a piece may settle on a different
- * selector or content name: change it here, in one place, in the PR that removes the test's
- * expected-to-fail marker.
+ * are built (#4), the Inventory list (#5), data-world and the Worlds switcher (#9), the
+ * conversation dialog (#8), and data-act, the Career stats and the Goals (#11). The issue that
+ * builds a piece may settle on a different selector or content name: change it here, in one
+ * place, in the PR that removes the test's expected-to-fail marker.
  */
 
 /** Content the tests rely on: the skeleton's opening rooms and Act 1 placeholders (#4, #5, #11). */
