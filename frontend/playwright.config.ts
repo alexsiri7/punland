@@ -16,7 +16,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } }],
+  // The suite plays once with each renderer while both exist (docs/ARCHITECTURE.md, "Renderer
+  // choice"): tests/e2e/play.ts starts the game with the project's renderer.
+  projects: [
+    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'desktop-chromium-3d', use: { ...devices['Desktop Chrome'] }, metadata: { renderer: '3d' } },
+  ],
   webServer: {
     command: `node tests/serve.mjs ${PORT}`,
     url: `http://127.0.0.1:${PORT}/`,
