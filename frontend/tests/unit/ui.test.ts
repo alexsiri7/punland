@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
 import { loadContent } from '../../src/content';
 import { type DialogueTurn, newGame } from '../../src/domain';
-import { type DialogueBackend, type DrawnRoom, mountUi } from '../../src/presentation/ui';
+import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
 
 // The DOM UI (presentation/ui, docs/ARCHITECTURE.md section 5): the UI bar, the speech line and
 // the room's controls and the dialogue panel, driven by the session and by hover.
@@ -37,17 +37,19 @@ describe('the DOM UI', () => {
 
   function mount(head = { x: 560, y: 300 }) {
     const game = new GameSession(content, newGame(content), { save: async () => {} });
-    const ui = mountUi(container, game, { hover: (name) => hovered.push(name) }, dialogue);
-    const room: DrawnRoom = {
-      canvas: document.createElement('canvas'),
-      head: () => head,
+    const canvas = document.createElement('canvas');
+    const renderer = {
+      canvas: () => canvas,
       onResize: () => () => {},
+      hotspotBounds: (id: string) => content.rooms[game.state.room]?.hotspots.find((h) => h.id === id)?.rect ?? null,
+      anchor: () => head,
     };
-    ui.shown(room);
+    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name) }, dialogue);
+    ui.shown();
     const text = (selector: string) => container.querySelector(selector)?.textContent;
     const button = (group: string, name: string) =>
       container.querySelector<HTMLButtonElement>(`[aria-label="${group}"] button[aria-label="${name}"]`)!;
-    return { game, ui, room, text, button };
+    return { game, ui, text, button };
   }
 
   it("shows the room's label, place and hint in the UI bar", () => {
@@ -106,13 +108,13 @@ describe('the DOM UI', () => {
   });
 
   it("swaps in the new room's controls once it is shown, and takes the old ones away at once", () => {
-    const { game, ui, room, text, button } = mount();
+    const { game, ui, text, button } = mount();
     game.dispatch({ type: 'activate', hotspot: 'door' });
     while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
     expect(game.state.room).toBe('pub');
     expect(container.querySelector('.hotspots')).toBeNull();
     expect(container.querySelector('.worlds')).toBeNull();
-    ui.shown(room);
+    ui.shown();
     expect(container.querySelectorAll('.hotspots')).toHaveLength(1);
     expect(button('Hotspots', 'Open mic board')).toBeNull();
     expect(text('.ui-bar-label')).toBe(content.rooms.pub!.label);
@@ -131,10 +133,10 @@ describe('the DOM UI', () => {
     /** Walks into the pub and talks to the bartender. */
     function talk() {
       const mounted = mount();
-      const { game, ui, room } = mounted;
+      const { game, ui } = mounted;
       game.dispatch({ type: 'activate', hotspot: 'door' });
       while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
-      ui.shown(room);
+      ui.shown();
       game.dispatch({ type: 'activate', hotspot: 'bartender' });
       while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
       const panel = container.querySelector<HTMLElement>('[role="dialog"]')!;

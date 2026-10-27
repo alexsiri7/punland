@@ -65,20 +65,24 @@ frontend/
   src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), dialogue.ts
                         (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
-  src/presentation/     theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
-                        session.ts (the Session interface the renderer and UI see)
-  src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, mirror, dialogue), overlay.ts (lines
-                        it up with the canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts, inventory.ts,
-                        worlds.ts, dialogue.ts (the conversation panel)
-  src/presentation/phaser2d/  game.ts (Phaser game factory), RoomScene.ts (draws only the session's room: input -> commands,
-                        events -> sprites; no game rules, no text; tells the UI and mirror when the room is shown)
-  src/app/              main.ts (boot: title screen -> GameSession -> mountUi() and startGame()), title.ts (Continue only when a save exists),
+  src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
+                        theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
+                        session.ts (the Session interface the UI sees)
+  src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, renderer, mirror, dialogue), overlay.ts
+                        (lines it up with the renderer's canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts,
+                        inventory.ts, worlds.ts, dialogue.ts (the conversation panel)
+  src/presentation/phaser2d/  the only folder that imports phaser: renderer.ts (Phaser2dRenderer implements Renderer),
+                        RoomScene.ts (draws one SceneView from the room's art; no game rules, no text, no input)
+  src/app/              main.ts (boot: title screen -> GameSession -> playGame()), game.ts (playGame: the SceneView from the
+                        session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
+                        renderers.ts (chooses the renderer: 2D only), title.ts (Continue only when a save exists),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
   public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
   public/_headers       production CSP and security headers (Cloudflare Pages)
-  tests/unit/           vitest (jsdom); architecture.test.ts enforces the layers, support/layer-baseline.json lists the known violations
+  tests/unit/           vitest (jsdom); architecture.test.ts enforces the layers, support/layer-baseline.json lists the known
+                        violations (none left); fakes/renderer.ts is a Renderer that records calls, for app tests
   tests/e2e/            Playwright; fixtures.ts fails any test on page errors, console errors, CSP violations
   tests/serve.mjs       local stand-in for Pages: serves dist/ with _headers, 404.html for unknown paths
 backend/

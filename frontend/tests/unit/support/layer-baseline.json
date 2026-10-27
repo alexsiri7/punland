@@ -1,3 +1,1 @@
-[
-  { "file": "presentation/phaser2d/RoomScene.ts", "import": "../../content/protagonist", "rule": "phaser2d must not import content" }
-]
+[]

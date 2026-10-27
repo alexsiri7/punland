@@ -1,5 +1,5 @@
+import type { ScenePoint } from '../renderer';
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
-import type { ScenePoint } from './overlay';
 
 /** How long a spoken line stays up, in ms: longer lines for longer. */
 export function speechMs(line: string): number {
