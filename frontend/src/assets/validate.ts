@@ -1,5 +1,6 @@
 import type { Content, ModelId } from '../domain';
-import { type AssetIssue, MODELS_FILE, type Model, type ModelKind, readRegistry } from './registry';
+import { checkModel } from './contract';
+import { type AssetIssue, MODELS_FILE, type Model, type Model3d, type ModelKind, readRegistry } from './registry';
 
 /**
  * The registry checked against the content and the art (docs/ARCHITECTURE.md, section 6). It runs
@@ -9,14 +10,19 @@ import { type AssetIssue, MODELS_FILE, type Model, type ModelKind, readRegistry 
 /** Room art under public/ (rooms/<room>/art.json, written by scripts/render-art.mjs), parsed, by path. */
 export type ArtFiles = Readonly<Record<string, unknown>>;
 
+/** The model files under public/ (models/<kind>/<id>.glb), by path. */
+export type ModelFiles = Readonly<Record<string, Uint8Array>>;
+
 /**
  * Every problem in models.json (`json`, parsed) and in how `content` uses it: every model id in
  * the content is in the registry with the right kind, every scene's art is in `art` and has the
  * actors of the protagonist and of everything its room places, every hotspot has a rect, and
  * only placed entities come and go (`presentWhen`): a part of the scene has no actor of its own.
- * A model is named by its id in a field, e.g. `models[id=scene/opening].sprite2d.hotspots`.
+ * Every `model3d` file is in `files`, at the path its id gives it, and follows the asset contract
+ * (contract.ts); a broken rule is reported with the rule in the field. A model is named by its id
+ * in a field, e.g. `models[id=scene/opening].sprite2d.hotspots`.
  */
-export function validateAssets(json: unknown, content: Content, art: ArtFiles): AssetIssue[] {
+export function validateAssets(json: unknown, content: Content, art: ArtFiles, files: ModelFiles): AssetIssue[] {
   const { registry, issues } = readRegistry(json);
   const model = (id: ModelId, kind: ModelKind, file: string, field: string): Model | undefined => {
     const entry = Object.hasOwn(registry, id) ? registry[id] : undefined;
@@ -43,9 +49,14 @@ export function validateAssets(json: unknown, content: Content, art: ArtFiles): 
       issues.push({ file: MODELS_FILE, field: `${field}.layers`, message: `"${layers}" is not room art` });
     }
     const drawn = (by: Model | undefined, what: string) => {
-      if (!actors || !by || by.kind === 'scene' || actors.has(by.sprite2d.actor)) return;
-      const message = `has no actor "${by.sprite2d.actor}" for ${what}`;
-      issues.push({ file: `public/${layers}`, field: 'layers', message });
+      if (!actors || !by || by.kind === 'scene') return;
+      if (!by.sprite2d) {
+        const message = `is needed to draw ${what} in "${layers}"`;
+        issues.push({ file: MODELS_FILE, field: `models[id=${by.id}].sprite2d`, message });
+      } else if (!actors.has(by.sprite2d.actor)) {
+        const message = `has no actor "${by.sprite2d.actor}" for ${what}`;
+        issues.push({ file: `public/${layers}`, field: 'layers', message });
+      }
     };
     drawn(protagonist, 'the protagonist');
     for (const hotspot of room.hotspots) {
@@ -63,7 +74,29 @@ export function validateAssets(json: unknown, content: Content, art: ArtFiles): 
       if (entity && Object.hasOwn(registry, entity.model)) drawn(registry[entity.model], `the hotspot "${hotspot.id}"`);
     }
   }
+
+  for (const entry of Object.values(registry)) {
+    if (entry.model3d) issues.push(...modelFileIssues(entry, entry.model3d, files));
+  }
   return issues;
+}
+
+/** The contract's location rule: models/<kind>s/<id>.glb for the entry <kind>/<id>, in lowercase kebab-case. */
+function modelFileIssues(entry: Model, { file, height }: Model3d, files: ModelFiles): AssetIssue[] {
+  const name = entry.id.slice(`${entry.kind}/`.length);
+  const expected = `models/${entry.kind}s/${name}.glb`;
+  const field = `models[id=${entry.id}].model3d.file`;
+  if (!entry.id.startsWith(`${entry.kind}/`) || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
+    return [{ file: MODELS_FILE, field, message: `has no file name: the id must be ${entry.kind}/<lowercase-kebab-case>` }];
+  }
+  if (file !== expected) return [{ file: MODELS_FILE, field, message: `must be "${expected}", after the model id` }];
+  const bytes = Object.hasOwn(files, file) ? files[file] : undefined;
+  if (!bytes) return [{ file: MODELS_FILE, field, message: `"${file}" is not under public/` }];
+  return checkModel(bytes, entry.kind, `public/${file}`, height).map(({ file, rule, message }) => ({
+    file,
+    field: rule,
+    message,
+  }));
 }
 
 /** The actor layers of a room's art, or null if `art` isn't room art. */

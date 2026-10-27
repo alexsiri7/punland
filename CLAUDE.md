@@ -69,9 +69,11 @@ frontend/
   src/content/protagonist.ts  the protagonist's (placeholder) name, the one place it lives in code
   src/assets/           the model registry: models.json (every scene, character and object by model id, e.g.
                         scene/opening, character/bartender: kind and sprite2d, the room art and hotspot rects of a scene,
-                        the actor layer of a character or object), registry.ts (loads and checks it; sceneSprite,
-                        hotspotRect, actorOf), validate.ts (validateAssets: the registry against the content and the
-                        room art, run in unit tests)
+                        the actor layer of a character or object; model3d, its glb under public/models/),
+                        registry.ts (loads and checks it; sceneSprite, hotspotRect, actorOf), glb.ts (a dependency-free
+                        glb reader), contract.ts (checkModel: one glb against the asset contract), validate.ts
+                        (validateAssets: the registry against the content, the room art and the model files, run in
+                        unit tests)
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), dialogue.ts
                         (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
   src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
@@ -89,6 +91,9 @@ frontend/
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
+  scripts/make-placeholders.mjs  writes the placeholder models in public/models/ (tests/unit/placeholders.test.ts
+                        checks the committed files match it)
+  public/models/<kind>s/<id>.glb  3D models (placeholders for now), not drawn yet: the asset contract, ARCHITECTURE.md §8
   public/rooms/<room>/  rendered room art the game loads: background.jpg, <actor>.png, fore.png, poster.jpg, art.json
   public/_headers       production CSP and security headers (Cloudflare Pages)
   tests/unit/           vitest (jsdom); architecture.test.ts enforces the layers (support/layers.ts holds the layer table);

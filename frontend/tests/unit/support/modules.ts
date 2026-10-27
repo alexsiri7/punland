@@ -1,8 +1,7 @@
 /**
  * The layered modules the acceptance tests for spec change #25 use, with the shapes
- * docs/ARCHITECTURE.md gives them (sections 3, 4, 6 and 8). The glb contract doesn't exist until
- * B1 (#36) lands, so each module is loaded when a test asks for it: a missing module fails that
- * test alone, not the whole file. The step that builds a module may settle on a different
+ * docs/ARCHITECTURE.md gives them (sections 3, 4, 6 and 8). Each module is loaded when a test
+ * asks for it, so a missing module fails that test alone, not the whole file. The step that builds a module may settle on a different
  * path, export or shape: change it here, in one place, in the PR that removes the tests'
  * expected-to-fail markers.
  */
@@ -16,6 +15,7 @@ export type { Command, Content, ContentFiles, FloorPoint, GameEvent, GameState }
 export interface ContractBreach {
   file: string;
   rule: string;
+  message: string;
 }
 
 export type ModelKind = 'scene' | 'character' | 'object';

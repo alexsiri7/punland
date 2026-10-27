@@ -45,8 +45,28 @@
         }
       }
     },
-    { "id": "character/protagonist", "kind": "character", "sprite2d": { "actor": "cat" } },
-    { "id": "character/bartender", "kind": "character", "sprite2d": { "actor": "bartender" } },
-    { "id": "object/flyer", "kind": "object", "sprite2d": { "actor": "flyer" } }
+    {
+      "id": "character/protagonist",
+      "kind": "character",
+      "sprite2d": { "actor": "cat" },
+      "model3d": { "file": "models/characters/protagonist.glb", "placeholder": true, "height": 1.5 }
+    },
+    {
+      "id": "character/bartender",
+      "kind": "character",
+      "sprite2d": { "actor": "bartender" },
+      "model3d": { "file": "models/characters/bartender.glb", "placeholder": true, "height": 1.55 }
+    },
+    {
+      "id": "object/flyer",
+      "kind": "object",
+      "sprite2d": { "actor": "flyer" },
+      "model3d": { "file": "models/objects/flyer.glb", "placeholder": true }
+    },
+    {
+      "id": "object/broken-guitar",
+      "kind": "object",
+      "model3d": { "file": "models/objects/broken-guitar.glb", "placeholder": true }
+    }
   ]
 }

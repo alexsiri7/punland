@@ -239,14 +239,14 @@ Each scene, character and object is one registry entry, keyed by a `ModelId` tha
 ```
 
 - **What A8 built.** `assets/models.json` lists the entries, like the content files list theirs, so a second entry with the same id is a problem the validator reports rather than a key `JSON.parse` silently drops. `assets/registry.ts` checks the file's shape as it loads (or throws, listing the problems) and holds the `models` by id, with the 2D lookups `sceneSprite`, `hotspotRect` and `actorOf`. A scene's `sprite2d` names its room art under `public/` and holds the rect of every hotspot of its room, by hotspot id: the parts of the scene and the placed entities, whose rect is per room. A character's or object's `sprite2d` names the actor layer that draws it in each room's art. Only those actors are shown and hidden, so only a hotspot that places an entity may have `presentWhen`; a part of the scene has no actor in `sprite2d`, and the validator reports one that comes and goes. The protagonist's entry is `character/protagonist`, so nothing hangs on his placeholder name.
-- **Variants.** `sprite2d` is filled in A8 and removed in B7. `model3d` is filled from B1.
+- **Variants.** `sprite2d` is filled in A8 and removed in B7. `model3d` is filled from B1: `{file, placeholder, height?}`, the glb's path under `public/`, whether it is still a placeholder, and a character's height in metres. B1 gives one to the protagonist, the bartender, the flyer and the broken guitar; scenes get theirs in B3. A character or object needs a `sprite2d` only to be placed in a room, so `object/broken-guitar` (drawn as part of the protagonist's 2D art) has only a `model3d`; every entry has at least one variant.
 - **The registry holds no logic.** It never says what a thing does, only how it looks and where its anchors and hit areas are.
 - **Validators** (`assets/validate.ts`, run in unit tests: the browser can't see which files are under `public/`) check five things:
   - every `model` id in content has an entry of the right kind, and every entry's id is used once;
   - every file exists: a scene's room art, with the actor of the protagonist and of every entity its room places;
   - every `hotspots`/`node` a room uses exists, as a 2D rect or a 3D `hit_*` node;
   - a `node`-targeted hotspot has no `presentWhen`: a part of the scene has no actor in `sprite2d` to show or hide it;
-  - every 3D file meets the [asset contract](#8-asset-contract-for-the-designer). The glb is parsed in the test with no dependency: read its JSON chunk and inspect it.
+  - every 3D file is at `models/<kind>s/<id>.glb` and meets the [asset contract](#8-asset-contract-for-the-designer). `assets/glb.ts` reads the glb with no dependency (its header and JSON chunk), and `assets/contract.ts` `checkModel` checks it for its kind, returning `{file, rule, message}`, with the rule's topic from section 8 (`nodes: anchor_head`, `budget: triangles`). The unit tests hand `validateAssets` the files under `public/models/`, and it reports a broken rule with the rule in the field. Checking a scene's `hit_*` nodes against its room's hotspots comes with the scene models in B3.
 
   A problem is `{file, field, message}` as in the content validator, with a model named by its id in the field (`models[id=scene/opening].sprite2d.hotspots`).
 
@@ -290,7 +290,7 @@ Every model file must follow this. A placeholder model follows it too, so a desi
 - a box guitar;
 - a room shell with a floor, the scene's `hit_*` boxes and `cam_main` matched to today's 2D art.
 
-The output is committed, and each one is marked `"placeholder": true` in the registry. A designer replaces a placeholder by writing a file of the same name, running `npm test` (contract check) and `npm run test:e2e`, then flipping `placeholder` to `false`.
+The output is committed, and each one is marked `"placeholder": true` in the registry. `tests/unit/placeholders.test.ts` checks that the script reproduces the committed files byte for byte, so after changing the script, run it and commit its output with it. B1 writes the protagonist, the bartender (a crow), the flyer and the broken guitar; the room shells come with B3. A designer replaces a placeholder by writing a file of the same name, running `npm test` (contract check) and `npm run test:e2e`, then flipping `placeholder` to `false`.
 
 ## 9. Tests
 
@@ -299,7 +299,7 @@ The output is committed, and each one is marked `"placeholder": true` in the reg
 | Layering | `tests/unit/architecture.test.ts` | A1. The architecture spec, "Layered code". |
 | Domain | `tests/unit/walk.test.ts`, `tests/unit/game-save.test.ts` | Pure. Floor geometry, and `toSave`/`fromSave`. |
 | Rules | `tests/unit/rules.test.ts`, `tests/unit/rules.acceptance.test.ts` | Pure. Every command and effect, plus the "Playing without a renderer" script. |
-| Content and registry | `tests/unit/content.test.ts`, `tests/unit/assets.test.ts` | The validators, against the real files and broken copies. The glb contract checks (`models.acceptance.test.ts`) come with B1. |
+| Content and registry | `tests/unit/content.test.ts`, `tests/unit/assets.test.ts`, `tests/unit/models.acceptance.test.ts`, `tests/unit/placeholders.test.ts` | The validators, against the real files and broken copies, with the glb contract over every `model3d` file and the broken fixtures (`tests/fixtures/models/glb.ts`). The placeholders match their script. |
 | App and session | `tests/unit/session.test.ts`, `tests/unit/game.test.ts` | The session: the `data-*` mirror and autosave. The app: a game played with the fake renderer (`tests/unit/fakes/renderer.ts`). |
 | Behaviour | `tests/e2e/*.spec.ts` | Unchanged public interface. Renderer-specific tests are listed below. |
 
@@ -334,7 +334,7 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **A7** ([#33](https://github.com/alexsiri7/punland/issues/33)), done | 5 | Entities and interactions as data: `characters.json` and `objects.json`, rooms place entities, `interactions` with verbs, conditions and effects replace `action` and `uses`, the `talk` effect, and the four rooms migrated. |
 | **A8** ([#34](https://github.com/alexsiri7/punland/issues/34)), done | 3 | Model registry (`assets/models.json`) with the `sprite2d` variants. Hotspot rects and actor/layer mapping move out of room content. Registry validators. |
 | **A9** ([#35](https://github.com/alexsiri7/punland/issues/35)), done | 2 | Phase A gate: remove leftover shims, check that every layer matches this document, and update the status line below. Every phase-B step waits on this one. |
-| **B1** ([#36](https://github.com/alexsiri7/punland/issues/36)) | 5 | The 3D asset contract in code: `model3d` registry entries, the glb contract validator (unit tests), and `make-placeholders.mjs` with committed placeholders for the protagonist, bartender, flyer and broken guitar. |
+| **B1** ([#36](https://github.com/alexsiri7/punland/issues/36)), done | 5 | The 3D asset contract in code: `model3d` registry entries, the glb contract validator (unit tests), and `make-placeholders.mjs` with committed placeholders for the protagonist, bartender, flyer and broken guitar. |
 | **B2** ([#37](https://github.com/alexsiri7/punland/issues/37)) | 5 | `presentation/three3d`: renderer behind `?renderer=3d`. Proves WebGL in CI. Fixed `cam_main` camera, the toon look, floor raycast ↔ floor points, projected hotspot bounds and anchors, and the grain overlay. Adds the `three` dependency. |
 | **B3** ([#38](https://github.com/alexsiri7/punland/issues/38)) | 5 | Placeholder scene models for `opening`, `pub`, `feed` and `dream`, with `cam_main`, `floor` and the `hit_*` nodes matching today's hotspots. Entities placed from the registry, with the flyer reused in two rooms. |
 | **B4** ([#39](https://github.com/alexsiri7/punland/issues/39)) | 3 | 3D picking and hover: raycast `hit_*` and entity meshes, hover drives `data-hover` and the action line, DOM buttons follow the projected bounds. |
@@ -342,4 +342,4 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **B6** ([#41](https://github.com/alexsiri7/punland/issues/41)) | 3 | 3D becomes the default renderer. The whole e2e suite runs against it, and `?renderer=2d` stays as a fallback. |
 | **B7** ([#42](https://github.com/alexsiri7/punland/issues/42)) | 3 | Remove the 2D path: `phaser2d`, the `phaser` dependency, `sprite2d` entries, `scripts/render-art.mjs` and `public/rooms/*` layers. Replace the 2D-specific tests (see Tests). Update CLAUDE.md and STYLE.md's "Scene build" to describe 3D. |
 
-**Status:** design merged (spec change #25); acceptance tests #26 done; phase A done (A1 to A9). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 wait on A7 (#33).
+**Status:** design merged (spec change #25); acceptance tests #26 done; phase A done (A1 to A9); B1 done. Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 wait on A7 (#33).
