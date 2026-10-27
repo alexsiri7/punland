@@ -10,7 +10,8 @@
           "board": { "x": 868, "y": 452, "width": 100, "height": 110 },
           "flyer": { "x": 714, "y": 390, "width": 46, "height": 58 }
         }
-      }
+      },
+      "model3d": { "file": "models/scenes/opening.glb", "placeholder": true }
     },
     {
       "id": "scene/pub",
@@ -21,7 +22,8 @@
           "door": { "x": 60, "y": 138, "width": 162, "height": 332 },
           "bartender": { "x": 940, "y": 164, "width": 140, "height": 192 }
         }
-      }
+      },
+      "model3d": { "file": "models/scenes/pub.glb", "placeholder": true }
     },
     {
       "id": "scene/feed",
@@ -32,7 +34,8 @@
           "page": { "x": 400, "y": 40, "width": 480, "height": 460 },
           "likes": { "x": 960, "y": 430, "width": 80, "height": 90 }
         }
-      }
+      },
+      "model3d": { "file": "models/scenes/feed.glb", "placeholder": true }
     },
     {
       "id": "scene/dream",
@@ -43,7 +46,8 @@
           "stage": { "x": 600, "y": 316, "width": 440, "height": 136 },
           "flyer": { "x": 780, "y": 222, "width": 92, "height": 92 }
         }
-      }
+      },
+      "model3d": { "file": "models/scenes/dream.glb", "placeholder": true }
     },
     {
       "id": "character/protagonist",

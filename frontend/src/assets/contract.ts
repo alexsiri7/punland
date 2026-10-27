@@ -1,4 +1,5 @@
-import { type Glb, type GlbNode, type Mat4, readGlb, type Vec3 } from './glb';
+import { type FloorPoint, SCENE } from '../domain';
+import { type Glb, type GlbNode, type GlbPrimitive, type Mat4, readGlb, type Triangle, type Vec3 } from './glb';
 import type { ModelKind } from './registry';
 
 /**
@@ -91,9 +92,15 @@ type Breach = (rule: string, message: string) => void;
 
 function checkCamera(glb: Glb, breach: Breach): void {
   const camera = glb.nodes.find((node) => node.name === 'cam_main');
-  if (camera && (camera.camera === null || glb.cameras[camera.camera] !== 'perspective')) {
+  if (camera && yfovOf(glb, camera) === null) {
     breach('nodes: cam_main', 'has a "cam_main" node that is not a perspective camera');
   }
+}
+
+/** The vertical field of view, in radians, of a node's perspective camera, if it has one. */
+function yfovOf(glb: Glb, node: GlbNode | undefined): number | null {
+  const lens = node?.camera === null || node === undefined ? undefined : glb.cameras[node.camera];
+  return lens?.type === 'perspective' ? lens.yfov : null;
 }
 
 function checkBudgets(glb: Glb, kind: ModelKind, breach: Breach): void {
@@ -164,27 +171,89 @@ function checkOrigin(glb: Glb, kind: ModelKind, height: number | undefined, brea
 function boundsOf(glb: Glb, which: (node: GlbNode) => boolean): { min: Vec3; max: Vec3 } | null {
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
+  for (const { primitive, world } of meshesUnder(glb, which)) {
+    if (!primitive.bounds) continue;
+    for (const corner of corners(primitive.bounds)) {
+      const point = transform(world, corner);
+      for (let axis = 0; axis < 3; axis++) {
+        min[axis] = Math.min(min[axis]!, point[axis]!);
+        max[axis] = Math.max(max[axis]!, point[axis]!);
+      }
+    }
+  }
+  if (min[0] === Infinity) return null;
+  return { min: [min[0]!, min[1]!, min[2]!], max: [max[0]!, max[1]!, max[2]!] };
+}
+
+/** The primitives of the nodes `which` picks and of their children, each with its node's world transform. */
+function meshesUnder(glb: Glb, which: (node: GlbNode) => boolean): { primitive: GlbPrimitive; world: Mat4 }[] {
+  const found: { primitive: GlbPrimitive; world: Mat4 }[] = [];
+  for (const { node, world, picked } of walk(glb, which)) {
+    if (!picked || node.mesh === null) continue;
+    for (const primitive of glb.meshes[node.mesh] ?? []) found.push({ primitive, world });
+  }
+  return found;
+}
+
+/** Every node of the default scene with its world transform, and whether it or a parent is one `which` picks. */
+function walk(glb: Glb, which: (node: GlbNode) => boolean = () => false) {
+  const nodes: { node: GlbNode; world: Mat4; picked: boolean }[] = [];
   const visit = (index: number, parent: Mat4, picked: boolean, depth: number) => {
     const node = glb.nodes[index];
     if (!node || depth > glb.nodes.length) return;
     const world = multiply(parent, node.local);
     const inside = picked || which(node);
-    for (const primitive of inside && node.mesh !== null ? (glb.meshes[node.mesh] ?? []) : []) {
-      if (!primitive.bounds) continue;
-      for (const corner of corners(primitive.bounds)) {
-        const point = transform(world, corner);
-        for (let axis = 0; axis < 3; axis++) {
-          min[axis] = Math.min(min[axis]!, point[axis]!);
-          max[axis] = Math.max(max[axis]!, point[axis]!);
-        }
-      }
-    }
+    nodes.push({ node, world, picked: inside });
     for (const child of node.children) visit(child, world, inside, depth + 1);
   };
   for (const root of glb.roots) visit(root, IDENTITY, false, 0);
-  if (min[0] === Infinity) return null;
-  return { min: [min[0]!, min[1]!, min[2]!], max: [max[0]!, max[1]!, max[2]!] };
+  return nodes;
 }
+
+/**
+ * The points of `points`, in scene pixels, that a ray from the scene's `cam_main` through them
+ * does not land on its `floor` mesh: the camera sees the 1280 × 640 scene, and the floor counts
+ * where its triangles face the camera, as the 3D renderer draws and picks it (docs/ARCHITECTURE.md,
+ * section 7). With no perspective `cam_main`, none lands.
+ */
+export function offFloor<P extends FloorPoint>(glb: Glb, points: readonly P[]): P[] {
+  const camera = walk(glb).find(({ node }) => node.name === 'cam_main');
+  const yfov = yfovOf(glb, camera?.node);
+  if (!camera || yfov === null) return [...points];
+  const floor = meshesUnder(glb, (node) => node.name === 'floor').flatMap(({ primitive, world }) =>
+    primitive.triangles.map(([a, b, c]): Triangle => [transform(world, a), transform(world, b), transform(world, c)]),
+  );
+  const origin = transform(camera.world, [0, 0, 0]);
+  const tan = Math.tan(yfov / 2);
+  return points.filter(({ x, y }) => {
+    // The camera looks down its -Z, and the scene is twice as wide as it is high.
+    const towards = transform(camera.world, [
+      ((2 * x) / SCENE.width - 1) * tan * (SCENE.width / SCENE.height),
+      (1 - (2 * y) / SCENE.height) * tan,
+      -1,
+    ]);
+    return !floor.some((triangle) => hitsFront(origin, sub(towards, origin), triangle));
+  });
+}
+
+/** Whether the ray from `origin` along `ray` meets the front (counter-clockwise) face of `triangle` (Möller–Trumbore). */
+function hitsFront(origin: Vec3, ray: Vec3, [a, b, c]: Triangle): boolean {
+  const e1 = sub(b, a);
+  const e2 = sub(c, a);
+  const p = cross(ray, e2);
+  const det = dot(e1, p);
+  if (det <= 1e-12) return false;
+  const s = sub(origin, a);
+  const u = dot(s, p) / det;
+  if (u < 0 || u > 1) return false;
+  const q = cross(s, e1);
+  const v = dot(ray, q) / det;
+  return v >= 0 && u + v <= 1 && dot(e2, q) / det > 0;
+}
+
+const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 
 function corners({ min, max }: { min: Vec3; max: Vec3 }): Vec3[] {
   return [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [

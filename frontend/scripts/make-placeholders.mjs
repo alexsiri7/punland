@@ -10,6 +10,7 @@
 //
 // Each part is one node with one mesh, and its material is named after the part. Characters
 // pivot their limbs and head at nodes, so the clips are node transform animations with no skin.
+// A room's shell is laid out in scene pixels, through its camera, over the room's 2D art.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -31,6 +32,40 @@ const COLOURS = {
   apron: '#D9CDB4',
   paper: '#D9CDB4',
   ink: '#C8483B',
+  // The rooms: STYLE.md's city, sky, light and accents, and the room art's own tones (art/<room>/scene.svg).
+  pavement: '#5E5A62',
+  kerb: '#4A464E',
+  road: '#2F2D35',
+  skyline: '#4A4A5E',
+  'far-city': '#6E6A82',
+  facade: '#96805F',
+  shopfront: '#2F4A36',
+  fascia: '#1A2822',
+  door: '#1A2822',
+  glow: '#E8B566',
+  'sign-gold': '#E3C58A',
+  chalkboard: '#2A2830',
+  brick: '#6E4038',
+  wainscot: '#4A3A30',
+  boards: '#3A2E26',
+  night: '#2E3A52',
+  'green-door': '#2F4A36',
+  bar: '#8A5A34',
+  'bar-top': '#6E4628',
+  beam: '#2F2D35',
+  backdrop: '#2A2A30',
+  screen: '#1E1E24',
+  header: '#46607E',
+  card: '#3A3C46',
+  likes: '#C8483B',
+  play: '#8A7FA8',
+  platform: '#5E5A62',
+  rock: '#6E6A82',
+  stage: '#5A332D',
+  lamp: '#3E5E44',
+  banner: '#8E879C',
+  haze: '#6E6478',
+  clay: '#C98A6C',
 };
 
 /** Every placeholder, by its path under public/. */
@@ -40,6 +75,10 @@ export function placeholders() {
     'models/characters/bartender.glb': glb(bartender()),
     'models/objects/flyer.glb': glb(flyer()),
     'models/objects/broken-guitar.glb': glb(brokenGuitar()),
+    'models/scenes/opening.glb': glb(opening()),
+    'models/scenes/pub.glb': glb(pub()),
+    'models/scenes/feed.glb': glb(feed()),
+    'models/scenes/dream.glb': glb(dream()),
   };
 }
 
@@ -192,6 +231,200 @@ function brokenGuitar() {
   };
 }
 
+// --- The rooms. Each one is laid out in the scene pixels of its 2D art (1280 x 640), through
+// its camera: the walkable area's front centre (content/rooms/<room>.json) is the origin, and
+// a wall or prop stands on the plane where its foot meets the floor. ---------------------------
+
+/** The camera of every room: 25° high, 2.5 m up and tipped 6° down, so the protagonist is about 256 px tall at the front. */
+const YFOV = (25 * Math.PI) / 180;
+const EYE = 2.5;
+const TILT = (-6 * Math.PI) / 180;
+const [SCENE_WIDTH, SCENE_HEIGHT] = [1280, 640];
+/** How far the floor reaches past the front of the walk line, inside the contract's tolerance. */
+const FRONT = 0.015;
+
+/**
+ * A room's camera, placed so that `front`, the front centre of its walkable area in scene pixels,
+ * is the origin; and the room's pixels as world points through it.
+ */
+function lens(front) {
+  const tan = Math.tan(YFOV / 2);
+  const direction = (x, y) => {
+    const [dx, dy, dz] = [((2 * x) / SCENE_WIDTH - 1) * tan * (SCENE_WIDTH / SCENE_HEIGHT), (1 - (2 * y) / SCENE_HEIGHT) * tan, -1];
+    return [dx, dy * Math.cos(TILT) - dz * Math.sin(TILT), dy * Math.sin(TILT) + dz * Math.cos(TILT)];
+  };
+  const toFront = direction(front.x, front.y);
+  const reach = EYE / -toFront[1];
+  const eye = [-reach * toFront[0], EYE, -reach * toFront[2]].map(round);
+  const along = (x, y, t) => eye.map((v, axis) => v + t * direction(x, y)[axis]);
+  return {
+    camera: { name: 'cam_main', at: eye, rotation: [Math.sin(TILT / 2), 0, 0, Math.cos(TILT / 2)].map(round), yfov: YFOV },
+    /** The floor under a pixel. */
+    floor: (x, y) => along(x, y, EYE / -direction(x, y)[1]),
+    /** The point of the upright plane at depth `z` under a pixel. */
+    at: (x, y, z) => along(x, y, (z - eye[2]) / direction(x, y)[2]),
+  };
+}
+
+/** A room's parts on its camera: boxes over pixel rects, standing on the floor or on a plane. */
+function shell(front) {
+  const view = lens(front);
+  /** A box whose front face covers `rect` in the scene at depth `z`, `depth` deep. */
+  const panel = ({ x, y, width, height }, z, depth) => {
+    const [left, top] = view.at(x, y, z);
+    const [right, bottom] = view.at(x + width, y + height, z);
+    return box([left, bottom, z - depth], [right - left, top - bottom, depth]);
+  };
+  /** The depth at which a pixel row meets the floor. */
+  const depthAt = (y) => view.floor(front.x, y)[2];
+  return {
+    camera: view.camera,
+    point: view.at,
+    depthAt,
+    panel,
+    /** A box over `rect` that stands on the floor where its foot, the rect's bottom, meets it. */
+    standing: (rect, depth) => panel(rect, depthAt(rect.y + rect.height), depth),
+    /** The floor across the scene from the depth of pixel row `back` to just past the origin, and a strip of `apron` in front. */
+    floor: (back, part, apron) => {
+      const z = depthAt(back);
+      const [left] = view.at(-40, back, z);
+      const [right] = view.at(SCENE_WIDTH + 40, back, z);
+      return [
+        { name: 'floor', part, shape: ground([left, z], [right, FRONT]) },
+        { name: 'apron', part: apron, shape: ground([left, FRONT], [right, 2]) },
+      ];
+    },
+  };
+}
+
+/** A flat quad on the floor (y = 0) from the back left corner to the front right one, facing up. */
+function ground([x0, z0], [x1, z1]) {
+  const [a, b, c, d] = [[x0, 0, z0], [x0, 0, z1], [x1, 0, z1], [x1, 0, z0]];
+  return [[a, b, c], [a, c, d]];
+}
+
+const rect = (x, y, width, height) => ({ x, y, width, height });
+
+/** The street outside The Three Crows: its green shopfront and lit windows, the board on the pavement, the city down the side street. */
+function opening() {
+  const room = shell({ x: 820, y: 610 });
+  const wall = room.depthAt(518);
+  const far = wall - 14;
+  const [corner] = room.point(300, 518, wall);
+  const windows = [rect(506, 253, 99, 217), rect(806, 253, 148, 217), rect(995, 253, 147, 217), rect(1187, 253, 100, 217)];
+  return {
+    name: 'opening',
+    children: [
+      ...room.floor(518, 'pavement', 'road'),
+      { name: 'side-street', part: 'road', shape: ground([corner - 30, far], [corner, wall]) },
+      { name: 'facade', part: 'facade', shape: room.panel(rect(300, -400, 1100, 535), wall, 1) },
+      { name: 'shopfront', part: 'shopfront', shape: room.panel(rect(300, 134, 1100, 384), wall + 0.05, 0.05) },
+      { name: 'fascia', part: 'fascia', shape: room.panel(rect(470, 140, 830, 46), wall + 0.08, 0.03) },
+      ...windows.map((at, i) => ({ name: `window_${i}`, part: 'glow', shape: room.panel(at, wall + 0.07, 0.02) })),
+      ...[rect(512, -40, 96, 110), rect(690, -40, 96, 110), rect(868, -40, 96, 110), rect(1046, -40, 96, 110)].map((at, i) => ({
+        name: `upstairs_${i}`,
+        part: 'glow',
+        shape: room.panel(at, wall + 0.02, 0.02),
+      })),
+      { name: 'side-building', part: 'skyline', shape: room.panel(rect(-40, -100, 230, 610), wall - 3, 3) },
+      ...[rect(130, 60, 70, 300), rect(190, 120, 60, 260), rect(240, 30, 50, 330)].map((at, i) => ({
+        name: `city_${i}`,
+        part: 'far-city',
+        shape: room.panel(at, far, 2),
+      })),
+      { name: 'hit_door', part: 'door', shape: room.panel(rect(634, 208, 142, 312), wall + 0.1, 0.05) },
+      {
+        name: 'hit_board',
+        part: 'chalkboard',
+        shape: room.standing(rect(874, 454, 92, 118), 0.08),
+        children: [{ name: 'board-headline', part: 'sign-gold', shape: room.panel(rect(886, 470, 68, 14), room.depthAt(572) + 0.01, 0.01) }],
+      },
+      room.camera,
+    ],
+  };
+}
+
+/** Inside The Three Crows: the brick wall with its window and poster, the street door, and the bar. */
+function pub() {
+  const room = shell({ x: 640, y: 615 });
+  const wall = room.depthAt(470);
+  return {
+    name: 'pub',
+    children: [
+      ...room.floor(470, 'boards', 'boards'),
+      { name: 'wall', part: 'brick', shape: room.panel(rect(-40, -400, 1360, 870), wall, 0.2) },
+      { name: 'wainscot', part: 'wainscot', shape: room.panel(rect(-40, 384, 1360, 86), wall + 0.03, 0.03) },
+      { name: 'beam', part: 'beam', shape: room.panel(rect(-40, -60, 1360, 100), wall + 0.08, 0.08) },
+      { name: 'window', part: 'night', shape: room.panel(rect(330, 115, 124, 157), wall + 0.02, 0.02) },
+      { name: 'poster', part: 'paper', shape: room.panel(rect(510, 195, 98, 135), wall + 0.02, 0.02) },
+      { name: 'sign', part: 'fascia', shape: room.panel(rect(858, 61, 332, 64), wall + 0.04, 0.04) },
+      ...[182, 272].map((y, i) => ({ name: `shelf_${i}`, part: 'bar', shape: room.panel(rect(800, y, 461, 10), wall + 0.25, 0.25) })),
+      { name: 'bar', part: 'bar', shape: room.panel(rect(733, 362, 560, 108), wall + 0.7, 0.7) },
+      { name: 'bar-top', part: 'bar-top', shape: room.panel(rect(726, 352, 570, 12), wall + 0.75, 0.8) },
+      { name: 'hit_door', part: 'green-door', shape: room.panel(rect(60, 138, 162, 332), wall + 0.06, 0.06) },
+      room.camera,
+    ],
+  };
+}
+
+/** The band's page, as a room: the empty page on its screen, the cards around it and the likes. */
+function feed() {
+  const room = shell({ x: 640, y: 606 });
+  const wall = room.depthAt(522);
+  const cards = [rect(430, 237, 200, 118), rect(650, 237, 200, 118), rect(430, 372, 200, 109), rect(650, 372, 200, 109)];
+  const sides = [rect(60, 80, 150, 189), rect(60, 301, 150, 189), rect(1070, 80, 150, 189), rect(1070, 301, 150, 189)];
+  return {
+    name: 'feed',
+    children: [
+      ...room.floor(522, 'road', 'road'),
+      { name: 'backdrop', part: 'backdrop', shape: room.panel(rect(-40, -400, 1360, 922), wall, 0.2) },
+      ...sides.map((at, i) => ({ name: `post_${i}`, part: 'card', shape: room.panel(at, wall + 0.02, 0.02) })),
+      {
+        name: 'hit_page',
+        part: 'screen',
+        shape: room.panel(rect(381, 19, 518, 499), wall + 0.1, 0.1),
+        children: [
+          { name: 'header', part: 'header', shape: room.panel(rect(400, 40, 480, 120), wall + 0.12, 0.02) },
+          ...cards.map((at, i) => ({ name: `slot_${i}`, part: 'card', shape: room.panel(at, wall + 0.12, 0.02) })),
+        ],
+      },
+      { name: 'play', part: 'play', shape: room.standing(rect(221, 460, 59, 60), 0.3) },
+      { name: 'hit_likes', part: 'likes', shape: room.standing(rect(960, 432, 80, 88), 0.4) },
+      room.camera,
+    ],
+  };
+}
+
+/** The dream: a stone platform in the dusk, the stage floating over it, banners hanging from nowhere. */
+function dream() {
+  const room = shell({ x: 660, y: 620 });
+  const back = room.depthAt(525);
+  const stage = back - 6;
+  const sky = back - 60;
+  const banners = [rect(80, -40, 80, 130), rect(200, -40, 36, 88), rect(300, -40, 60, 160), rect(880, -40, 80, 124), rect(1010, -40, 50, 152), rect(1120, -40, 60, 136)];
+  return {
+    name: 'dream',
+    children: [
+      ...room.floor(525, 'platform', 'platform'),
+      { name: 'underside', part: 'rock', shape: box([-12, -0.6, back], [24, 0.6, 2 - back]) },
+      { name: 'haze', part: 'haze', shape: room.panel(rect(-40, 200, 1360, 240), sky, 1) },
+      { name: 'horizon', part: 'clay', shape: room.panel(rect(-40, 440, 1360, 240), sky, 1) },
+      ...banners.map((at, i) => ({ name: `banner_${i}`, part: 'banner', shape: room.panel(at, stage - 4, 0.1) })),
+      {
+        name: 'hit_stage',
+        part: 'stage',
+        shape: room.panel(rect(618, 298, 404, 64), stage, 3),
+        children: [
+          { name: 'stage-rock', part: 'rock', shape: room.panel(rect(560, 362, 518, 70), stage + 0.2, 3.4) },
+          { name: 'mic', part: 'beam', shape: room.panel(rect(806, 228, 6, 70), stage - 1.5, 0.05) },
+          ...[688, 950].map((x, i) => ({ name: `lamp_${i}`, part: 'lamp', shape: room.panel(rect(x - 36, 150, 72, 26), stage - 1, 0.6) })),
+        ],
+      },
+      room.camera,
+    ],
+  };
+}
+
 /**
  * A character's clips, moving its pivot nodes: `idle` and `walk` loop, `talk` loops, and
  * `pickup` and `use` play once over 0.6 s. Walking is in place: the game moves the character.
@@ -320,10 +553,16 @@ function glb(model) {
 
   const nodes = [];
   const meshes = [];
+  const cameras = [];
   const add = (part) => {
     const node = { name: part.name };
     nodes.push(node);
     if (part.at) node.translation = part.at;
+    if (part.rotation) node.rotation = part.rotation;
+    if (part.yfov) {
+      cameras.push({ type: 'perspective', perspective: { aspectRatio: 2, yfov: round(part.yfov), znear: 0.1, zfar: 200 } });
+      node.camera = cameras.length - 1;
+    }
     if (part.shape) {
       const triangles = part.shape.map((t) => t.map((p) => p.map(round)));
       const normals = triangles.flatMap((t) => {
@@ -363,6 +602,7 @@ function glb(model) {
     nodes,
     meshes,
     materials,
+    ...(cameras.length && { cameras }),
     ...(animations.length && { animations }),
     accessors,
     bufferViews,

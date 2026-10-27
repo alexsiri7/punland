@@ -20,6 +20,11 @@ const art = Object.fromEntries(
 );
 
 const content = loadContent();
+type Content = typeof content;
+
+function hotspotIn(rooms: Content['rooms'], room: string, id: string) {
+  return rooms[room]!.hotspots.find((h) => h.id === id)!;
+}
 
 type Json = Record<string, any>;
 
@@ -183,6 +188,43 @@ describe('the model registry', () => {
       field,
       message: expect.stringMatching(message),
     });
+  });
+
+  it("reports a scene file without the hit node of one of its room's parts", () => {
+    const files = { ...modelFiles, 'models/scenes/opening.glb': modelFiles['models/scenes/pub.glb']! };
+    expect(validateAssets(registryFile, content, art, files)).toContainEqual({
+      file: 'public/models/scenes/opening.glb',
+      field: 'nodes: hit_board',
+      message: expect.stringMatching(/no node "hit_board" for the hotspot "board" of content\/rooms\/opening.json/),
+    });
+  });
+
+  it.each<{ point: string; edit: (rooms: Content['rooms']) => void; file: string; field: string }>([
+    { point: 'a start', edit: (rooms) => (rooms.feed!.start = { x: 640, y: 200 }), file: 'feed', field: 'start' },
+    {
+      point: 'a corner of the floor',
+      edit: (rooms) => (rooms.dream!.walkable[1] = { x: 1170, y: 300 }),
+      file: 'dream',
+      field: 'walkable[1]',
+    },
+    {
+      point: 'where an entity stands',
+      edit: (rooms) => Object.assign(hotspotIn(rooms, 'pub', 'bartender').target, { at: { x: 1010, y: 100 } }),
+      file: 'pub',
+      field: 'hotspots[id=bartender].target.at',
+    },
+    {
+      point: 'an exit into the room',
+      edit: (rooms) => Object.assign(hotspotIn(rooms, 'pub', 'door').interactions[0]!.effects[0]!, { at: { x: 705, y: 150 } }),
+      file: 'pub',
+      field: 'hotspots[id=door].interactions[0].effects[0].at',
+    },
+  ])("reports $point that misses the floor of the room's scene file", ({ edit, file, field }) => {
+    const given = structuredClone(content) as Content;
+    edit(given.rooms);
+    expect(validateAssets(registryFile, given, art, modelFiles)).toEqual([
+      { file: `content/rooms/${file}.json`, field, message: expect.stringMatching(/does not land on the "floor" of public\/models\/scenes\//) },
+    ]);
   });
 
   it('reports a part of the scene that comes and goes, which the 2D art cannot show or hide', () => {
