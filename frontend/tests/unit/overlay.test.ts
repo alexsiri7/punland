@@ -21,9 +21,9 @@ describe('the UI overlay', () => {
     const overlay = createOverlay(container);
     expect(overlay.root.hidden).toBe(true);
 
+    const canvas = canvasAt(box);
     overlay.follow({
-      canvas: canvasAt(box),
-      head: () => ({ x: 0, y: 0 }),
+      canvas: () => canvas,
       onResize: (layout) => {
         resized = layout;
         return () => {};
@@ -45,13 +45,10 @@ describe('the UI overlay', () => {
   it('stops following the previous room once it follows the next', () => {
     const overlay = createOverlay(document.createElement('div'));
     let unfollowed = 0;
-    const room = {
-      canvas: canvasAt({ left: 0, top: 0, width: 1280, height: 800 }),
-      head: () => ({ x: 0, y: 0 }),
-      onResize: () => () => unfollowed++,
-    };
-    overlay.follow(room);
-    overlay.follow(room);
+    const canvas = canvasAt({ left: 0, top: 0, width: 1280, height: 800 });
+    const renderer = { canvas: () => canvas, onResize: () => () => unfollowed++ };
+    overlay.follow(renderer);
+    overlay.follow(renderer);
     expect(unfollowed).toBe(1);
   });
 });

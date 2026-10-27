@@ -1,9 +1,6 @@
 import Phaser from 'phaser';
-import { PROTAGONIST } from '../../content/protagonist';
-import type { FloorPoint, GameEvent, Room } from '../../domain';
-import type { Session } from '../session';
-import { SCENE_HEIGHT } from '../theme';
-import type { DrawnRoom, ScenePoint } from '../ui';
+import type { FloorPoint } from '../../domain';
+import type { SceneView } from '../renderer';
 
 /** public/rooms/<room>/art.json, written by scripts/render-art.mjs from art/<room>/scene.svg. */
 interface RoomArt {
@@ -14,53 +11,38 @@ interface RoomArt {
   layers: { key: string; file: string; x: number; y: number; depth: number; actor?: string; foot?: FloorPoint }[];
 }
 
-/** Told when the session's room is drawn and takes input, and when its floor is clicked: the DOM UI and mirror. */
-export interface RoomShown {
-  shown(room: DrawnRoom): void;
-  walked(): void;
-}
-
-/** The room to show: the session's. Everything else is in the session. */
+/** The view to draw. */
 export interface RoomData {
-  room: string;
+  view: SceneView;
 }
 
 /**
- * Shows the session's room, from its content (src/content/rooms/<room>.json: floor, hotspots,
- * exits, items) and its art (public/rooms/<room>/: swappable layer files). Nothing here is
- * specific to a room, and nothing here is a game rule: input becomes commands to the session,
- * and the session's events are drawn. All text and controls are the DOM UI's (presentation/ui),
- * which it tells when the room is drawn.
+ * Draws one SceneView from the room's art (public/rooms/<room>/: swappable layer files): its
+ * layers, with the player's sprite and the hotspots' sprites found by their actor ids. Nothing
+ * here is specific to a room, and nothing here is a game rule or takes input.
  */
 export class RoomScene extends Phaser.Scene {
   static readonly KEY = 'room';
 
-  private id = '';
-  private room!: Room;
+  private view!: SceneView;
   private player: Phaser.GameObjects.Image | null = null;
-  /** Room sprites of hotspots that come and go, by hotspot id. */
-  private hotspotSprites = new Map<string, Phaser.GameObjects.Image>();
-  private unsubscribe: () => void = () => {};
+  /** Room sprites of hotspots, by hotspot id. */
+  private sprites = new Map<string, Phaser.GameObjects.Image>();
 
-  constructor(
-    private readonly session: Session,
-    private readonly view: RoomShown,
-  ) {
+  /** `drawn` is called once the view is drawn. */
+  constructor(private readonly drawn: (view: SceneView) => void) {
     super(RoomScene.KEY);
   }
 
   init(data: RoomData): void {
-    const room = this.session.content.rooms[data.room];
-    if (!room) throw new Error(`room "${data.room}" is not in the content`);
-    this.id = data.room;
-    this.room = room;
+    this.view = data.view;
     this.player = null;
-    this.hotspotSprites = new Map();
+    this.sprites = new Map();
   }
 
   preload(): void {
     const artKey = this.artKey();
-    const base = `rooms/${this.id}/`;
+    const base = `rooms/${this.view.room}/`;
     const loadLayers = (art: RoomArt) => {
       for (const layer of art.layers) {
         if (!this.textures.exists(layer.key)) this.load.image(layer.key, `${base}${layer.file}`);
@@ -76,97 +58,45 @@ export class RoomScene extends Phaser.Scene {
 
   create(): void {
     const art = this.cache.json.get(this.artKey()) as RoomArt;
-    const absent = new Set(this.room.hotspots.filter((h) => !this.session.isPresent(h)).map((h) => h.id));
     for (const layer of art.layers) {
-      if (layer.actor && absent.has(layer.actor)) continue;
       const image = this.add
         .image(layer.x, layer.y, layer.key)
         .setOrigin(0)
         .setScale(1 / art.scale)
         .setDepth(layer.depth);
-      if (layer.actor === PROTAGONIST.actor) {
+      if (!layer.actor) continue;
+      if (layer.actor === this.view.player.model) {
         if (layer.foot) {
           image.setOrigin((layer.foot.x - layer.x) / image.displayWidth, (layer.foot.y - layer.y) / image.displayHeight);
         } else {
           image.setOrigin(0.5, 1);
         }
         this.player = image;
-      } else if (layer.actor) {
-        this.hotspotSprites.set(layer.actor, image);
+        continue;
+      }
+      const entity = this.view.entities.find((e) => e.model === layer.actor);
+      if (entity) {
+        image.setVisible(entity.visible);
+        this.sprites.set(entity.hotspot, image);
       }
     }
-    this.placePlayer(this.session.state.at);
-    this.unsubscribe = this.session.subscribe((event) => this.draw(event));
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribe());
-
-    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-      if (pointer.worldY >= SCENE_HEIGHT) return;
-      this.session.dispatch({ type: 'walk', to: { x: pointer.worldX, y: pointer.worldY } });
-      this.view.walked();
-    });
-    this.view.shown({
-      canvas: this.game.canvas,
-      head: () => this.head(),
-      onResize: (layout) => {
-        this.scale.on(Phaser.Scale.Events.RESIZE, layout);
-        return () => this.scale.off(Phaser.Scale.Events.RESIZE, layout);
-      },
-    });
+    this.drawn(this.view);
   }
 
-  override update(): void {
-    if (!this.session.state.walk) return;
-    // Phaser's smoothed delta is capped per frame, so a slow or unfocused page would walk in slow motion.
-    this.session.dispatch({ type: 'tick', dtMs: this.game.loop.rawDelta });
-  }
-
-  private draw(event: GameEvent): void {
-    switch (event.type) {
-      case 'moved':
-        this.placePlayer(event.at);
-        break;
-      case 'hotspotHidden':
-        this.hotspotSprites.get(event.hotspot)?.destroy();
-        this.hotspotSprites.delete(event.hotspot);
-        break;
-      case 'hotspotShown':
-      case 'roomChanged':
-        this.redraw();
-        break;
-      case 'said':
-      case 'hushed':
-      case 'pickedUp':
-      case 'itemRemoved':
-      case 'selected':
-      case 'arrived':
-      case 'worldChanged':
-      case 'gathered':
-      case 'conversationStarted':
-      case 'saved':
-        break;
-      default:
-        event satisfies never;
-    }
-  }
-
-  /** Draws the session's room afresh. This scene draws nothing more: its events are done with. */
-  private redraw(): void {
-    this.unsubscribe();
-    this.scene.restart({ room: this.session.state.room } satisfies RoomData);
-  }
-
-  private artKey(): string {
-    return `${this.id}-art`;
-  }
-
-  private placePlayer(at: FloorPoint): void {
+  placePlayer(at: FloorPoint): void {
     this.player?.setPosition(at.x, at.y);
   }
 
-  /** Just over the player's head, where their speech goes. */
-  private head(): ScenePoint {
-    const { at } = this.session.state;
-    const headroom = this.player ? this.player.displayHeight * this.player.originY + 16 : 280;
-    return { x: at.x, y: at.y - headroom };
+  setVisible(hotspot: string, visible: boolean): void {
+    this.sprites.get(hotspot)?.setVisible(visible);
+  }
+
+  /** How far over the player's feet their head is, in scene pixels. */
+  headroom(): number {
+    return this.player ? this.player.displayHeight * this.player.originY + 16 : 280;
+  }
+
+  private artKey(): string {
+    return `${this.view.room}-art`;
   }
 }
