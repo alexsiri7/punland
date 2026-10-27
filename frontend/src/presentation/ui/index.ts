@@ -70,6 +70,11 @@ export function mountUi(
         renderInventory();
         bar.reselected();
         break;
+      case 'hotspotShown': {
+        const shown = session.content.rooms[session.state.room]?.hotspots.find((h) => h.id === event.hotspot);
+        if (shown) hotspots?.add(shown);
+        break;
+      }
       case 'hotspotHidden':
         hotspots?.remove(event.hotspot);
         break;
@@ -80,7 +85,6 @@ export function mountUi(
         // Walking away ends the conversation.
         conversation.close();
         break;
-      case 'hotspotShown':
       case 'roomChanged':
         // The room is redrawn; until it is shown, its old controls must not take input.
         conversation.close();

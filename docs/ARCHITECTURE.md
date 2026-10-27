@@ -107,7 +107,7 @@ interface Hotspot {
 interface GameState {
   room: RoomId; at: FloorPoint;
   inventory: { carried: ItemId[]; pickedUp: ItemId[] };
-  journey: { left: Partial<Record<WorldId, Place>>; gathered: MaterialId[] };
+  journey: { left: Partial<Record<WorldId, Place>>; gathered: string[] };
   flags: Record<string, boolean | number | string>;      // puzzle state; #11 adds stats, act and goals beside it
   // transient, never saved:
   selected: ItemId | null;
@@ -143,7 +143,7 @@ type GameEvent =
   | { type: 'roomChanged'; room: RoomId; at: FloorPoint } | { type: 'worldChanged'; world: WorldId }
   | { type: 'hotspotShown' | 'hotspotHidden'; hotspot: HotspotId }
   | { type: 'conversationStarted'; character: CharacterId }
-  | { type: 'gathered'; material: MaterialId }
+  | { type: 'gathered'; material: string }
   | { type: 'saved' };                                     // state worth persisting changed
 
 function apply(content: Content, state: GameState, command: Command): { state: GameState; events: GameEvent[] };
@@ -161,10 +161,10 @@ function apply(content: Content, state: GameState, command: Command): { state: G
     when?: Condition[];                                // all must hold
     effects: Effect[];                                 // run in order
   }
-  type Condition = { has: ItemId } | { pickedUp: ItemId } | { gathered: MaterialId } | { flag: string; is?: boolean | number | string } | { not: Condition }; // `is` is true when left out
+  type Condition = { has: ItemId } | { pickedUp: ItemId } | { gathered: string } | { flag: string; is?: boolean | number | string } | { not: Condition }; // `is` is true when left out
   type Effect =
     | { say: string } | { goTo: RoomId; at?: FloorPoint } | { pickUp: ItemId } | { give: ItemId } | { take: ItemId }
-    | { gather: MaterialId } | { set: string; to: boolean | number | string } | { talk: CharacterId };
+    | { gather: string } | { set: string; to: boolean | number | string } | { talk: CharacterId };
   ```
 
   Activating a hotspot with no item selected runs its first interaction without an `item` whose conditions hold; when none holds, nothing happens. With an item selected, it runs the first `use` interaction for that item whose conditions hold, or else says the item's `noUse`. The verb names what an interaction is; the hotspot's `verb` stays the text shown on hover. After the effects, the rules compare each hotspot of the room with its `presentWhen` and send `hotspotShown` or `hotspotHidden` for the ones that changed. `pickUp` records the item as picked up for good (a `presentWhen: [{ not: { pickedUp } }]` hides its hotspot), `give` and `take` only move it in or out of the inventory (`itemAdded`, `itemRemoved`), and `gather` is the dream material that used to be a hotspot's `dreamMaterial`. Adding an effect or condition is a rules change with unit tests. Adding a puzzle that uses existing ones is content only (progress spec, "Adding a puzzle").
@@ -199,7 +199,7 @@ interface Renderer {
 ```
 
 - **Renderers draw. They decide nothing.** Input goes `canvas pointer → renderer.pick → app → session.dispatch`. A fake renderer (`tests/unit/fakes/renderer.ts`) lets the app and session be tested in jsdom.
-- **What A5 built.** `presentation/renderer.ts` has these types with the ids still plain strings, until A6 brands them. Until the model registry (A8) a `ModelId` is the name of an actor layer in the room's art (the hotspot id, or the protagonist's `actor`), and so `SceneView` has no room `model` and no entity `at` or `node` yet. Each entity carries its hotspot's `rect` instead, which is what `hotspotBounds` returns in 2D until A8 moves it into the asset entry. `onResize` is new: the overlay lines up again whenever the canvas is resized or moved. `app/game.ts` (`playGame`) builds the `SceneView` from the session, shows it on `roomChanged` and `hotspotShown`, calls `setPlayer` on `moved` and `setVisible` on `hotspotHidden`, sends `tick` from `frame`, and turns canvas pointer presses into `walk` through `pick`. `phaser2d/renderer.ts` (`Phaser2dRenderer`) implements it with one `RoomScene` that restarts for each view: `pick` returns a floor point above the UI bar (the hotspot buttons take the pointer in 2D) and `none` while no room is drawn, and `play` is a no-op.
+- **What A5 built.** `presentation/renderer.ts` has these types with the ids still plain strings, until A6 brands them. Until the model registry (A8) a `ModelId` is the name of an actor layer in the room's art (the hotspot id, or the protagonist's `actor`), and so `SceneView` has no room `model` and no entity `at` or `node` yet. Each entity carries its hotspot's `rect` instead, which is what `hotspotBounds` returns in 2D until A8 moves it into the asset entry. `onResize` is new: the overlay lines up again whenever the canvas is resized or moved. `app/game.ts` (`playGame`) builds the `SceneView` from the session, shows it on `roomChanged`, calls `setPlayer` on `moved` and `setVisible` on `hotspotShown` and `hotspotHidden` (A7: a hotspot shown in the room no longer redraws it, so a line or conversation from the same interaction stays up), sends `tick` from `frame`, and turns canvas pointer presses into `walk` through `pick`. `phaser2d/renderer.ts` (`Phaser2dRenderer`) implements it with one `RoomScene` that restarts for each view: `pick` returns a floor point above the UI bar (the hotspot buttons take the pointer in 2D) and `none` while no room is drawn, and `play` is a no-op.
 - **Renderer choice.** The app picks the renderer: `?renderer=2d|3d` while both exist (B2 to B6), with 3D the default from B6 and 2D removed in B7.
 
 ### DOM UI (`presentation/ui/`)

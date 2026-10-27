@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { playGame } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
 import { loadContent } from '../../src/content';
-import { newGame } from '../../src/domain';
+import { type CharacterId, newGame } from '../../src/domain';
 import { FakeRenderer } from './fakes/renderer';
 
 // The app plays the session through the Renderer interface (docs/ARCHITECTURE.md, section 5),
@@ -96,6 +96,32 @@ describe('the game, drawn by a renderer', () => {
     await walk();
     expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'flyer', visible: false });
     expect(button('Open mic flyer')).toBeNull();
+  });
+
+  it('keeps the line and the conversation of an interaction that brings a hotspot into the room', async () => {
+    const given = structuredClone(content);
+    const opening = given.rooms.opening!;
+    const door = opening.hotspots.find((h) => h.id === 'door')!;
+    door.presentWhen = [{ flag: 'lit' }];
+    opening.hotspots.find((h) => h.id === 'board')!.interactions = [
+      { verb: 'look', effects: [{ say: 'The door!' }, { set: 'lit', to: true }, { talk: 'bartender' as CharacterId }] },
+    ];
+    container.remove();
+    container = document.createElement('div');
+    document.body.append(container);
+    renderer = new FakeRenderer();
+    game = new GameSession(given, newGame(given), { save: async () => {} });
+    await playGame(container, game, renderer, { turn: () => new Promise(() => {}) });
+    expect(button('Pub door')).toBeNull();
+
+    button('Open mic board').click();
+    await walk();
+    expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'door', visible: true });
+    expect(renderer.shown()).toEqual(['opening']);
+    expect(button('Pub door')).not.toBeNull();
+    expect(container.dataset.say).toBe('The door!');
+    expect(container.querySelector<HTMLElement>('.speech')!.hidden).toBe(false);
+    expect(container.querySelector<HTMLElement>('[aria-label="Bartender"]')!.hidden).toBe(false);
   });
 
   it('takes input only once the latest room asked for is drawn', async () => {
