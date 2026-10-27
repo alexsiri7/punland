@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { models } from '../../src/assets/registry';
+import { type Model3d, models } from '../../src/assets/registry';
 import { modelFiles } from './support/files';
 
 // scripts/make-placeholders.mjs writes the placeholder models (docs/ARCHITECTURE.md, section 8):
@@ -9,7 +9,7 @@ import { modelFiles } from './support/files';
 const SCRIPT = '../../scripts/make-placeholders.mjs';
 interface Script {
   placeholders(): Record<string, Uint8Array>;
-  placeholdersToWrite(models: { model3d?: { file: string; placeholder: boolean } }[]): Record<string, Uint8Array>;
+  placeholdersToWrite(models: { model3d?: Model3d }[]): Record<string, Uint8Array>;
 }
 
 describe('the placeholder models', () => {
