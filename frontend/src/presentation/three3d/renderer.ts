@@ -1,6 +1,6 @@
 import { BasicShadowMap, Color, WebGLRenderer } from 'three';
 import type { FloorPoint, Rect } from '../../domain';
-import type { Pick, Renderer, ScenePoint, SceneView } from '../renderer';
+import type { AnimationName, Pick, Renderer, ScenePoint, SceneView } from '../renderer';
 import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
 import { Models } from './models';
 import { Room } from './room';
@@ -24,6 +24,8 @@ export class Three3dRenderer implements Renderer {
   /** The room of `view`, once it is drawn. */
   private room: Room | null = null;
   private at: FloorPoint = { x: 0, y: 0 };
+  /** The player's clip, kept from room to room. */
+  private playerClip: AnimationName = 'idle';
   /** The canvas's size in CSS pixels. */
   private size = { width: 0, height: 0 };
   private readonly resized = new Set<() => void>();
@@ -72,6 +74,7 @@ export class Three3dRenderer implements Renderer {
       const dtMs = last === undefined ? 0 : time - last;
       last = time;
       for (const callback of this.frames) callback(dtMs);
+      this.room?.animate(dtMs);
       this.draw();
     });
     return Promise.resolve();
@@ -85,6 +88,7 @@ export class Three3dRenderer implements Renderer {
     const room = await Room.build(view, this.models);
     if (view !== this.view) return;
     room.placePlayer(this.at);
+    room.play('player', this.playerClip);
     this.room = room;
   }
 
@@ -97,7 +101,10 @@ export class Three3dRenderer implements Renderer {
     this.room?.setVisible(hotspot, visible);
   }
 
-  play(): void {}
+  play(who: string, clip: AnimationName): void {
+    if (who === 'player') this.playerClip = clip;
+    this.room?.play(who, clip);
+  }
 
   /** What is drawn at the point: a hotspot in the room, else the floor. */
   pick(screen: ScenePoint): Pick {

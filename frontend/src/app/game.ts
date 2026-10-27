@@ -2,6 +2,7 @@ import type { FloorPoint } from '../domain';
 import type { Renderer, SceneEntity, SceneView } from '../presentation/renderer';
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../presentation/theme';
 import { type DialogueBackend, mountUi } from '../presentation/ui';
+import { animate } from './animation';
 import { createMirror } from './mirror';
 import type { GameSession } from './session';
 
@@ -28,8 +29,9 @@ export function sceneView(session: GameSession): SceneView {
 /**
  * Plays the session in `container`: `renderer` draws it, the DOM UI (presentation/ui) lies over
  * it and the #game mirror follows it. The renderer is told what to draw from the session's
- * events, its canvas's clicks become commands and its pointer the hovered hotspot through
- * `renderer.pick`, and its frames tick the walk. Resolves once the first room is shown.
+ * events, the clips its characters play included, its canvas's clicks become commands and its
+ * pointer the hovered hotspot through `renderer.pick`, and its frames tick the walk. Resolves
+ * once the first room is shown.
  */
 export async function playGame(
   container: HTMLElement,
@@ -50,6 +52,10 @@ export async function playGame(
     ui.shown();
     mirror.shown();
   };
+  animate(session, (who, clip) => {
+    renderer.play(who, clip);
+    if (who === 'player') mirror.playerAnimation(clip);
+  });
   let last: FloorPoint = session.state.at;
   session.subscribe((event) => {
     if (event.type === 'moved') {

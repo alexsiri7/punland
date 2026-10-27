@@ -1,7 +1,8 @@
 import { Box3, Color, Mesh, type Object3D, PerspectiveCamera, Raycaster, Scene, Vector2, Vector3 } from 'three';
 import type { FloorPoint, Rect } from '../../domain';
-import type { ScenePoint, SceneView } from '../renderer';
+import type { AnimationName, ScenePoint, SceneView } from '../renderer';
 import { palette, SCENE_HEIGHT, SCENE_WIDTH } from '../theme';
+import { Actor } from './actor';
 import { light } from './look';
 import type { Models } from './models';
 
@@ -24,6 +25,8 @@ export class Room {
   private readonly entities = new Map<string, Object3D>();
   /** The hotspots that are not in the room now: they are not drawn or picked. */
   private readonly hidden = new Set<string>();
+  /** The player's and each placed entity's clips, by 'player' or hotspot id; each starts idle. */
+  private readonly actors = new Map<string, Actor>();
 
   private constructor(model: Object3D | null) {
     const camera = model?.getObjectByName('cam_main');
@@ -51,6 +54,7 @@ export class Room {
     const room = new Room(scene);
     if (player) {
       room.player = player;
+      room.actors.set('player', new Actor(player));
       room.scene.add(player);
       room.stand(player, view.player.at);
     }
@@ -66,6 +70,7 @@ export class Room {
       room.stand(object, entity.at);
       object.visible = entity.visible;
       room.entities.set(entity.hotspot, object);
+      room.actors.set(entity.hotspot, new Actor(object));
       room.hotspots.set(entity.hotspot, object);
       room.scene.add(object);
     });
@@ -79,6 +84,15 @@ export class Room {
     if (!this.stand(this.player, at)) return;
     const step = this.player.position.clone().sub(from);
     if (step.lengthSq() > 1e-8) this.player.rotation.y = Math.atan2(step.x, step.z);
+  }
+
+  play(who: string, clip: AnimationName): void {
+    this.actors.get(who)?.play(clip);
+  }
+
+  /** Advances every clip by `dtMs`. */
+  animate(dtMs: number): void {
+    for (const actor of this.actors.values()) actor.update(dtMs / 1000);
   }
 
   setVisible(hotspot: string, visible: boolean): void {

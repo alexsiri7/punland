@@ -13,7 +13,7 @@ describe('the 3D renderer, loading models', () => {
     const load = vi
       .spyOn(GLTFLoader.prototype, 'loadAsync')
       .mockRejectedValueOnce(new Error('404'))
-      .mockResolvedValueOnce({ scene: new Group() } as never);
+      .mockResolvedValueOnce({ scene: new Group(), animations: [] } as never);
     const models = new Models();
 
     await expect(models.instance('character/protagonist')).resolves.toBeNull();

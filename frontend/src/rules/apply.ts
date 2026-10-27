@@ -120,6 +120,7 @@ function interact(
     const noUse = item === null ? undefined : content.items[item]?.noUse;
     return noUse === undefined ? state : say(state, noUse, events);
   }
+  if (item !== null) events.push({ type: 'used', item, hotspot: hotspot.id });
   return runEffects(content, state, interaction.effects, hotspot, events);
 }
 

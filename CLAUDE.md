@@ -92,13 +92,15 @@ frontend/
   src/presentation/three3d/  the only folder that imports three, chosen with ?renderer=3d: renderer.ts (Three3dRenderer
                         implements Renderer; a WebGL canvas sized like the 2D one, the grain overlay, a message on #game
                         without WebGL), room.ts (one SceneView: the room's scene model seen from its cam_main, the models
-                        on its floor, floor points <-> the floor mesh, hotspot bounds from models and hit_<node> nodes, picking hotspots then the floor by raycast), models.ts (the registry's glb files, cached, in toon materials),
+                        on its floor, floor points <-> the floor mesh, hotspot bounds from models and hit_<node> nodes, picking hotspots then the floor by raycast), actor.ts (a placed model's clips: one AnimationMixer
+                        each, cross-faded, idle for a missing clip), models.ts (the registry's glb files, cached, in toon materials, with their clips),
                         look.ts (STYLE.md in 3D: the two-step toon ramp and the lights)
   src/app/              main.ts (boot: title screen -> GameSession -> playGame()), game.ts (playGame: the SceneView from the
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
                         renderers.ts (chooses the renderer: ?renderer=3d, else 2D; each loads as its own chunk), title.ts (Continue only when a save exists),
+                        animation.ts (animate: session events -> the clip each character plays, for renderer.play and the mirror),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
-                        mirror.ts (data-scene/-world/-player/-hover/-say/-act on #game)
+                        mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation on #game)
   art/<room>/scene.svg  layered room art (source); scripts/render-art.mjs renders it to public/rooms/<room>/
   scripts/make-placeholders.mjs  writes the placeholder models in public/models/, the room shells laid out in their
                         2D art's scene pixels (tests/unit/placeholders.test.ts

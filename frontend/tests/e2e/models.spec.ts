@@ -100,7 +100,6 @@ test('Keyboard use in 3D', async ({ page }) => {
 });
 
 test('Walking animation', async ({ page }) => {
-  test.fail(true, 'needs #40');
   // Requirement: Character animation. The player character plays its walk animation while it
   // walks and idle once it stops, mirrored on #game as data-player-animation.
   await newGame(page, '3d');
