@@ -1,10 +1,13 @@
 import {
   type Command,
+  type Condition,
   type Content,
+  type Effect,
   type FloorPoint,
   type GameEvent,
   type GameState,
   type Hotspot,
+  type Interaction,
   nearestWalkable,
   type Place,
   type Room,
@@ -28,10 +31,17 @@ export function apply(
   return { state: next, events };
 }
 
-/** Whether the hotspot is in its room: not picked up yet, and its dream material gathered. */
+/** Whether the hotspot is in its room: all its `presentWhen` conditions hold. */
 export function isPresent(state: GameState, hotspot: Hotspot): boolean {
-  if (hotspot.action.type === 'pickup' && state.inventory.pickedUp.includes(hotspot.action.item)) return false;
-  return hotspot.shownWith === undefined || state.journey.gathered.includes(hotspot.shownWith);
+  return hotspot.presentWhen?.every((condition) => holds(state, condition)) ?? true;
+}
+
+function holds(state: GameState, condition: Condition): boolean {
+  if ('has' in condition) return state.inventory.carried.includes(condition.has);
+  if ('pickedUp' in condition) return state.inventory.pickedUp.includes(condition.pickedUp);
+  if ('gathered' in condition) return state.journey.gathered.includes(condition.gathered);
+  if ('flag' in condition) return state.flags[condition.flag] === (condition.is ?? true);
+  return !holds(state, condition.not);
 }
 
 function step(content: Content, state: GameState, command: Command, events: GameEvent[]): GameState {
@@ -78,51 +88,56 @@ function tick(content: Content, state: GameState, dtMs: number, events: GameEven
   if (!walk.then) return arrived;
   const hotspot = presentHotspot(content, arrived, walk.then.hotspot);
   if (!hotspot) return arrived;
-  return walk.then.item === null
-    ? runAction(content, arrived, hotspot, events)
-    : useItem(content, arrived, walk.then.item, hotspot, events);
+  return interact(content, arrived, hotspot, walk.then.item, events);
 }
 
-/** A hotspot's action, once the player has walked to it. */
-function runAction(content: Content, state: GameState, hotspot: Hotspot, events: GameEvent[]): GameState {
-  let next = hotspot.dreamMaterial ? gather(content, state, hotspot.dreamMaterial, events) : state;
-  const { action } = hotspot;
-  switch (action.type) {
-    case 'say':
-      next = say(next, action.line, events);
-      break;
-    case 'exit':
-      next = arrive(content, next, action.at ? { room: action.room, at: action.at } : { room: action.room }, events);
-      break;
-    case 'pickup':
-      next = pickUp(next, action.item, hotspot, events);
-      break;
-    case 'talk':
-      events.push({ type: 'conversationStarted', character: action.character });
-      break;
-    default:
-      action satisfies never;
-  }
-  events.push({ type: 'saved' });
-  return next;
-}
-
-/** Use X on Y: the hotspot's response if it accepts the item, else the item's refusal. */
-function useItem(content: Content, state: GameState, item: string, hotspot: Hotspot, events: GameEvent[]): GameState {
-  const use = hotspot.uses?.find((u) => u.item === item);
-  if (!use) {
-    const noUse = content.items[item]?.noUse;
+/**
+ * Activating a hotspot, once the player has walked to it: its first interaction without an
+ * item whose conditions hold, or with `item`, its first `use` of that item whose conditions
+ * hold, else the item's refusal.
+ */
+function interact(
+  content: Content,
+  state: GameState,
+  hotspot: Hotspot,
+  item: string | null,
+  events: GameEvent[],
+): GameState {
+  const matches = (interaction: Interaction) =>
+    (item === null ? interaction.item === undefined : interaction.verb === 'use' && interaction.item === item) &&
+    (interaction.when?.every((condition) => holds(state, condition)) ?? true);
+  const interaction = hotspot.interactions.find(matches);
+  if (!interaction) {
+    const noUse = item === null ? undefined : content.items[item]?.noUse;
     return noUse === undefined ? state : say(state, noUse, events);
   }
-  let next = say(state, use.say, events);
-  if (use.removes !== undefined && next.inventory.carried.includes(use.removes)) {
-    const removed = use.removes;
-    const carried = next.inventory.carried.filter((id) => id !== removed);
-    next = { ...next, inventory: { ...next.inventory, carried } };
-    events.push({ type: 'itemRemoved', item: removed });
+  const room = roomOf(content, state.room);
+  let next = state;
+  for (const effect of interaction.effects) next = run(content, next, effect, hotspot, events);
+  if (next.room === state.room) {
+    for (const h of room.hotspots) {
+      const was = isPresent(state, h);
+      if (was !== isPresent(next, h)) events.push({ type: was ? 'hotspotHidden' : 'hotspotShown', hotspot: h.id });
+    }
   }
   events.push({ type: 'saved' });
   return next;
+}
+
+/** One effect of an interaction with `hotspot`. */
+function run(content: Content, state: GameState, effect: Effect, hotspot: Hotspot, events: GameEvent[]): GameState {
+  if ('say' in effect) return say(state, effect.say, events);
+  if ('goTo' in effect) {
+    const place = effect.at ? { room: effect.goTo, at: effect.at } : { room: effect.goTo };
+    return arrive(content, state, place, events);
+  }
+  if ('pickUp' in effect) return pickUp(state, effect.pickUp, hotspot, events);
+  if ('give' in effect) return give(state, effect.give, events);
+  if ('take' in effect) return take(state, effect.take, events);
+  if ('gather' in effect) return gather(state, effect.gather, events);
+  if ('set' in effect) return { ...state, flags: { ...state.flags, [effect.set]: effect.to } };
+  events.push({ type: 'conversationStarted', character: effect.talk });
+  return state;
 }
 
 /** The player leaves this world where they stand, and comes back to the same spot; its start the first time. */
@@ -148,10 +163,10 @@ function arrive(content: Content, state: GameState, place: Place, events: GameEv
   return { ...next, room: place.room, at, walk: null };
 }
 
-/** The item goes into the inventory, and the hotspot is gone for good. */
+/** The item goes into the inventory, and counts as picked up for good. */
 function pickUp(state: GameState, item: string, hotspot: Hotspot, events: GameEvent[]): GameState {
   const { carried, pickedUp } = state.inventory;
-  events.push({ type: 'pickedUp', item, hotspot: hotspot.id }, { type: 'hotspotHidden', hotspot: hotspot.id });
+  events.push({ type: 'pickedUp', item, hotspot: hotspot.id });
   return {
     ...state,
     inventory: {
@@ -161,17 +176,23 @@ function pickUp(state: GameState, item: string, hotspot: Hotspot, events: GameEv
   };
 }
 
-/** Dream material: the room's hotspots shown with it appear. */
-function gather(content: Content, state: GameState, material: string, events: GameEvent[]): GameState {
+function give(state: GameState, item: string, events: GameEvent[]): GameState {
+  if (state.inventory.carried.includes(item)) return state;
+  events.push({ type: 'itemAdded', item });
+  return { ...state, inventory: { ...state.inventory, carried: [...state.inventory.carried, item] } };
+}
+
+function take(state: GameState, item: string, events: GameEvent[]): GameState {
+  if (!state.inventory.carried.includes(item)) return state;
+  events.push({ type: 'itemRemoved', item });
+  return { ...state, inventory: { ...state.inventory, carried: state.inventory.carried.filter((id) => id !== item) } };
+}
+
+/** Dream material, for the dream's hotspots that are there once it is gathered. */
+function gather(state: GameState, material: string, events: GameEvent[]): GameState {
   if (state.journey.gathered.includes(material)) return state;
-  const next = { ...state, journey: { ...state.journey, gathered: [...state.journey.gathered, material] } };
   events.push({ type: 'gathered', material });
-  for (const hotspot of roomOf(content, state.room).hotspots) {
-    if (hotspot.shownWith === material && isPresent(next, hotspot)) {
-      events.push({ type: 'hotspotShown', hotspot: hotspot.id });
-    }
-  }
-  return next;
+  return { ...state, journey: { ...state.journey, gathered: [...state.journey.gathered, material] } };
 }
 
 function walkTo(

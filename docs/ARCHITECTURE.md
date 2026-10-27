@@ -87,7 +87,7 @@ interface FloorPoint { x: number; y: number }
 
 interface World     { id: WorldId; name: string; start: RoomId; locked?: string }
 interface Item      { id: ItemId; name: string; noUse: string; model: ModelId }
-interface Character { id: CharacterId; name: string; model: ModelId; dialogue?: { sheet: CharacterId } } // sheet id = backend sheet
+interface Character { id: CharacterId; name: string; model: ModelId }  // the id is also its backend sheet's id
 interface Prop      { id: ObjectId; name: string; model: ModelId }  // a reusable prop, e.g. the flyer
 interface Room {
   id: RoomId; world: WorldId; model: ModelId;            // the scene's model (2D layers or 3D glb)
@@ -107,7 +107,7 @@ interface Hotspot {
 interface GameState {
   room: RoomId; at: FloorPoint;
   inventory: { carried: ItemId[]; pickedUp: ItemId[] };
-  journey: { left: Partial<Record<WorldId, Place>>; gathered: MaterialId[] };
+  journey: { left: Partial<Record<WorldId, Place>>; gathered: string[] };
   flags: Record<string, boolean | number | string>;      // puzzle state; #11 adds stats, act and goals beside it
   // transient, never saved:
   selected: ItemId | null;
@@ -116,9 +116,9 @@ interface GameState {
 }
 ```
 
-- **Today's content shapes.** Until A7, `domain/content.ts` holds the content types as the files have them today (`action` and `uses` on a hotspot, items keyed by id), and `Content` carries the start room and items.
-- **Validated content (A6).** `content/validate.ts` checks `worlds.json`, `items.json` and `rooms/<room>.json` (a room's id is its file name) by hand, in the style of `isSaveGame`: the shapes, that every room, item and world an id names exists, unique hotspot ids per room, a convex floor with the room's `start`, every `walkTo` and every exit's `at` on the right floor, exits that stay in their world, worlds that start in their own rooms, and hotspot rects inside the 1280 × 640 scene. A problem is `{file, field, message}`, with `field` a JSON path such as `hotspots[2].action.room`. `validateContent(files)` lists every problem, and `content/index.ts` `loadContent(files?)` builds the `Content` from the real files (or the ones given) or throws, listing them; `app/main.ts` loads it before the title screen. A new game starts in the first world's start room. The ids in a `Content` (`RoomId`, `ItemId`, `WorldId`, `HotspotId`) are branded by the validator. `GameState`, commands, events and the renderer types still hold plain strings: commands and saves hand ids in unchecked, and the rules look them up in the content.
-- **Save format.** `SaveGame` stays `version: 1` and only grows by optional fields, so old saves still load (architecture spec, "An older save"). `domain/save.ts` holds `SaveGame` (with an optional `at`, the spot the player stood on), `toSave(state)` and `fromSave(save, content)`, which drops unknown ids the way `game.ts` does today. `toSave` leaves out `savedAt`: the rules read no clock, so whoever writes the save stamps it.
+- **Content shapes today.** `domain/content.ts` holds the content types as the files have them: items keyed by id, and no `model` on items and rooms until the registry (A8). `content/characters.json` lists the characters (`{ id, name, model }`) and the protagonist's display data (`protagonist: { model }`, whose name `loadContent` takes from `content/protagonist.ts`); `content/objects.json` lists the props. `Content` carries them by id (`characters`, `objects`, `protagonist`) beside the start room and items. A `model` is a registry id such as `character/bartender` that A8 fills in. Since A7 a hotspot has `target`, `interactions` and `presentWhen` as above; `node` is the hotspot's id for now.
+- **Validated content (A6).** `content/validate.ts` checks `worlds.json`, `items.json` and `rooms/<room>.json` (a room's id is its file name) by hand, in the style of `isSaveGame`: the shapes, that every room, item, world, character and object an id names exists (a `talk` names a character, a `target` a character or an object), known verbs, conditions and effects (each condition and effect has exactly one of its kind's keys), an `item` only on a `use` interaction, unique ids for hotspots per room and for characters and objects, a convex floor with the room's `start`, every `walkTo`, every entity's `at` and every `goTo`'s `at` on the right floor, `goTo`s that stay in their world, worlds that start in their own rooms, and hotspot rects inside the 1280 × 640 scene. A problem is `{file, field, message}`, with `field` a JSON path such as `hotspots[0].interactions[0].effects[0].goTo`. `validateContent(files)` lists every problem, and `content/index.ts` `loadContent(files?)` builds the `Content` from the real files (or the ones given) or throws, listing them; `app/main.ts` loads it before the title screen. A new game starts in the first world's start room. The ids in a `Content` (`RoomId`, `ItemId`, `WorldId`, `HotspotId`, `CharacterId`, `ObjectId`) are branded by the validator. `GameState`, commands, events and the renderer types still hold plain strings: commands and saves hand ids in unchecked, and the rules look them up in the content.
+- **Save format.** `SaveGame` stays `version: 1` and only grows by optional fields, so old saves still load (architecture spec, "An older save"). `domain/save.ts` holds `SaveGame` (with an optional `at`, the spot the player stood on, and since A7 the optional `flags`), `toSave(state)` and `fromSave(save, content)`, which drops unknown ids the way `game.ts` does today. `toSave` leaves out `savedAt`: the rules read no clock, so whoever writes the save stamps it.
 - **Hotspot rects.** The screen `rect` of a hotspot moves out of the room content into the room's 2D asset entry (A8). In 3D it is derived from the projected bounds of the model's hit area.
 - **Stats and acts (#11).** These plug in as `GameState.stats`, `GameState.act` and `GameState.goals`, plus the effects `changeStat` and `reachGoal` and the conditions `stat`, `act` and `goal`. Act definitions go in `content/acts.json`. No other layer needs to change.
 
@@ -138,18 +138,18 @@ type Command =
 type GameEvent =
   | { type: 'moved'; at: FloorPoint } | { type: 'arrived' }
   | { type: 'said'; line: string; by: 'player' | CharacterId } | { type: 'hushed' }
-  | { type: 'pickedUp'; item: ItemId; hotspot: HotspotId } | { type: 'itemRemoved'; item: ItemId }
+  | { type: 'pickedUp'; item: ItemId; hotspot: HotspotId } | { type: 'itemAdded' | 'itemRemoved'; item: ItemId }
   | { type: 'selected'; item: ItemId | null }
   | { type: 'roomChanged'; room: RoomId; at: FloorPoint } | { type: 'worldChanged'; world: WorldId }
   | { type: 'hotspotShown' | 'hotspotHidden'; hotspot: HotspotId }
   | { type: 'conversationStarted'; character: CharacterId }
-  | { type: 'gathered'; material: MaterialId }
+  | { type: 'gathered'; material: string }
   | { type: 'saved' };                                     // state worth persisting changed
 
 function apply(content: Content, state: GameState, command: Command): { state: GameState; events: GameEvent[] };
 ```
 
-- **Dialogue.** `dialogueResult` and `conversationStarted` arrived with the dialogue panel (#8); A2 has the rest. Until A7, a hotspot's `talk` action (`{ type: 'talk', character }`) starts the conversation, and `dialogueResult` changes nothing until #11 gives a reached goal its effect.
+- **Dialogue.** `dialogueResult` and `conversationStarted` arrived with the dialogue panel (#8); A2 has the rest. A `talk` effect starts the conversation, and the panel shows the character's `name` from `characters.json`. `dialogueResult` changes nothing until #11 gives a reached goal its effect.
 - **The rules are pure.** `apply` never mutates its input, reads no clock and no randomness, and needs no DOM. That is how the spec scenario "Playing without a renderer" is tested.
 - **Walking is a tick.** `tick` is the old `RoomScene.update()` at `WALK_SPEED`, and the app's frame loop sends it. The `walk` command clamps its target to the floor with `nearestWalkable`.
 - **Interactions** replace `action` and `uses` (A7):
@@ -161,13 +161,13 @@ function apply(content: Content, state: GameState, command: Command): { state: G
     when?: Condition[];                                // all must hold
     effects: Effect[];                                 // run in order
   }
-  type Condition = { has: ItemId } | { pickedUp: ItemId } | { gathered: MaterialId } | { flag: string; is?: boolean | number | string } | { not: Condition };
+  type Condition = { has: ItemId } | { pickedUp: ItemId } | { gathered: string } | { flag: string; is?: boolean | number | string } | { not: Condition }; // `is` is true when left out
   type Effect =
     | { say: string } | { goTo: RoomId; at?: FloorPoint } | { pickUp: ItemId } | { give: ItemId } | { take: ItemId }
-    | { gather: MaterialId } | { set: string; to: boolean | number | string } | { talk: CharacterId };
+    | { gather: string } | { set: string; to: boolean | number | string } | { talk: CharacterId };
   ```
 
-  Activating a hotspot with no item selected runs its first interaction whose verb is the hotspot's default and whose conditions hold. With an item selected, it runs the matching `use` interaction for that item, or else says the item's `noUse`. Adding an effect or condition is a rules change with unit tests. Adding a puzzle that uses existing ones is content only (progress spec, "Adding a puzzle").
+  Activating a hotspot with no item selected runs its first interaction without an `item` whose conditions hold; when none holds, nothing happens. With an item selected, it runs the first `use` interaction for that item whose conditions hold, or else says the item's `noUse`. The verb names what an interaction is; the hotspot's `verb` stays the text shown on hover. After the effects, the rules compare each hotspot of the room with its `presentWhen` and send `hotspotShown` or `hotspotHidden` for the ones that changed. `pickUp` records the item as picked up for good (a `presentWhen: [{ not: { pickedUp } }]` hides its hotspot), `give` and `take` only move it in or out of the inventory (`itemAdded`, `itemRemoved`), and `gather` is the dream material that used to be a hotspot's `dreamMaterial`. Adding an effect or condition is a rules change with unit tests. Adding a puzzle that uses existing ones is content only (progress spec, "Adding a puzzle").
 - **The session.** `app/session.ts` (`GameSession`) owns the current `GameState`. It exposes `dispatch(command)` and `subscribe(listener)`, applies the rules and fans the events out to the renderer, the UI, the `data-*` mirror and autosave (on `saved`, through the `SaveStore`, stamping `savedAt`). It is the one stateful object, and it is small. `app/main.ts` builds it from `fromSave` or `newGame` and hands it, with the renderer from `app/renderers.ts`, to `playGame` (`app/game.ts`). The DOM UI may not import `app/`: it sees the session through the `Session` interface in `presentation/session.ts`.
 
 ## 5. Presentation
@@ -199,7 +199,7 @@ interface Renderer {
 ```
 
 - **Renderers draw. They decide nothing.** Input goes `canvas pointer → renderer.pick → app → session.dispatch`. A fake renderer (`tests/unit/fakes/renderer.ts`) lets the app and session be tested in jsdom.
-- **What A5 built.** `presentation/renderer.ts` has these types with the ids still plain strings, until A6 brands them. Until the model registry (A8) a `ModelId` is the name of an actor layer in the room's art (the hotspot id, or the protagonist's `actor`), and so `SceneView` has no room `model` and no entity `at` or `node` yet. Each entity carries its hotspot's `rect` instead, which is what `hotspotBounds` returns in 2D until A8 moves it into the asset entry. `onResize` is new: the overlay lines up again whenever the canvas is resized or moved. `app/game.ts` (`playGame`) builds the `SceneView` from the session, shows it on `roomChanged` and `hotspotShown`, calls `setPlayer` on `moved` and `setVisible` on `hotspotHidden`, sends `tick` from `frame`, and turns canvas pointer presses into `walk` through `pick`. `phaser2d/renderer.ts` (`Phaser2dRenderer`) implements it with one `RoomScene` that restarts for each view: `pick` returns a floor point above the UI bar (the hotspot buttons take the pointer in 2D) and `none` while no room is drawn, and `play` is a no-op.
+- **What A5 built.** `presentation/renderer.ts` has these types with the ids still plain strings, until A6 brands them. Until the model registry (A8) a `ModelId` is the name of an actor layer in the room's art (the hotspot id, or the protagonist's `actor`), and so `SceneView` has no room `model` and no entity `at` or `node` yet. Each entity carries its hotspot's `rect` instead, which is what `hotspotBounds` returns in 2D until A8 moves it into the asset entry. `onResize` is new: the overlay lines up again whenever the canvas is resized or moved. `app/game.ts` (`playGame`) builds the `SceneView` from the session, shows it on `roomChanged`, calls `setPlayer` on `moved` and `setVisible` on `hotspotShown` and `hotspotHidden` (A7: a hotspot shown in the room no longer redraws it, so a line or conversation from the same interaction stays up), sends `tick` from `frame`, and turns canvas pointer presses into `walk` through `pick`. `phaser2d/renderer.ts` (`Phaser2dRenderer`) implements it with one `RoomScene` that restarts for each view: `pick` returns a floor point above the UI bar (the hotspot buttons take the pointer in 2D) and `none` while no room is drawn, and `play` is a no-op.
 - **Renderer choice.** The app picks the renderer: `?renderer=2d|3d` while both exist (B2 to B6), with 3D the default from B6 and 2D removed in B7.
 
 ### DOM UI (`presentation/ui/`)
@@ -326,7 +326,7 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **A4** ([#30](https://github.com/alexsiri7/punland/issues/30)), done | 3 | DOM UI layer: the UI bar text, action line, hint and speech move from Phaser text to `presentation/ui`, driven by the session. Hotspot, inventory and world controls move under `presentation/ui`. The dialogue panel (#8) builds on this. |
 | **A5** ([#31](https://github.com/alexsiri7/punland/issues/31)), done | 5 | `presentation/renderer.ts` plus `presentation/phaser2d` (the only `phaser` import), with picking through `renderer.pick` and a fake renderer for unit tests. `game.ts`/`RoomScene` are folded into the 2D renderer and the app. |
 | **A6** ([#32](https://github.com/alexsiri7/punland/issues/32)), done | 3 | Content validators: every content file is checked at load and in tests, ids are branded, and errors name the file and the field. |
-| **A7** ([#33](https://github.com/alexsiri7/punland/issues/33)) | 5 | Entities and interactions as data: `characters.json` and `objects.json`, rooms place entities, `interactions` with verbs, conditions and effects replace `action` and `uses`, the `talk` effect, and the four rooms migrated. |
+| **A7** ([#33](https://github.com/alexsiri7/punland/issues/33)), done | 5 | Entities and interactions as data: `characters.json` and `objects.json`, rooms place entities, `interactions` with verbs, conditions and effects replace `action` and `uses`, the `talk` effect, and the four rooms migrated. |
 | **A8** ([#34](https://github.com/alexsiri7/punland/issues/34)) | 3 | Model registry (`assets/models.json`) with the `sprite2d` variants. Hotspot rects and actor/layer mapping move out of room content. Registry validators. |
 | **A9** ([#35](https://github.com/alexsiri7/punland/issues/35)) | 2 | Phase A gate: remove leftover shims, check that every layer matches this document, and update the status line below. Every phase-B step waits on this one. |
 | **B1** ([#36](https://github.com/alexsiri7/punland/issues/36)) | 5 | The 3D asset contract in code: `model3d` registry entries, the glb contract validator (unit tests), and `make-placeholders.mjs` with committed placeholders for the protagonist, bartender, flyer and broken guitar. |
@@ -337,4 +337,4 @@ Each step is one issue and one PR, and each keeps the game playable and CI green
 | **B6** ([#41](https://github.com/alexsiri7/punland/issues/41)) | 3 | 3D becomes the default renderer. The whole e2e suite runs against it, and `?renderer=2d` stays as a fallback. |
 | **B7** ([#42](https://github.com/alexsiri7/punland/issues/42)) | 3 | Remove the 2D path: `phaser2d`, the `phaser` dependency, `sprite2d` entries, `scripts/render-art.mjs` and `public/rooms/*` layers. Replace the 2D-specific tests (see Tests). Update CLAUDE.md and STYLE.md's "Scene build" to describe 3D. |
 
-**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 to A6 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 wait on A7 (#33).
+**Status:** design merged (spec change #25); acceptance tests #26 done; phase A in progress (A1 to A7 done). Every step is `blocked_by` the one before it and by #26; every B step is also blocked by A9 (#35). Dialogue UI #8 builds on A4 (#30); stats and acts #11 wait on A7 (#33).

@@ -51,11 +51,7 @@ export function mountUi(
   let drawn = false;
   overlay.root.append(bar.element, inventory.element, speech.element, conversation.element);
 
-  // Until characters are content of their own (#33), a character goes by the name of the hotspot that talks to them.
-  const characterName = (character: string) =>
-    session.content.rooms[session.state.room]?.hotspots.find(
-      (h) => h.action.type === 'talk' && h.action.character === character,
-    )?.name ?? character;
+  const characterName = (character: string) => session.content.characters[character]?.name ?? character;
   const renderInventory = () => inventory.render(session.state.inventory.carried, session.state.selected);
   session.subscribe((event) => {
     switch (event.type) {
@@ -66,6 +62,7 @@ export function mountUi(
         speech.hush();
         break;
       case 'pickedUp':
+      case 'itemAdded':
       case 'itemRemoved':
         renderInventory();
         break;
@@ -73,6 +70,11 @@ export function mountUi(
         renderInventory();
         bar.reselected();
         break;
+      case 'hotspotShown': {
+        const shown = session.content.rooms[session.state.room]?.hotspots.find((h) => h.id === event.hotspot);
+        if (shown) hotspots?.add(shown);
+        break;
+      }
       case 'hotspotHidden':
         hotspots?.remove(event.hotspot);
         break;
@@ -83,7 +85,6 @@ export function mountUi(
         // Walking away ends the conversation.
         conversation.close();
         break;
-      case 'hotspotShown':
       case 'roomChanged':
         // The room is redrawn; until it is shown, its old controls must not take input.
         conversation.close();

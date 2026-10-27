@@ -3,6 +3,8 @@ import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
 
 export interface HotspotLayer {
   readonly element: HTMLElement;
+  /** Gives a hotspot that has come into the room its button. */
+  add(h: Hotspot): void;
   /** Takes one hotspot's button away, e.g. once its item is picked up. */
   remove(id: string): void;
   destroy(): void;
@@ -28,9 +30,9 @@ export function createHotspotLayer(
   const listening = new AbortController();
   const { signal } = listening;
   const buttons = new Map<string, HTMLButtonElement>();
-  for (const h of hotspots) {
+  const add = (h: Hotspot) => {
     const rect = bounds(h);
-    if (!rect) continue;
+    if (!rect) return;
     const button = doc.createElement('button');
     button.type = 'button';
     button.setAttribute('aria-label', h.name);
@@ -45,9 +47,11 @@ export function createHotspotLayer(
     button.addEventListener('click', () => on.activate(h), { signal });
     layer.append(button);
     buttons.set(h.id, button);
-  }
+  };
+  for (const h of hotspots) add(h);
   return {
     element: layer,
+    add,
     remove(id) {
       buttons.get(id)?.remove();
       buttons.delete(id);

@@ -1,17 +1,27 @@
 export type { Command, GameEvent } from './commands';
 export type { DialogueTurn } from './dialogue';
-export type {
-  Content,
-  Hotspot,
-  HotspotAction,
-  HotspotId,
-  Item,
-  ItemId,
-  ItemUse,
-  Room,
-  RoomId,
-  World,
-  WorldId,
+export {
+  type Character,
+  type CharacterId,
+  type Condition,
+  type Content,
+  type Effect,
+  type Entity,
+  type FlagValue,
+  type Hotspot,
+  type HotspotId,
+  type HotspotTarget,
+  type Interaction,
+  type Item,
+  type ItemId,
+  type ObjectId,
+  type Prop,
+  type Room,
+  type RoomId,
+  type Verb,
+  VERBS,
+  type World,
+  type WorldId,
 } from './content';
 export { type FloorPoint, insidePolygon, isConvex, nearestWalkable, type Rect, SCENE } from './geometry';
 export type { InventoryState } from './inventory';

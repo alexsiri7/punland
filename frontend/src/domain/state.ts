@@ -1,4 +1,4 @@
-import type { Content } from './content';
+import type { Content, FlagValue } from './content';
 import type { FloorPoint } from './geometry';
 import type { JourneyState } from './journey';
 
@@ -14,9 +14,9 @@ export interface GameState {
   at: FloorPoint;
   inventory: { carried: string[]; pickedUp: string[] };
   journey: JourneyState;
-  flags: Record<string, boolean | number | string>;
+  flags: Record<string, FlagValue>;
   selected: string | null;
-  /** Where the player is walking, and what happens on arrival: `hotspot`'s action, or using `item` on it. */
+  /** Where the player is walking, and what happens on arrival: `hotspot`'s interaction, or using `item` on it. */
   walk: { target: FloorPoint; then: { hotspot: string; item: string | null } | null } | null;
   saying: { line: string; by: Speaker } | null;
 }

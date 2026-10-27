@@ -16,12 +16,17 @@ describe('world content', () => {
   });
 
   it('shows dream material only in the dream, once the street can give it', () => {
-    const given = hotspots.filter(({ room }) => room.world !== 'dream').map(({ h }) => h.dreamMaterial);
-    for (const { room, h } of hotspots) {
-      if (h.dreamMaterial !== undefined) expect(room.world, h.id).not.toBe('dream');
-      if (h.shownWith === undefined) continue;
-      expect(room.world, h.id).toBe('dream');
-      expect(given, h.id).toContain(h.shownWith);
+    const gathers = ({ h }: (typeof hotspots)[number]) =>
+      h.interactions.flatMap(({ effects }) => effects.flatMap((effect) => ('gather' in effect ? [effect.gather] : [])));
+    const given = hotspots.filter(({ room }) => room.world !== 'dream').flatMap(gathers);
+    for (const spot of hotspots) {
+      const { room, h } = spot;
+      if (gathers(spot).length > 0) expect(room.world, h.id).not.toBe('dream');
+      for (const condition of h.presentWhen ?? []) {
+        if (!('gathered' in condition)) continue;
+        expect(room.world, h.id).toBe('dream');
+        expect(given, h.id).toContain(condition.gathered);
+      }
     }
   });
 });

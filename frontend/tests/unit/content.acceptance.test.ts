@@ -45,7 +45,7 @@ describe('Validated content', () => {
 describe('Interactions as data', () => {
   // Requirement: Interactions as data. What a hotspot does is content data, so a new puzzle step
   // with effects the rules already know needs no code change.
-  it.fails('Adding a puzzle step (needs #33)', async () => {
+  it('Adding a puzzle step', async () => {
     const [{ loadContent, validateContent }, { newGame }] = await Promise.all([load('content'), load('domain')]);
     const line = 'I hold the guitar up to the board. Still no slot for broken instruments.';
     const files = withEdit('content/rooms/opening.json', (room) => {

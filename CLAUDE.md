@@ -59,10 +59,13 @@ frontend/
   src/domain/           pure model: floor geometry (FloorPoint, walking on a convex floor), content types (content.ts),
                         GameState and newGame (state.ts), Command and GameEvent (commands.ts), SaveGame with toSave/fromSave
                         (save.ts), inventory/journey save state
-  src/rules/            pure rules: apply(content, state, command) -> {state, events}; isPresent
-  src/content/          content data: rooms/<room>.json, items.json, worlds.json, protagonist.ts; validate.ts checks the files
+  src/rules/            pure rules: apply(content, state, command) -> {state, events}, running interactions; isPresent
+  src/content/          content data: rooms/<room>.json, items.json, worlds.json, characters.json, objects.json,
+                        protagonist.ts; validate.ts checks the files
                         ({file, field, message} problems, branded ids); index.ts loadContent() builds Content or throws
-  src/content/rooms/<room>.json  room content: floor, start point, hotspots and their actions (say, exit, pickup, talk)
+  src/content/rooms/<room>.json  room content: floor, start point, hotspots: a target (a placed character or object, or
+                        a scene node), interactions (verb, item, `when` conditions, effects such as say, goTo, pickUp,
+                        talk) and `presentWhen` conditions
   src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), dialogue.ts
                         (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts

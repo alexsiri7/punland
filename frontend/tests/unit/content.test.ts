@@ -23,6 +23,8 @@ const WORLDS = 'content/worlds.json';
 const ITEMS = 'content/items.json';
 const OPENING = 'content/rooms/opening.json';
 const PUB = 'content/rooms/pub.json';
+const CHARACTERS = 'content/characters.json';
+const OBJECTS = 'content/objects.json';
 const hotspot = (room: Json, id: string): Json => room.hotspots.find((h: Json) => h.id === id);
 
 describe('content validation', () => {
@@ -35,8 +37,8 @@ describe('content validation', () => {
     {
       problem: 'an unknown room in an exit',
       file: OPENING,
-      edit: (room) => (hotspot(room, 'door').action.room = 'cellar'),
-      field: 'hotspots[0].action.room',
+      edit: (room) => (hotspot(room, 'door').interactions[0].effects[0].goTo = 'cellar'),
+      field: 'hotspots[0].interactions[0].effects[0].goTo',
       message: /"cellar" is not a known room/,
     },
     {
@@ -47,10 +49,10 @@ describe('content validation', () => {
       message: /is missing/,
     },
     {
-      problem: 'an unknown item in uses',
+      problem: 'an unknown item to use',
       file: PUB,
-      edit: (room) => (hotspot(room, 'bartender').uses[0].item = 'kazoo'),
-      field: 'hotspots[1].uses[0].item',
+      edit: (room) => (hotspot(room, 'bartender').interactions[1].item = 'kazoo'),
+      field: 'hotspots[1].interactions[1].item',
       message: /"kazoo" is not a known item/,
     },
     {
@@ -70,8 +72,8 @@ describe('content validation', () => {
     {
       problem: 'an unknown item in a pickup',
       file: OPENING,
-      edit: (room) => (hotspot(room, 'flyer').action.item = 'kazoo'),
-      field: 'hotspots[2].action.item',
+      edit: (room) => (hotspot(room, 'flyer').interactions[0].effects[1].pickUp = 'kazoo'),
+      field: 'hotspots[2].interactions[0].effects[1].pickUp',
       message: /"kazoo" is not a known item/,
     },
     {
@@ -91,8 +93,8 @@ describe('content validation', () => {
     {
       problem: 'an exit onto no floor',
       file: PUB,
-      edit: (room) => (hotspot(room, 'door').action.at = { x: 0, y: 0 }),
-      field: 'hotspots[0].action.at',
+      edit: (room) => (hotspot(room, 'door').interactions[0].effects[0].at = { x: 0, y: 0 }),
+      field: 'hotspots[0].interactions[0].effects[0].at',
       message: /floor of "opening"/,
     },
     {
@@ -110,17 +112,87 @@ describe('content validation', () => {
       message: /inside the 1280 × 640 scene/,
     },
     {
-      problem: 'an unknown action',
+      problem: 'an unknown effect',
       file: OPENING,
-      edit: (room) => (hotspot(room, 'board').action = { type: 'dance' }),
-      field: 'hotspots[1].action.type',
-      message: /must be say/,
+      edit: (room) => (hotspot(room, 'board').interactions[0].effects[0] = { dance: 'now' }),
+      field: 'hotspots[1].interactions[0].effects[0]',
+      message: /must have exactly one of say, goTo/,
+    },
+    {
+      problem: 'an effect with two kinds',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'board').interactions[0].effects[0] = { say: 'Hm.', goTo: 'pub' }),
+      field: 'hotspots[1].interactions[0].effects[0]',
+      message: /must have exactly one of say, goTo/,
+    },
+    {
+      problem: 'an unknown verb',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'board').interactions[0].verb = 'dance'),
+      field: 'hotspots[1].interactions[0].verb',
+      message: /must be look, use/,
+    },
+    {
+      problem: 'an item with a verb other than use',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'board').interactions[0].item = 'flyer'),
+      field: 'hotspots[1].interactions[0].item',
+      message: /only with the use verb/,
+    },
+    {
+      problem: 'a use without an item',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'board').interactions[0].verb = 'use'),
+      field: 'hotspots[1].interactions[0].item',
+      message: /is missing/,
+    },
+    {
+      problem: 'a talk with an unknown character',
+      file: PUB,
+      edit: (room) => (hotspot(room, 'bartender').interactions[0].effects[0].talk = 'bouncer'),
+      field: 'hotspots[1].interactions[0].effects[0].talk',
+      message: /"bouncer" is not a known character/,
+    },
+    {
+      problem: 'an unknown entity',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'flyer').target.entity = 'kazoo'),
+      field: 'hotspots[2].target.entity',
+      message: /"kazoo" is not a known character or object/,
+    },
+    {
+      problem: 'an entity placed off the floor',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'flyer').target.at = { x: 0, y: 0 }),
+      field: 'hotspots[2].target.at',
+      message: /floor/,
+    },
+    {
+      problem: 'an unknown item in a condition',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'flyer').presentWhen[0].not.pickedUp = 'kazoo'),
+      field: 'hotspots[2].presentWhen[0].not.pickedUp',
+      message: /"kazoo" is not a known item/,
+    },
+    {
+      problem: 'a character without a name',
+      file: CHARACTERS,
+      edit: (file) => delete file.characters[0].name,
+      field: 'characters[0].name',
+      message: /is missing/,
+    },
+    {
+      problem: 'an object without a model',
+      file: OBJECTS,
+      edit: (file) => delete file.objects[0].model,
+      field: 'objects[0].model',
+      message: /is missing/,
     },
     {
       problem: 'an exit into another world',
       file: OPENING,
-      edit: (room) => (hotspot(room, 'door').action.room = 'feed'),
-      field: 'hotspots[0].action.room',
+      edit: (room) => (hotspot(room, 'door').interactions[0].effects[0].goTo = 'feed'),
+      field: 'hotspots[0].interactions[0].effects[0].goTo',
       message: /another world/,
     },
     {
@@ -172,13 +244,13 @@ describe('content validation', () => {
   it('fails to load broken content, listing every problem', () => {
     const content = broken(OPENING, (r) => {
       delete r.label;
-      hotspot(r, 'door').action.room = 'cellar';
+      hotspot(r, 'door').interactions[0].effects[0].goTo = 'cellar';
     });
     expect(() => loadContent(content)).toThrow(
       [
         "The content doesn't hold together:",
         '  content/rooms/opening.json label: is missing',
-        '  content/rooms/opening.json hotspots[0].action.room: "cellar" is not a known room',
+        '  content/rooms/opening.json hotspots[0].interactions[0].effects[0].goTo: "cellar" is not a known room',
       ].join('\n'),
     );
   });

@@ -59,6 +59,7 @@ describe('GameSession', () => {
       savedAt: NOW.toISOString(),
       inventory: { items: ['broken-guitar', 'flyer'], pickedUp: ['flyer'] },
       journey: { left: {}, gathered: ['open-mic'] },
+      flags: {},
     });
     expect(saves.every(isSaveGame)).toBe(true);
   });
@@ -77,6 +78,7 @@ describe('GameSession', () => {
         savedAt: NOW.toISOString(),
         inventory: V1_SAVE.inventory,
         journey: V1_SAVE.journey,
+        flags: {},
       },
     ]);
   });
@@ -136,8 +138,8 @@ describe('the #game mirror', () => {
     const { game } = session();
     createMirror(container, game).shown();
     play(game, { type: 'activate', hotspot: 'board' });
-    const line = content.rooms.opening!.hotspots.find((h) => h.id === 'board')!.action;
-    expect(container.dataset.say).toBe(line.type === 'say' ? line.line : '');
+    const [effect] = content.rooms.opening!.hotspots.find((h) => h.id === 'board')!.interactions[0]!.effects;
+    expect(container.dataset.say).toBe(effect && 'say' in effect ? effect.say : '');
     game.dispatch({ type: 'walk', to: { x: 900, y: 585 } });
     expect(container.dataset.say).toBe('');
     play(game, { type: 'activate', hotspot: 'board' });

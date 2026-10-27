@@ -53,11 +53,11 @@ export async function playGame(
     if (event.type === 'moved') {
       renderer.setPlayer(event.at, event.at.x < last.x ? 'left' : 'right');
       last = event.at;
-    } else if (event.type === 'roomChanged' || event.type === 'hotspotShown') {
+    } else if (event.type === 'roomChanged') {
       last = session.state.at;
       void show();
-    } else if (event.type === 'hotspotHidden') {
-      renderer.setVisible(event.hotspot, false);
+    } else if (event.type === 'hotspotShown' || event.type === 'hotspotHidden') {
+      renderer.setVisible(event.hotspot, event.type === 'hotspotShown');
     }
   });
 

@@ -1,0 +1,4 @@
+{
+  "protagonist": { "model": "character/protagonist" },
+  "characters": [{ "id": "bartender", "name": "Bartender", "model": "character/bartender" }]
+}

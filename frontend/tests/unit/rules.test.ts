@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { loadContent } from '../../src/content';
-import { type GameState, newGame } from '../../src/domain';
+import { type Content, type GameState, newGame } from '../../src/domain';
 import { apply, type Command, type GameEvent } from '../../src/rules';
 
 const floor = [
@@ -13,7 +13,7 @@ const floor = [
 const rect = { x: 0, y: 0, width: 10, height: 10 };
 const place = { verb: 'Look at', name: 'it' };
 
-const content = loadContent({
+const files: Record<string, any> = {
   'content/worlds.json': {
     worlds: [
       { id: 'street', name: 'Street', start: 'street' },
@@ -28,6 +28,11 @@ const content = loadContent({
       flyer: { name: 'Flyer', noUse: 'Not the flyer.' },
     },
   },
+  'content/characters.json': {
+    protagonist: { model: 'character/protagonist' },
+    characters: [{ id: 'bartender', name: 'Bartender', model: 'character/bartender' }],
+  },
+  'content/objects.json': { objects: [{ id: 'flyer', name: 'Flyer', model: 'object/flyer' }] },
   'content/rooms/street.json': {
     world: 'street',
     label: 'STREET',
@@ -41,34 +46,38 @@ const content = loadContent({
         name: 'Door',
         verb: 'Go in',
         rect,
+        target: { node: 'door' },
         walkTo: { x: 500, y: 550 },
-        action: { type: 'exit', room: 'pub' },
+        interactions: [{ verb: 'go', effects: [{ goTo: 'pub' }] }],
       },
       {
         id: 'flyer',
         name: 'Flyer',
         verb: 'Pick up',
         rect,
+        target: { entity: 'flyer', at: { x: 200, y: 520 } },
         walkTo: { x: 200, y: 550 },
-        action: { type: 'pickup', item: 'flyer' },
-        dreamMaterial: 'open-mic',
+        interactions: [{ verb: 'pickup', effects: [{ gather: 'open-mic' }, { pickUp: 'flyer' }] }],
+        presentWhen: [{ not: { pickedUp: 'flyer' } }],
       },
       {
         id: 'sign',
         name: 'Sign',
         verb: 'Look at',
         rect,
+        target: { node: 'sign' },
         walkTo: { x: 420, y: 550 },
-        action: { type: 'say', line: 'A sign.' },
+        interactions: [{ verb: 'look', effects: [{ say: 'A sign.' }] }],
       },
       {
         id: 'echo',
         name: 'Echo',
         verb: 'Listen to',
         rect,
+        target: { node: 'echo' },
         walkTo: { x: 300, y: 550 },
-        action: { type: 'say', line: 'Nine o\'clock.' },
-        shownWith: 'open-mic',
+        interactions: [{ verb: 'look', effects: [{ say: "Nine o'clock." }] }],
+        presentWhen: [{ gathered: 'open-mic' }],
       },
     ],
   },
@@ -85,25 +94,30 @@ const content = loadContent({
         name: 'Door',
         verb: 'Go out',
         rect,
+        target: { node: 'door' },
         walkTo: { x: 100, y: 550 },
-        action: { type: 'exit', room: 'street', at: { x: 510, y: 560 } },
+        interactions: [{ verb: 'go', effects: [{ goTo: 'street', at: { x: 510, y: 560 } }] }],
       },
       {
         id: 'bar',
         name: 'Bar',
         verb: 'Look at',
         rect,
+        target: { node: 'bar' },
         walkTo: { x: 800, y: 550 },
-        action: { type: 'say', line: 'A bar.' },
-        uses: [{ item: 'flyer', say: 'Pinned up.', removes: 'flyer' }],
+        interactions: [
+          { verb: 'look', effects: [{ say: 'A bar.' }] },
+          { verb: 'use', item: 'flyer', effects: [{ say: 'Pinned up.' }, { take: 'flyer' }] },
+        ],
       },
       {
-        id: 'keeper',
-        name: 'Keeper',
+        id: 'bartender',
+        name: 'Bartender',
         verb: 'Talk to',
         rect,
+        target: { entity: 'bartender', at: { x: 700, y: 520 } },
         walkTo: { x: 700, y: 550 },
-        action: { type: 'talk', character: 'keeper' },
+        interactions: [{ verb: 'talk', effects: [{ talk: 'bartender' }] }],
       },
     ],
   },
@@ -129,13 +143,22 @@ const content = loadContent({
         name: 'Flyer',
         verb: 'Look at',
         rect,
+        target: { entity: 'flyer', at: { x: 700, y: 520 } },
         walkTo: { x: 700, y: 550 },
-        action: { type: 'say', line: 'Open mic.' },
-        shownWith: 'open-mic',
+        interactions: [{ verb: 'look', effects: [{ say: 'Open mic.' }] }],
+        presentWhen: [{ gathered: 'open-mic' }],
       },
     ],
   },
-});
+};
+const content = loadContent(files);
+
+/** The fixture content with `edit` applied to a copy of the room file at `room`. */
+function editedRoom(room: string, edit: (room: any) => void): Content {
+  const copy = structuredClone(files);
+  edit(copy[`content/rooms/${room}.json`]);
+  return loadContent(copy);
+}
 
 const activate = (hotspot: string): Command => ({ type: 'activate', hotspot });
 const select = (item: string | null): Command => ({ type: 'select', item });
@@ -145,9 +168,9 @@ const tick = (dtMs = 50): Command => ({ type: 'tick', dtMs });
 type Step = { state: GameState; events: GameEvent[] };
 
 /** Ticks until the player stands still. */
-function walkOn({ state, events }: Step): Step {
+function walkOn({ state, events }: Step, given = content): Step {
   while (state.walk !== null) {
-    const step = apply(content, state, tick());
+    const step = apply(given, state, tick());
     state = step.state;
     events = [...events, ...step.events];
   }
@@ -155,11 +178,11 @@ function walkOn({ state, events }: Step): Step {
 }
 
 /** Applies each command, walking on after each. */
-function play(state: GameState, commands: readonly Command[]): Step {
+function play(state: GameState, commands: readonly Command[], given = content): Step {
   let played: Step = { state, events: [] };
   for (const command of commands) {
-    const step = apply(content, played.state, command);
-    played = walkOn({ state: step.state, events: [...played.events, ...step.events] });
+    const step = apply(given, played.state, command);
+    played = walkOn({ state: step.state, events: [...played.events, ...step.events] }, given);
   }
   return played;
 }
@@ -336,15 +359,93 @@ describe('exit', () => {
 describe('talk', () => {
   it('starts a conversation with the character, leaving the state as it is', () => {
     const inPub = play(start(), [activate('door')]).state;
-    const { state, events } = play(inPub, [activate('keeper')]);
+    const { state, events } = play(inPub, [activate('bartender')]);
     expect(state).toEqual({ ...inPub, at: { x: 700, y: 550 } });
-    expect(events.slice(-2)).toEqual([{ type: 'conversationStarted', character: 'keeper' }, { type: 'saved' }]);
+    expect(events.slice(-2)).toEqual([{ type: 'conversationStarted', character: 'bartender' }, { type: 'saved' }]);
   });
 
   it('changes nothing yet when a conversation reaches its goal', () => {
     const state = start();
-    const result: Command = { type: 'dialogueResult', character: 'keeper', goalReached: true };
+    const result: Command = { type: 'dialogueResult', character: 'bartender', goalReached: true };
     expect(apply(content, state, result)).toEqual({ state, events: [] });
+  });
+});
+
+describe('interactions as data', () => {
+  const inPub = (given = content) => play(newGame(given), [activate('door')], given).state;
+  const bartender = (room: any) => room.hotspots.find((h: { id: string }) => h.id === 'bartender');
+
+  it('plays a puzzle step added to the content, with no code change', () => {
+    const line = 'I show the bartender my broken guitar. She winces.';
+    const given = editedRoom('pub', (room) =>
+      bartender(room).interactions.push({
+        verb: 'use',
+        item: 'guitar',
+        effects: [{ say: line }, { set: 'showed-guitar', to: true }],
+      }),
+    );
+    const { state, events } = play(inPub(given), [select('guitar'), activate('bartender')], given);
+    expect(state.flags).toEqual({ 'showed-guitar': true });
+    expect(state.inventory.carried).toEqual(['guitar']);
+    expect(events.slice(-2)).toEqual([{ type: 'said', line, by: 'player' }, { type: 'saved' }]);
+  });
+
+  it('runs the first interaction whose conditions hold', () => {
+    const given = editedRoom('pub', (room) =>
+      bartender(room).interactions.unshift(
+        { verb: 'talk', when: [{ flag: 'served' }], effects: [{ say: 'Already served.' }] },
+        { verb: 'talk', when: [{ not: { has: 'guitar' } }], effects: [{ say: 'No guitar?' }] },
+        { verb: 'use', item: 'guitar', when: [{ flag: 'served', is: false }], effects: [{ set: 'served', to: true }] },
+      ),
+    );
+    let { state, events } = play(inPub(given), [activate('bartender')], given);
+    expect(events).toContainEqual({ type: 'conversationStarted', character: 'bartender' });
+    ({ state } = play(state, [select('guitar'), activate('bartender')], given));
+    expect(state.saying?.line).toBe('Not the guitar.');
+    state = { ...state, flags: { served: false } };
+    ({ state } = play(state, [select('guitar'), activate('bartender'), activate('bartender')], given));
+    expect(state.flags).toEqual({ served: true });
+    expect(state.saying?.line).toBe('Already served.');
+  });
+
+  it('gives and takes items', () => {
+    const given = editedRoom('pub', (room) =>
+      bartender(room).interactions.unshift({ verb: 'talk', effects: [{ give: 'flyer' }, { take: 'guitar' }] }),
+    );
+    const { state, events } = play(inPub(given), [activate('bartender')], given);
+    expect(state.inventory).toEqual({ carried: ['flyer'], pickedUp: [] });
+    expect(events.slice(-3)).toEqual([
+      { type: 'itemAdded', item: 'flyer' },
+      { type: 'itemRemoved', item: 'guitar' },
+      { type: 'saved' },
+    ]);
+    expect(play(state, [activate('bartender')], given).events.slice(-1)).toEqual([{ type: 'saved' }]);
+  });
+
+  it("shows and hides the room's hotspots as their conditions change", () => {
+    const given = editedRoom('pub', (room) => {
+      bartender(room).presentWhen = [{ flag: 'open' }];
+      room.hotspots.find((h: { id: string }) => h.id === 'bar').interactions.unshift(
+        { verb: 'look', when: [{ flag: 'open' }], effects: [{ set: 'open', to: false }] },
+        { verb: 'look', effects: [{ set: 'open', to: true }] },
+      );
+    });
+    const closed = inPub(given);
+    expect(apply(given, closed, activate('bartender'))).toEqual({ state: closed, events: [] });
+    const opened = play(closed, [activate('bar')], given);
+    expect(opened.events.slice(-2)).toEqual([{ type: 'hotspotShown', hotspot: 'bartender' }, { type: 'saved' }]);
+    const closedAgain = play(opened.state, [activate('bar')], given);
+    expect(closedAgain.events.slice(-2)).toEqual([{ type: 'hotspotHidden', hotspot: 'bartender' }, { type: 'saved' }]);
+  });
+
+  it('does nothing when no interaction holds', () => {
+    const given = editedRoom('street', (room) => {
+      room.hotspots.find((h: { id: string }) => h.id === 'sign').interactions[0].when = [{ has: 'flyer' }];
+    });
+    const walked = apply(given, newGame(given), activate('sign'));
+    const { state, events } = walkOn(walked, given);
+    expect(state.saying).toBeNull();
+    expect(events.at(-1)).toEqual({ type: 'arrived' });
   });
 });
 
@@ -406,9 +507,9 @@ describe('apply', () => {
     { type: 'walk', to: { x: 2000, y: 0 } },
     activate('door'),
     activate('bar'),
-    activate('keeper'),
+    activate('bartender'),
     activate('flyer'),
-    { type: 'dialogueResult', character: 'keeper', goalReached: true },
+    { type: 'dialogueResult', character: 'bartender', goalReached: true },
     select('guitar'),
     select(null),
     enterWorld('dream'),

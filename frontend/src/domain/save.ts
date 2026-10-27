@@ -1,4 +1,4 @@
-import type { Content } from './content';
+import type { Content, FlagValue } from './content';
 import type { FloorPoint } from './geometry';
 import type { InventoryState } from './inventory';
 import type { JourneyState } from './journey';
@@ -17,6 +17,8 @@ export interface SaveGame {
   inventory?: InventoryState;
   /** Absent in saves from before #10: a fresh journey. */
   journey?: JourneyState;
+  /** Puzzle state set by `set` effects; absent in saves from before #33: none set. */
+  flags?: Record<string, FlagValue>;
 }
 
 /** A save without its timestamp, which the rules can't read: whoever writes the save stamps it. */
@@ -29,6 +31,7 @@ export function toSave(state: GameState): UnstampedSave {
     at: { ...state.at },
     inventory: { items: [...state.inventory.carried], pickedUp: [...state.inventory.pickedUp] },
     journey: structuredClone(state.journey),
+    flags: { ...state.flags },
   };
 }
 
@@ -60,5 +63,6 @@ export function fromSave(save: UnstampedSave, content: Content): GameState {
           gathered: [...save.journey.gathered],
         }
       : game.journey,
+    flags: { ...save.flags },
   };
 }

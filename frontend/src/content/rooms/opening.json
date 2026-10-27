@@ -16,25 +16,30 @@
       "name": "Pub door",
       "verb": "Go in",
       "rect": { "x": 634, "y": 208, "width": 142, "height": 312 },
+      "target": { "node": "door" },
       "walkTo": { "x": 705, "y": 560 },
-      "action": { "type": "exit", "room": "pub" }
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "pub" }] }]
     },
     {
       "id": "board",
       "name": "Open mic board",
       "verb": "Look at",
       "rect": { "x": 868, "y": 452, "width": 100, "height": 110 },
+      "target": { "node": "board" },
       "walkTo": { "x": 840, "y": 590 },
-      "action": { "type": "say", "line": "Tonight: open mic, downstairs at nine. That's my shot." }
+      "interactions": [
+        { "verb": "look", "effects": [{ "say": "Tonight: open mic, downstairs at nine. That's my shot." }] }
+      ]
     },
     {
       "id": "flyer",
       "name": "Open mic flyer",
       "verb": "Pick up",
       "rect": { "x": 714, "y": 390, "width": 46, "height": 58 },
+      "target": { "entity": "flyer", "at": { "x": 737, "y": 545 } },
       "walkTo": { "x": 737, "y": 560 },
-      "action": { "type": "pickup", "item": "flyer" },
-      "dreamMaterial": "open-mic"
+      "interactions": [{ "verb": "pickup", "effects": [{ "gather": "open-mic" }, { "pickUp": "flyer" }] }],
+      "presentWhen": [{ "not": { "pickedUp": "flyer" } }]
     }
   ]
 }

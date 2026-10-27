@@ -45,6 +45,9 @@ function isJourney(value: unknown): value is JourneyState {
   );
 }
 
+const isFlag = (value: unknown): boolean => ['boolean', 'number', 'string'].includes(typeof value);
+const isFlags = (value: unknown): boolean => isObject(value) && !Array.isArray(value) && Object.values(value).every(isFlag);
+
 /** A save this game can resume. Fields it doesn't know (from a newer game) are ignored. */
 export function isSaveGame(value: unknown): value is SaveGame {
   if (!isObject(value)) return false;
@@ -54,7 +57,8 @@ export function isSaveGame(value: unknown): value is SaveGame {
     typeof value.savedAt === 'string' &&
     (value.at === undefined || isPoint(value.at)) &&
     (value.inventory === undefined || isInventory(value.inventory)) &&
-    (value.journey === undefined || isJourney(value.journey))
+    (value.journey === undefined || isJourney(value.journey)) &&
+    (value.flags === undefined || isFlags(value.flags))
   );
 }
 
