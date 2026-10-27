@@ -25,7 +25,7 @@ describe('room content', () => {
     it('has art for each hotspot that comes and goes', () => {
       for (const h of room.hotspots) {
         // The room engine hides a hotspot that comes and goes by its art actor of the same id.
-        if (h.action.type === 'pickup' || h.shownWith !== undefined) expect(actors, h.id).toContain(h.id);
+        if (h.presentWhen !== undefined) expect(actors, h.id).toContain(h.id);
       }
     });
 

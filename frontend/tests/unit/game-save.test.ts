@@ -5,9 +5,10 @@ import { fromSave, newGame, toSave } from '../../src/domain';
 const content = loadContent();
 
 describe('toSave', () => {
-  it('saves the room, the spot, the inventory and the journey, and nothing transient', () => {
+  it('saves the room, the spot, the inventory, the journey and the flags, and nothing transient', () => {
     const state = {
       ...newGame(content),
+      flags: { 'pinned-flyer': true },
       room: 'pub',
       at: { x: 300, y: 580 },
       selected: 'flyer',
@@ -19,6 +20,7 @@ describe('toSave', () => {
       at: { x: 300, y: 580 },
       inventory: { items: ['broken-guitar'], pickedUp: [] },
       journey: { left: {}, gathered: [] },
+      flags: { 'pinned-flyer': true },
     });
   });
 });
@@ -28,9 +30,10 @@ describe('fromSave', () => {
     const state = fromSave({ version: 1, room: 'pub' }, content);
     expect(state.at).toEqual(content.rooms.pub?.start);
     expect(state.inventory).toEqual(newGame(content).inventory);
+    expect(state.flags).toEqual({});
   });
 
-  it('drops items and rooms the content no longer has', () => {
+  it('drops items and rooms the content no longer has, and keeps the flags', () => {
     const state = fromSave(
       {
         version: 1,
@@ -38,6 +41,7 @@ describe('fromSave', () => {
         at: { x: 1, y: 2 },
         inventory: { items: ['broken-guitar', 'gone-item'], pickedUp: ['gone-item'] },
         journey: { left: { street: { room: 'pub' }, dream: { room: 'gone' } }, gathered: ['open-mic'] },
+        flags: { 'pinned-flyer': true },
       },
       content,
     );
@@ -45,6 +49,7 @@ describe('fromSave', () => {
     expect(state.at).toEqual(newGame(content).at);
     expect(state.inventory).toEqual({ carried: ['broken-guitar'], pickedUp: ['gone-item'] });
     expect(state.journey).toEqual({ left: { street: { room: 'pub' } }, gathered: ['open-mic'] });
+    expect(state.flags).toEqual({ 'pinned-flyer': true });
   });
 
   it('drops a room named after a property every object inherits', () => {

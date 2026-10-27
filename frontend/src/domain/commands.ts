@@ -5,7 +5,7 @@ import type { Speaker } from './state';
 export type Command =
   /** A floor click; the rules clamp it to the floor. */
   | { type: 'walk'; to: FloorPoint }
-  /** Walks to the hotspot, then runs its action, or uses the selected item on it. */
+  /** Walks to the hotspot, then runs its interaction, or uses the selected item on it. */
   | { type: 'activate'; hotspot: string }
   | { type: 'select'; item: string | null }
   | { type: 'enterWorld'; world: string }
@@ -21,6 +21,8 @@ export type GameEvent =
   | { type: 'said'; line: string; by: Speaker }
   | { type: 'hushed' }
   | { type: 'pickedUp'; item: string; hotspot: string }
+  /** Into the inventory without being picked up, e.g. a character gives it. */
+  | { type: 'itemAdded'; item: string }
   | { type: 'itemRemoved'; item: string }
   | { type: 'selected'; item: string | null }
   | { type: 'roomChanged'; room: string; at: FloorPoint }

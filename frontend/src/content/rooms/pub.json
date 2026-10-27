@@ -16,21 +16,26 @@
       "name": "Street door",
       "verb": "Go out",
       "rect": { "x": 60, "y": 138, "width": 162, "height": 332 },
+      "target": { "node": "door" },
       "walkTo": { "x": 150, "y": 550 },
-      "action": { "type": "exit", "room": "opening", "at": { "x": 705, "y": 590 } }
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "opening", "at": { "x": 705, "y": 590 } }] }]
     },
     {
       "id": "bartender",
       "name": "Bartender",
       "verb": "Talk to",
       "rect": { "x": 940, "y": 164, "width": 140, "height": 192 },
+      "target": { "entity": "bartender", "at": { "x": 1010, "y": 535 } },
       "walkTo": { "x": 880, "y": 560 },
-      "action": { "type": "talk", "character": "bartender" },
-      "uses": [
+      "interactions": [
+        { "verb": "talk", "effects": [{ "talk": "bartender" }] },
         {
+          "verb": "use",
           "item": "flyer",
-          "say": "I slide the flyer over. The bartender pins it up behind the bar.",
-          "removes": "flyer"
+          "effects": [
+            { "say": "I slide the flyer over. The bartender pins it up behind the bar." },
+            { "take": "flyer" }
+          ]
         }
       ]
     }
