@@ -108,4 +108,18 @@ describe('character animation', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(played('bartender')).toEqual(['talk', 'idle']);
   });
+
+  it('has a character stop talking when the player leaves the conversation', async () => {
+    game.dispatch({ type: 'activate', hotspot: 'door' });
+    await walk();
+    game.dispatch({ type: 'activate', hotspot: 'bartender' });
+    await walk();
+    container.querySelector<HTMLButtonElement>('.dialogue-leave')!.click();
+    expect(played('bartender')).toEqual(['talk', 'idle']);
+
+    game.dispatch({ type: 'activate', hotspot: 'bartender' });
+    await walk();
+    container.querySelector('.dialogue')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(played('bartender')).toEqual(['talk', 'idle', 'talk', 'idle']);
+  });
 });

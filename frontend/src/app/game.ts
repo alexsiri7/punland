@@ -40,7 +40,11 @@ export async function playGame(
   dialogue: DialogueBackend,
 ): Promise<void> {
   const mirror = createMirror(container, session);
-  const ui = mountUi(container, session, renderer, mirror, dialogue);
+  const animation = animate(session, (who, clip) => {
+    renderer.play(who, clip);
+    if (who === 'player') mirror.playerAnimation(clip);
+  });
+  const ui = mountUi(container, session, renderer, { hover: mirror.hover, left: animation.conversationLeft }, dialogue);
   await renderer.mount(container);
 
   // Only the latest room drawn takes input: one asked for since replaces it.
@@ -52,10 +56,6 @@ export async function playGame(
     ui.shown();
     mirror.shown();
   };
-  animate(session, (who, clip) => {
-    renderer.play(who, clip);
-    if (who === 'player') mirror.playerAnimation(clip);
-  });
   let last: FloorPoint = session.state.at;
   session.subscribe((event) => {
     if (event.type === 'moved') {

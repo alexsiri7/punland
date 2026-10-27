@@ -83,7 +83,7 @@ frontend/
   src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
                         theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
                         session.ts (the Session interface the UI sees)
-  src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, renderer, mirror, dialogue), overlay.ts
+  src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, renderer, on, dialogue), overlay.ts
                         (lines it up with the renderer's canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts,
                         inventory.ts, worlds.ts, dialogue.ts (the conversation panel), progress.ts (career stats, the act's goals)
   src/presentation/phaser2d/  the only folder that imports phaser: renderer.ts (Phaser2dRenderer implements Renderer),

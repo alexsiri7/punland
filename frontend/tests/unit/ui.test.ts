@@ -52,7 +52,7 @@ describe('the DOM UI', () => {
       hotspotBounds: (id: string) => hotspotRect(content.rooms[game.state.room]!.model, id),
       anchor: () => head,
     };
-    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name) }, dialogue);
+    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name), left: () => {} }, dialogue);
     ui.shown();
     const text = (selector: string) => container.querySelector(selector)?.textContent;
     const button = (group: string, name: string) =>

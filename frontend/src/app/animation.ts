@@ -9,11 +9,15 @@ export const ONCE_MS = 600;
  * The clips the characters play, from the session's events (models spec, "Character animation").
  * The player walks while walking. Standing, they play `pickup` once after picking something up
  * and `use` once after an accepted use, then `talk` while their line is up, then `idle`. A
- * character talks from the start of a conversation with them until the player walks or leaves
- * the room. `play` is called only when a clip changes, the player's once a command's events
- * are in; `who` is 'player' or a hotspot id.
+ * character talks from the start of a conversation with them until the player walks, leaves the
+ * room or leaves the conversation (`conversationLeft`, from the dialogue panel). `play` is called
+ * only when a clip changes, the player's once a command's events are in; `who` is 'player' or a
+ * hotspot id.
  */
-export function animate(session: GameSession, play: (who: 'player' | string, clip: AnimationName) => void): void {
+export function animate(
+  session: GameSession,
+  play: (who: 'player' | string, clip: AnimationName) => void,
+): { conversationLeft(): void } {
   let walking = false;
   let once: { clip: AnimationName; until: number } | null = null;
   let talkingUntil = 0;
@@ -94,4 +98,5 @@ export function animate(session: GameSession, play: (who: 'player' | string, cli
     }
     settle();
   });
+  return { conversationLeft: stopTalker };
 }
