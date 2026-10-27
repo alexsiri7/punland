@@ -6,19 +6,12 @@
  * expected-to-fail markers.
  */
 
+import type { ModelKind } from '../../../src/assets/registry';
 import type { ContentFiles, ContentIssue } from '../../../src/content';
 import type { Content, FloorPoint, GameState } from '../../../src/domain';
 import type { Command, GameEvent } from '../../../src/rules';
 
 export type { Command, Content, ContentFiles, FloorPoint, GameEvent, GameState };
-
-export interface ContractBreach {
-  file: string;
-  rule: string;
-  message: string;
-}
-
-export type ModelKind = 'scene' | 'character' | 'object';
 
 interface Modules {
   domain: typeof import('../../../src/domain');
@@ -34,7 +27,7 @@ interface Modules {
     fromSave(save: unknown, content: Content): GameState;
   };
   assets: { models: Record<string, { kind: ModelKind }> };
-  contract: { checkModel(glb: Uint8Array, kind: ModelKind, file: string): ContractBreach[] };
+  contract: typeof import('../../../src/assets/contract');
 }
 
 const PATHS: Record<keyof Modules, string> = {
