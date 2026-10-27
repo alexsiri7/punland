@@ -13,16 +13,19 @@ export interface HotspotLayer {
 /**
  * A room's hotspots as invisible buttons over the canvas, at their `bounds` in scene pixels, so
  * a player with a keyboard or a screen reader can use them too. A hotspot without bounds isn't
- * drawn and gets no button. Clicks that miss a hotspot fall through to the canvas.
+ * drawn and gets no button. Clicks that miss a hotspot fall through to the canvas, and so do all
+ * clicks when the renderer `picksHotspots` itself.
  */
 export function createHotspotLayer(
   doc: Document,
   hotspots: readonly Hotspot[],
   bounds: (h: Hotspot) => Rect | null,
+  picksHotspots: boolean,
   on: { hover(h: Hotspot | null): void; activate(h: Hotspot): void },
 ): HotspotLayer {
   const layer = doc.createElement('div');
   layer.className = 'hotspots';
+  layer.classList.toggle('pointer-through', picksHotspots);
   layer.setAttribute('role', 'group');
   layer.setAttribute('aria-label', 'Hotspots');
   const height = SCENE_HEIGHT + UI_BAR_HEIGHT;

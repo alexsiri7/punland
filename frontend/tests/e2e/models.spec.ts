@@ -6,6 +6,7 @@ import {
   content,
   conversation,
   game,
+  hotspot,
   newGame,
   openingSceneModel,
   playerPosition,
@@ -80,6 +81,22 @@ test('Walking on a 3D floor', async ({ page }) => {
       return at && Math.hypot(at.x - content.pavement.x, at.y - content.pavement.y);
     })
     .toBeLessThan(24);
+});
+
+test('Keyboard use in 3D', async ({ page }) => {
+  // Requirement: Picking in 3D. The hotspot buttons leave the pointer to the canvas but stay for
+  // the keyboard: Tab to a hotspot shows its name, Enter activates it.
+  await newGame(page, '3d');
+  const start = await playerPosition(page);
+  const board = hotspot(page, content.board);
+  for (let tabs = 0; tabs < 20 && !(await board.evaluate((b) => b === document.activeElement)); tabs++) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(board).toBeFocused();
+  await expect(game(page)).toHaveAttribute('data-hover', content.board);
+  await page.keyboard.press('Enter');
+  await expect(game(page)).toHaveAttribute('data-say', /\S/);
+  expect(await playerPosition(page)).not.toEqual(start);
 });
 
 test('Walking animation', async ({ page }) => {

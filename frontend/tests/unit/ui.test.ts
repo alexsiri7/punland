@@ -4,6 +4,7 @@ import { hotspotRect } from '../../src/assets/registry';
 import { loadContent } from '../../src/content';
 import { type DialogueTurn, type GameState, newGame } from '../../src/domain';
 import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
+import { readBytes } from './support/files';
 
 // The DOM UI (presentation/ui, docs/ARCHITECTURE.md section 5): the UI bar, the speech line and
 // the room's controls and the dialogue panel, driven by the session and by hover.
@@ -36,10 +37,11 @@ describe('the DOM UI', () => {
     vi.useRealTimers();
   });
 
-  function mount(head = { x: 560, y: 300 }, state: GameState = newGame(content)) {
+  function mount(head = { x: 560, y: 300 }, state: GameState = newGame(content), picksHotspots = false) {
     const game = new GameSession(content, state, { save: async () => {} });
     const canvas = document.createElement('canvas');
     const renderer = {
+      picksHotspots,
       canvas: () => canvas,
       onResize: () => () => {},
       hotspotBounds: (id: string) => hotspotRect(content.rooms[game.state.room]!.model, id),
@@ -88,6 +90,24 @@ describe('the DOM UI', () => {
     game.dispatch({ type: 'dialogueResult', character: 'bartender', goalReached: true });
     expect(container.querySelector('.goals-act')?.textContent).toBe('Act 2');
     expect(goals()).toEqual(['[ ] Find a band', '[ ] Play a full set']);
+  });
+
+  it('lets the pointer through the hotspot buttons to the canvas only when the renderer picks hotspots', () => {
+    const style = document.createElement('style');
+    style.textContent = new TextDecoder().decode(readBytes('src/presentation/style.css'));
+    document.head.append(style);
+    try {
+      for (const picksHotspots of [false, true]) {
+        container.replaceChildren();
+        const { button } = mount(undefined, undefined, picksHotspots);
+        const board = button('Hotspots', 'Open mic board');
+        expect(getComputedStyle(board).pointerEvents).toBe(picksHotspots ? 'none' : 'auto');
+        board.focus();
+        expect(document.activeElement).toBe(board);
+      }
+    } finally {
+      style.remove();
+    }
   });
 
   it('says what the selected item would be used on', () => {

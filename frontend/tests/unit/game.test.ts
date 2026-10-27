@@ -142,4 +142,23 @@ describe('the game, drawn by a renderer', () => {
     expect(button('Pub door')).not.toBeNull();
     expect([container.dataset.scene, container.dataset.player]).toEqual(['opening', '705,590']);
   });
+
+  it('hovers and activates the hotspot a renderer that picks hotspots finds on its canvas', async () => {
+    renderer.pick = (screen) => (screen.x < 100 ? { kind: 'hotspot', hotspot: 'board' } : { kind: 'none' });
+    const canvas = renderer.canvas();
+    const pointer = (type: string, x: number) =>
+      canvas.dispatchEvent(new MouseEvent(type, { clientX: x, clientY: 400 }));
+
+    pointer('pointermove', 50);
+    expect(container.dataset.hover).toBe('Open mic board');
+    pointer('pointermove', 500);
+    expect(container.dataset.hover).toBe('');
+    pointer('pointermove', 50);
+    pointer('pointerleave', 50);
+    expect(container.dataset.hover).toBe('');
+
+    pointer('pointerdown', 50);
+    await walk();
+    expect(container.dataset.say).toMatch(/\S/);
+  });
 });

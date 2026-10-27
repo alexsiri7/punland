@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { clickScene, content, game, hotspot, inventoryItem, newGame, playerPosition, worlds } from './play';
+import { clickHotspot, clickScene, content, game, hotspot, inventoryItem, newGame, playerPosition, worlds } from './play';
 
 // Acceptance tests for openspec/specs/worlds/spec.md.
 
@@ -73,12 +73,12 @@ test('Something done in the street turns up in the dream', async ({ page }) => {
   await expect(hotspot(page, content.flyer)).toHaveCount(0);
   await worlds(page).getByRole('button', { name: 'Street' }).click();
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
-  await hotspot(page, content.flyer).click();
+  await clickHotspot(page, content.flyer);
   // The cat walks to the flyer first; switching worlds on the way would call the pickup off.
   await expect(inventoryItem(page, content.flyer)).toBeVisible();
   await worlds(page).getByRole('button', { name: 'Dream' }).click();
   await expect(game(page)).toHaveAttribute('data-world', 'dream');
-  await hotspot(page, content.flyer).click();
+  await clickHotspot(page, content.flyer);
   await expect(game(page)).toHaveAttribute('data-say', /\S/);
 });
 

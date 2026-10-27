@@ -16,6 +16,8 @@ export interface Ui {
   shown(): void;
   /** The player clicked the room's floor: nothing is hovered any more. */
   walked(): void;
+  /** The pointer is over a hotspot the renderer picked on its canvas, or over none. */
+  pointed(hotspot: string | null): void;
 }
 
 /**
@@ -29,7 +31,7 @@ export interface Ui {
 export function mountUi(
   container: HTMLElement,
   session: Session,
-  renderer: Pick<Renderer, 'canvas' | 'onResize' | 'hotspotBounds' | 'anchor'>,
+  renderer: Pick<Renderer, 'picksHotspots' | 'canvas' | 'onResize' | 'hotspotBounds' | 'anchor'>,
   mirror: { hover(name: string): void },
   dialogue: DialogueBackend,
 ): Ui {
@@ -51,6 +53,8 @@ export function mountUi(
   let hotspots: HotspotLayer | null = null;
   let switcher: WorldSwitcher | null = null;
   let drawn = false;
+  /** The hotspot the pointer is over on the canvas, while the renderer picks hotspots. */
+  let pointedAt: string | null = null;
   overlay.root.append(
     progress.goals,
     bar.element,
@@ -99,6 +103,7 @@ export function mountUi(
         // The room is redrawn; until it is shown, its old controls must not take input.
         conversation.close();
         drawn = false;
+        pointedAt = null;
         hotspots?.destroy();
         switcher?.destroy();
         hotspots = null;
@@ -131,6 +136,7 @@ export function mountUi(
         doc,
         current.hotspots.filter((h) => session.isPresent(h)),
         (h) => renderer.hotspotBounds(h.id),
+        renderer.picksHotspots,
         {
           hover: (h) => bar.hover(h),
           activate: (h) => session.dispatch({ type: 'activate', hotspot: h.id }),
@@ -145,7 +151,14 @@ export function mountUi(
       renderInventory();
     },
     walked() {
+      pointedAt = null;
       bar.hover(null);
+    },
+    pointed(hotspot) {
+      if (!drawn || hotspot === pointedAt) return;
+      pointedAt = hotspot;
+      const current = session.content.rooms[session.state.room];
+      bar.hover(current?.hotspots.find((h) => h.id === hotspot) ?? null);
     },
   };
 }

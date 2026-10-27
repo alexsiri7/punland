@@ -28,6 +28,8 @@ export class Three3dRenderer implements Renderer {
   private size = { width: 0, height: 0 };
   private readonly resized = new Set<() => void>();
   private readonly frames = new Set<(dtMs: number) => void>();
+  /** Hover and click hit what is drawn: the hotspot buttons are for the keyboard and screen readers. */
+  readonly picksHotspots = true;
 
   /**
    * Without WebGL the game can't be drawn: #game says so, and the promise never resolves, so
@@ -97,9 +99,12 @@ export class Three3dRenderer implements Renderer {
 
   play(): void {}
 
-  /** The floor only, for now: hotspots are picked by their DOM buttons until B4. */
+  /** What is drawn at the point: a hotspot in the room, else the floor. */
   pick(screen: ScenePoint): Pick {
-    if (!this.room || screen.y >= SCENE_HEIGHT || !this.room.isFloor(screen)) return { kind: 'none' };
+    if (!this.room || screen.y >= SCENE_HEIGHT) return { kind: 'none' };
+    const hotspot = this.room.hotspotAt(screen);
+    if (hotspot !== null) return { kind: 'hotspot', hotspot };
+    if (!this.room.isFloor(screen)) return { kind: 'none' };
     return { kind: 'floor', at: { x: screen.x, y: screen.y } };
   }
 

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { content, conversation, enterPub, game, goal, hotspot, newGame, stubDialogue, type DialogueTurn } from './play';
+import { clickHotspot, content, conversation, enterPub, game, goal, newGame, stubDialogue, type DialogueTurn } from './play';
 
 // Acceptance tests for openspec/specs/dialogue/spec.md, from the player's side. The backend
 // is stubbed, so these cover the conversation panel (#8); the backend's own part of
@@ -24,7 +24,7 @@ function reply(line: string, extra: Partial<DialogueTurn> = {}): DialogueTurn {
 async function talkToBartender(page: Page): Promise<void> {
   await newGame(page);
   await enterPub(page);
-  await hotspot(page, content.bartender).click();
+  await clickHotspot(page, content.bartender);
   await expect(conversation(page)).toBeVisible();
 }
 
@@ -95,7 +95,7 @@ test('AI unavailable', async ({ page }) => {
   await talkToBartender(page);
   await expect(conversation(page)).toContainText('Sorry, kid, my head is somewhere else tonight.');
   await expect(conversation(page).getByRole('textbox')).toHaveCount(0);
-  await hotspot(page, content.pubDoor).click();
+  await clickHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
 });
 
@@ -105,6 +105,6 @@ test('Limit reached', async ({ page }) => {
   await talkToBartender(page);
   await expect(conversation(page)).toContainText("That's enough chat for tonight, kid.");
   await expect(conversation(page).getByRole('textbox')).toHaveCount(0);
-  await hotspot(page, content.pubDoor).click();
+  await clickHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
 });

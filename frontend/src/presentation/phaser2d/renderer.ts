@@ -62,6 +62,8 @@ export class Phaser2dRenderer implements Renderer {
   play(): void {}
 
   /** Hotspots are picked by their DOM buttons, which take the pointer in 2D: the canvas is all floor. */
+  readonly picksHotspots = false;
+
   pick(screen: ScenePoint): Pick {
     if (!this.drawn || screen.y >= SCENE_HEIGHT) return { kind: 'none' };
     return { kind: 'floor', at: { x: screen.x, y: screen.y } };

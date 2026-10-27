@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import {
+  clickHotspot,
   content,
   continueGame,
   conversation,
@@ -32,7 +33,7 @@ async function reachBartenderGoal(page: Page): Promise<void> {
     goal_reached: body.reply !== null,
     ended: body.reply !== null,
   }));
-  await hotspot(page, content.bartender).click();
+  await clickHotspot(page, content.bartender);
   await conversation(page).getByRole('button', { name: 'Go on.' }).click();
 }
 
@@ -62,7 +63,7 @@ test('Continue keeps the inventory', async ({ page, context }) => {
   const saves = new Map<string, string>();
   await stubSaves(page, saves);
   await newGame(page);
-  await hotspot(page, content.flyer).click();
+  await clickHotspot(page, content.flyer);
   await expect(inventoryItem(page, content.flyer)).toBeVisible();
   await expect.poll(() => [...saves.values()].some((save) => save.includes('flyer'))).toBe(true);
   await page.close();
