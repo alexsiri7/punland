@@ -1,5 +1,6 @@
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
+import type { DialogueTurn } from '../../src/domain';
 import { expect } from './fixtures';
 
 /**
@@ -167,18 +168,13 @@ function apiPath(prefix: string): (url: URL) => boolean {
   return (url) => url.pathname.startsWith(prefix);
 }
 
+export type { DialogueTurn };
+
 /**
  * Stands in for the backend's dialogue endpoint (#6): `turn` gets the request body
  * ({ character, reply }; reply is null when the conversation starts) and returns the
  * response the game should see.
  */
-export interface DialogueTurn {
-  line: string;
-  options: { text: string; reaches_goal: boolean }[];
-  goal_reached: boolean;
-  ended: boolean;
-}
-
 export async function stubDialogue(
   page: Page,
   turn: (body: { character: string; reply: string | null }) => DialogueTurn,

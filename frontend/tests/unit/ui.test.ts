@@ -175,6 +175,13 @@ describe('the DOM UI', () => {
       expect(field.value).toBe('');
     });
 
+    it('types a number into the reply field without picking that option', async () => {
+      const { field } = talk();
+      await answer(turn('Evening.'));
+      field.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }));
+      expect(asked.map((a) => a.reply)).toEqual([null]);
+    });
+
     it('tells the session when a reply reaches the goal, and offers no more replies once it ends', async () => {
       const { game, panel, options, field } = talk();
       const dispatch = vi.spyOn(game, 'dispatch');
