@@ -61,13 +61,15 @@ frontend/
                         (save.ts), inventory/journey save state
   src/rules/            pure rules: apply(content, state, command) -> {state, events}; isPresent
   src/content/          content data and its loaders: rooms/<room>.json, items, worlds, protagonist.ts; index.ts loadContent()
-  src/content/rooms/<room>.json  room content: floor, start point, hotspots and their actions (say, exit)
+  src/content/rooms/<room>.json  room content: floor, start point, hotspots and their actions (say, exit, pickup, talk)
   src/content/protagonist.ts  the protagonist's (placeholder) name and sprite id, the one place they live in code
-  src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), player.ts, storage.ts
+  src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend; re-exports SaveGame), dialogue.ts
+                        (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
   src/presentation/     theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
                         session.ts (the Session interface the renderer and UI see)
-  src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, mirror), overlay.ts (lines it up
-                        with the canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts, inventory.ts, worlds.ts
+  src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, mirror, dialogue), overlay.ts (lines
+                        it up with the canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts, inventory.ts,
+                        worlds.ts, dialogue.ts (the conversation panel)
   src/presentation/phaser2d/  game.ts (Phaser game factory), RoomScene.ts (draws only the session's room: input -> commands,
                         events -> sprites; no game rules, no text; tells the UI and mirror when the room is shown)
   src/app/              main.ts (boot: title screen -> GameSession -> mountUi() and startGame()), title.ts (Continue only when a save exists),
