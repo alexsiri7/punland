@@ -7,6 +7,7 @@ import {
   enterPub,
   game,
   hotspot,
+  isThreeD,
   newGame,
   openingSceneModel,
   playerPosition,
@@ -65,6 +66,7 @@ test('Entering the pub', async ({ page }) => {
 });
 
 test('Swapping art', async ({ page }) => {
+  test.fail(isThreeD(), 'swaps the 2D art: B7 replaces it with the scene-model swap');
   // Requirement: Placeholder art. Replacing a room's art file needs no change to game logic.
   const magenta = [
     '<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1280">',

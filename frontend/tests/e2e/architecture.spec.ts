@@ -32,7 +32,6 @@ async function playRoute(page: Page, renderer: Renderer): Promise<unknown[]> {
 }
 
 test('Swapping the renderer', async ({ page }) => {
-  test.fail(true, 'needs #37');
   // Requirement: Replaceable renderer. Whatever the renderer, the same content plays the same,
   // with the same #game data attributes and DOM controls.
   const in2d = await playRoute(page, '2d');

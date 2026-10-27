@@ -91,6 +91,12 @@ export function actorOf(model: ModelId): string | null {
   return entry && entry.kind !== 'scene' ? (entry.sprite2d?.actor ?? null) : null;
 }
 
+/** The glb file of a model under public/, if it has a 3D variant. */
+export function model3dFile(model: ModelId): string | null {
+  const entry = Object.hasOwn(models, model) ? models[model] : undefined;
+  return entry?.model3d?.file ?? null;
+}
+
 function loadRegistry(json: unknown): Registry {
   const { registry, issues } = readRegistry(json);
   if (issues.length === 0) return registry;

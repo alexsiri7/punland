@@ -9,6 +9,8 @@ export const palette = {
   duskBlue: '#2E3A52',
   hazeViolet: '#6E6478',
   horizonClay: '#C98A6C',
+  // City
+  pavement: '#5E5A62',
   // Light
   windowGlow: '#E8B566',
   bulb: '#FFE3A0',

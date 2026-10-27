@@ -15,3 +15,15 @@ test('A floor click clears the name of a hotspot that has keyboard focus', async
   await clickScene(page, content.pavement);
   await expect(game(page)).toHaveAttribute('data-hover', '');
 });
+
+test('Without WebGL, the 3D renderer says so on #game', async ({ page }) => {
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, id: string, options?: unknown) {
+      return id.startsWith('webgl') ? null : getContext.call(this, id, options);
+    } as typeof getContext;
+  });
+  await page.goto('/?renderer=3d');
+  await page.getByRole('button', { name: 'New game' }).click();
+  await expect(game(page).getByRole('alert')).toContainText('WebGL');
+});

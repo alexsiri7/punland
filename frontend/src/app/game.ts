@@ -1,5 +1,5 @@
 import type { FloorPoint } from '../domain';
-import type { Renderer, SceneView } from '../presentation/renderer';
+import type { Renderer, SceneEntity, SceneView } from '../presentation/renderer';
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../presentation/theme';
 import { type DialogueBackend, mountUi } from '../presentation/ui';
 import { createMirror } from './mirror';
@@ -13,10 +13,12 @@ export function sceneView(session: GameSession): SceneView {
   return {
     room: state.room,
     model: current.model,
-    entities: current.hotspots.map((h) => {
-      const placed = 'entity' in h.target ? h.target.entity : undefined;
-      const entity = placed === undefined ? undefined : (content.characters[placed] ?? content.objects[placed]);
-      return { hotspot: h.id, ...(entity && { model: entity.model }), visible: session.isPresent(h) };
+    entities: current.hotspots.map((h): SceneEntity => {
+      const { target } = h;
+      const visible = session.isPresent(h);
+      if (!('entity' in target)) return { hotspot: h.id, visible };
+      const entity = content.characters[target.entity] ?? content.objects[target.entity];
+      return entity ? { hotspot: h.id, model: entity.model, at: target.at, visible } : { hotspot: h.id, visible };
     }),
     player: { model: content.protagonist.model, at: state.at },
   };

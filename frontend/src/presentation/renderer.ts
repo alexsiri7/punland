@@ -15,9 +15,15 @@ export interface SceneView {
   /** The room's scene model: its art and its hotspots' hit areas. */
   model: ModelId;
   /** The room's hotspots, with the model of the character or object each one places, if it places one. */
-  entities: { hotspot: string; model?: ModelId; visible: boolean }[];
+  entities: SceneEntity[];
   player: { model: ModelId; at: FloorPoint };
 }
+
+/** A hotspot of the room; one that places a character or object has its model and the floor point it stands on. */
+export type SceneEntity = { hotspot: string; visible: boolean } & (
+  | { model: ModelId; at: FloorPoint }
+  | { model?: undefined }
+);
 
 /** What is under a point of the canvas. */
 export type Pick = { kind: 'hotspot'; hotspot: string } | { kind: 'floor'; at: FloorPoint } | { kind: 'none' };

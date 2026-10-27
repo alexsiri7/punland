@@ -56,7 +56,6 @@ test('Replacing a placeholder', async ({ page }) => {
 });
 
 test('Hovering a model', async ({ page }) => {
-  test.fail(true, 'needs #39');
   // Requirement: Picking in 3D. The pointer over an entity's model or hit area hovers its hotspot.
   await newGame(page, '3d');
   await pointAtHotspot(page, content.pubDoor);
@@ -64,7 +63,6 @@ test('Hovering a model', async ({ page }) => {
 });
 
 test('Clicking a model', async ({ page }) => {
-  test.fail(true, 'needs #39');
   // Requirement: Picking in 3D. A click on a hotspot's model walks the character to it and
   // activates the hotspot.
   await newGame(page, '3d');
@@ -75,7 +73,6 @@ test('Clicking a model', async ({ page }) => {
 });
 
 test('Walking on a 3D floor', async ({ page }) => {
-  test.fail(true, 'needs #39');
   // Requirement: Picking in 3D. A click on the floor walks the player there.
   await newGame(page, '3d');
   await clickScene(page, content.pavement);
