@@ -39,7 +39,7 @@ body {
   height: 100%;
   display: flex;
   align-items: stretch;
-  background: var(--ui-ground) url('/rooms/opening/poster.jpg') 62% 100% / cover no-repeat;
+  background: var(--ui-ground) url('/title/poster.jpg') 62% 100% / cover no-repeat;
 }
 
 .title-panel {
@@ -137,7 +137,7 @@ body {
 
 /*
  * The 3D renderer's grain (src/presentation/three3d/renderer.ts, which lays it over the scene):
- * STYLE.md's noise at about 16%. The 2D art has it baked in.
+ * STYLE.md's noise at about 16%.
  */
 .grain {
   position: absolute;

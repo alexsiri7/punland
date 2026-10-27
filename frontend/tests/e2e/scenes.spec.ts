@@ -7,7 +7,6 @@ import {
   enterPub,
   game,
   hotspot,
-  isThreeD,
   newGame,
   openingSceneModel,
   playerPosition,
@@ -64,29 +63,12 @@ test('Entering the pub', async ({ page }) => {
   await expect.poll(() => playerPosition(page)).toEqual(content.outsidePub);
 });
 
-test('Swapping art', async ({ page }) => {
-  test.fail(isThreeD(), 'swaps the 2D art: B7 replaces it with the scene-model swap');
-  // Requirement: Placeholder art. Replacing a room's art file needs no change to game logic.
-  const magenta = [
-    '<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1280">',
-    '<rect width="100%" height="100%" fill="#FF00FF"/></svg>',
-  ].join('');
-  await page.route('**/rooms/opening/background.jpg', (route) =>
-    route.fulfill({ status: 200, contentType: 'image/svg+xml', body: magenta }),
-  );
-  await newGame(page);
-  await expect.poll(() => scenePixel(page, { x: 40, y: 300 })).toEqual([255, 0, 255]);
-  await pointAtHotspot(page, content.pubDoor);
-  await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
-  await enterPub(page);
-});
-
 test('Swapping art (scene model)', async ({ page }) => {
   // Requirement: Placeholder art. Replacing a room's scene model needs no change to game logic.
   await page.route(`**${openingSceneModel}`, (route) =>
     route.fulfill({ status: 200, contentType: 'model/gltf-binary', body: Buffer.from(fixtures.magentaScene()) }),
   );
-  await newGame(page, '3d');
+  await newGame(page);
   // The toon ramp gives the backdrop two tones and the grain overlay sits above the canvas, so
   // the pixel is strongly magenta rather than exactly #FF00FF.
   await expect

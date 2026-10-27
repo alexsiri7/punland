@@ -10,7 +10,7 @@ Every new scene, character, prop and piece of UI follows this guide. It comes fr
 
 The boards are HTML for the design tool. Open them in a browser to look at them. The SVG markup inside them is the reference art. The tool's runtime (`support.js`) is not included, so they render without its chrome.
 
-The working implementation is the opening room: [`frontend/art/opening/scene.svg`](../../frontend/art/opening/scene.svg). It is board 3's SVG, rendered to the files the game loads. When this guide and the canvas disagree, the canvas wins. Ask the owner, then update this file.
+The game draws its rooms in 3D (see [Scene build](#scene-build)). The 2D reference for the opening room is [`rooms/opening.svg`](rooms/opening.svg), board 3's SVG, and [`rooms/`](rooms/) has one for each room. When this guide and the canvas disagree, the canvas wins. Ask the owner, then update this file.
 
 ## Mood
 
@@ -20,7 +20,7 @@ References: Return to Monkey Island, Monkey Island 2 cover art, and indie travel
 
 - **Angular characters.** Long tapered limbs, pointed snouts and chins, big confident silhouettes. No round, bubbly forms.
 - **Poster depth.** Use 3 or 4 flat silhouette layers, each lighter and bluer with distance. The far layers have no detail. Depth ramp, near to far: `#2F2D35` · `#4A4A5E` · `#6E6A82` · `#8E879C`.
-- **Fine grain.** Every scene gets a noise overlay at about 16%, so the flat colour looks printed rather than vector-clean. It is the `p-grain` filter in `scene.svg`.
+- **Fine grain.** Every scene gets a noise overlay at about 16%, so the flat colour looks printed rather than vector-clean. In the game it is the grain overlay over the canvas (`frontend/public/textures/grain.svg`); in the reference SVGs it is the `p-grain` filter.
 - **Warm against cool.** The world is cool blue, with warm pools of shop light. Interiors and windows carry the warmth.
 
 ## Palette
@@ -80,32 +80,18 @@ Both fonts are self-hosted from `@fontsource/*` (OFL) and imported in `frontend/
 
 ## Scene build
 
-Every room is **one 1280 × 640 SVG** (`frontend/art/<room>/scene.svg`) with one `<g id="layer-…">` per layer, back to front:
+Every room is **one 3D scene model**, `frontend/public/models/scenes/<room>.glb`, drawn by the game's Three.js renderer. Characters and objects are models of their own (`models/characters/<id>.glb`, `models/objects/<id>.glb`), placed on the room's floor by the room's content. Each model is one entry in the model registry, `frontend/src/assets/models.json`.
 
-1. `layer-sky`: the gradient rect.
-2. `layer-far`: skyline and wires.
-3. `layer-mid`: buildings.
-4. `layer-ground`: the walkable path.
-5. `layer-props`: posters, bins.
-6. `layer-actors`: characters, one `<g id="…">` each. They become separate swappable sprites. Each actor's `<g>` has its origin at its feet (`transform="translate(x y)"`), which the game uses to stand it on the floor.
-7. `layer-fore`: vines and lamp posts, drawn in front of the actors.
-8. Hotspots: invisible and named. These come from room content data (#4), not from the art.
+The model files follow the **asset contract**: [`docs/ARCHITECTURE.md`, section 8](../ARCHITECTURE.md#8-asset-contract-for-the-designer). It is the one place for the format, names, units, nodes, clips, materials and budgets, and the unit tests check it. In short, for a scene:
 
-The scene ends with the full-frame grain rect.
+- `cam_main` is the room's view, seen at 1280 × 640 with the UI bar 160 px under it. Characters stand about **256 px tall** at the front of the walk line.
+- `floor` is the walkable ground, and a `hit_<hotspot>` node marks each part of the scene that is a hotspot (`hit_door`, `hit_board`). Hotspots and what they do come from the room's content data, not from the model.
+- Materials are flat base colours from this palette, one per part, with no textures. The renderer adds the rest of the look: the two-tone toon ramp with its hard terminator, the key light from the upper left with hard shadows, and the grain overlay. Don't bake light or shading into a model.
+- Depth comes from colour: far set pieces get lighter and bluer (the depth ramp above).
 
-Characters stand about **256 px tall** at the front of the walk line.
+The 2D reference art for each room is a 1280 × 640 SVG in [`rooms/`](rooms/) (`rooms/<room>.svg`), layered back to front as sky, far, mid, ground, props, actors and fore. The placeholder scene models are laid out in its scene pixels through `cam_main`, so a room's model, the SVG and the floor points in the room's content line up.
 
-To get from SVG to game files, run `cd frontend && node scripts/render-art.mjs [room]`. It renders in headless Chromium with the self-hosted fonts, because an SVG used as an image cannot load web fonts. It writes `public/rooms/<room>/`:
-
-| File | Contents |
-| --- | --- |
-| `background.jpg` | Layers 1–5 plus grain. |
-| `<actor>.png` | Each actor, cropped. |
-| `fore.png` | The foreground layer. |
-| `poster.jpg` | Everything composited, used as the title screen backdrop. |
-| `art.json` | Each layer's position and depth, and each actor's feet. |
-
-Output is 2× scale. Commit the SVG and the rendered files together, and never hand-edit the PNG or JPG files. Swapping art means editing the SVG and re-rendering, with no code change. That keeps to the "art is a swappable placeholder file per room" invariant.
+Swapping a room's look means replacing its glb at the same path, with no code or content change. That keeps to the "art is a swappable placeholder file per room" invariant. The placeholders are written by `frontend/scripts/make-placeholders.mjs`; section 8 says how a designer's file replaces one.
 
 ## The protagonist (board 2)
 

@@ -10,14 +10,15 @@
 //
 // Each part is one node with one mesh, and its material is named after the part. Characters
 // pivot their limbs and head at nodes, so the clips are node transform animations with no skin.
-// A room's shell is laid out in scene pixels, through its camera, over the room's 2D art.
+// A room's shell is laid out in scene pixels, through its camera, over the room's reference art
+// (docs/design/rooms/<room>.svg).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { concat, container, srgbToLinear } from './glb-container.mjs';
 
 // Base tones from docs/design/STYLE.md: the protagonist's table (board 2), the palette's
-// accents and city, and the pub art's bartender (art/pub/scene.svg).
+// accents and city, and the pub art's bartender (docs/design/rooms/pub.svg).
 const COLOURS = {
   fur: '#D88A4A',
   muzzle: '#EBC9A4',
@@ -32,7 +33,7 @@ const COLOURS = {
   apron: '#D9CDB4',
   paper: '#D9CDB4',
   ink: '#C8483B',
-  // The rooms: STYLE.md's city, sky, light and accents, and the room art's own tones (art/<room>/scene.svg).
+  // The rooms: STYLE.md's city, sky, light and accents, and the room art's own tones (docs/design/rooms/<room>.svg).
   pavement: '#5E5A62',
   kerb: '#4A464E',
   road: '#2F2D35',
@@ -231,7 +232,7 @@ function brokenGuitar() {
   };
 }
 
-// --- The rooms. Each one is laid out in the scene pixels of its 2D art (1280 x 640), through
+// --- The rooms. Each one is laid out in the scene pixels of its reference art (1280 x 640), through
 // its camera: the walkable area's front centre (content/rooms/<room>.json) is the origin, and
 // a wall or prop stands on the plane where its foot meets the floor. ---------------------------
 

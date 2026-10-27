@@ -1,30 +1,15 @@
-import { type ModelId, type Rect, SCENE } from '../domain';
+import type { ModelId } from '../domain';
 import file from './models.json';
 
 /**
  * The model registry (docs/ARCHITECTURE.md, section 6): how every scene, character and object
  * looks, by the model id content gives it. It holds no logic: never what a thing does, only its
- * art and its hit areas. Each entry has one variant per renderer: `sprite2d` in 2D, `model3d` in 3D.
- * A character or object needs a 2D variant only to be placed in a room; the broken guitar, which
- * the protagonist's own art carries, has only a model.
+ * model file, which carries its anchors and hit areas.
  */
 
 export const MODELS_FILE = 'assets/models.json';
 
 export type ModelKind = 'scene' | 'character' | 'object';
-
-/** A room's art in 2D. */
-export interface SceneSprite {
-  /** Its layers under public/, as scripts/render-art.mjs writes them, e.g. `rooms/opening/art.json`. */
-  layers: string;
-  /** Each hotspot's hit area in scene pixels, by hotspot id (a `node` hotspot's id is its node). */
-  hotspots: Readonly<Record<string, Rect>>;
-}
-
-/** A character or object in 2D: the actor layer that draws it in each room's art. */
-export interface ActorSprite {
-  actor: string;
-}
 
 /** A model in 3D: its glb file, which follows the asset contract (docs/ARCHITECTURE.md, section 8). */
 export interface Model3d {
@@ -36,17 +21,19 @@ export interface Model3d {
   height?: number;
 }
 
-export type Model =
-  | { id: ModelId; kind: 'scene'; sprite2d: SceneSprite; model3d?: Model3d }
-  | { id: ModelId; kind: 'character' | 'object'; sprite2d?: ActorSprite; model3d?: Model3d };
+export interface Model {
+  id: ModelId;
+  kind: ModelKind;
+  model3d: Model3d;
+}
 
 export type Registry = Readonly<Record<ModelId, Model>>;
 
 /** A problem in an asset file or in the content's use of one, like a content problem (src/content). */
 export interface AssetIssue {
-  /** By its path under src/, or under public/ for art and model files. */
+  /** By its path under src/, or under public/ for model files. */
   file: string;
-  /** E.g. `models[0].sprite2d.hotspots.door`; empty for the file as a whole. */
+  /** E.g. `models[0].model3d.file`; empty for the file as a whole. */
   field: string;
   message: string;
 }
@@ -73,28 +60,10 @@ export function readRegistry(json: unknown): { registry: Registry; issues: Asset
 /** Every model, checked as it loads. */
 export const models: Registry = loadRegistry(file);
 
-/** The room art of a scene model, if it is one. */
-export function sceneSprite(model: ModelId): SceneSprite | null {
-  const entry = Object.hasOwn(models, model) ? models[model] : undefined;
-  return entry?.kind === 'scene' ? entry.sprite2d : null;
-}
-
-/** A hotspot's hit area in a scene model's room art, in scene pixels. */
-export function hotspotRect(scene: ModelId, hotspot: string): Rect | null {
-  const hotspots = sceneSprite(scene)?.hotspots;
-  return hotspots && Object.hasOwn(hotspots, hotspot) ? (hotspots[hotspot] ?? null) : null;
-}
-
-/** The actor layer of a character or object model, if it is one. */
-export function actorOf(model: ModelId): string | null {
-  const entry = Object.hasOwn(models, model) ? models[model] : undefined;
-  return entry && entry.kind !== 'scene' ? (entry.sprite2d?.actor ?? null) : null;
-}
-
-/** The glb file of a model under public/, if it has a 3D variant. */
+/** The glb file of a model under public/, if the model is in the registry. */
 export function model3dFile(model: ModelId): string | null {
   const entry = Object.hasOwn(models, model) ? models[model] : undefined;
-  return entry?.model3d?.file ?? null;
+  return entry?.model3d.file ?? null;
 }
 
 function loadRegistry(json: unknown): Registry {
@@ -111,32 +80,15 @@ function readModel(entry: unknown, at: string, problem: Problem): Model | null {
     problem(at, 'must be an object');
     return null;
   }
-  const { id, kind, sprite2d } = entry;
+  const { id, kind } = entry;
   if (!isText(id)) problem(`${at}.id`, 'must be a model id');
   if (kind !== 'scene' && kind !== 'character' && kind !== 'object') {
     problem(`${at}.kind`, 'must be scene, character or object');
     return null;
   }
-  const model3d = entry.model3d === undefined ? undefined : readModel3d(entry.model3d, `${at}.model3d`, problem);
-  if (kind === 'scene') {
-    if (!isObject(sprite2d)) problem(`${at}.sprite2d`, 'must be an object');
-    const scene = isObject(sprite2d) ? readScene(sprite2d, `${at}.sprite2d`, problem) : null;
-    if (!isText(id) || !scene || model3d === null) return null;
-    return model3d ? { id, kind, sprite2d: scene, model3d } : { id, kind, sprite2d: scene };
-  }
-  if (sprite2d === undefined && model3d === undefined) {
-    problem(at, 'must have a sprite2d, a model3d or both');
-    return null;
-  }
-  const actor = sprite2d === undefined ? undefined : readActor(sprite2d, `${at}.sprite2d`, problem);
-  if (!isText(id) || actor === null || model3d === null) return null;
-  return { id, kind, ...(actor && { sprite2d: actor }), ...(model3d && { model3d }) };
-}
-
-function readActor(sprite: unknown, at: string, problem: Problem): ActorSprite | null {
-  if (isObject(sprite) && isText(sprite.actor)) return { actor: sprite.actor };
-  problem(`${at}.actor`, 'must be the name of an actor layer');
-  return null;
+  const model3d = readModel3d(entry.model3d, `${at}.model3d`, problem);
+  if (!isText(id) || !model3d) return null;
+  return { id, kind, model3d };
 }
 
 function readModel3d(model: unknown, at: string, problem: Problem): Model3d | null {
@@ -153,34 +105,6 @@ function readModel3d(model: unknown, at: string, problem: Problem): Model3d | nu
   if (!isHeight) problem(`${at}.height`, 'must be a height in metres');
   if (!isFile || !isFlag || !isHeight) return null;
   return height === undefined ? { file, placeholder } : { file, placeholder, height };
-}
-
-function readScene(sprite: Record<string, unknown>, at: string, problem: Problem): SceneSprite | null {
-  const { layers, hotspots } = sprite;
-  if (!isText(layers)) problem(`${at}.layers`, 'must be the path of an art.json under public/');
-  if (!isObject(hotspots)) {
-    problem(`${at}.hotspots`, 'must be an object');
-    return null;
-  }
-  const rects: Record<string, Rect> = {};
-  let valid = isText(layers);
-  for (const [hotspot, value] of Object.entries(hotspots)) {
-    const rect = readRect(value);
-    if (rect) rects[hotspot] = rect;
-    else {
-      problem(`${at}.hotspots.${hotspot}`, `must be a rect inside the ${SCENE.width} × ${SCENE.height} scene`);
-      valid = false;
-    }
-  }
-  return valid && isText(layers) ? { layers, hotspots: rects } : null;
-}
-
-function readRect(value: unknown): Rect | null {
-  if (!isObject(value)) return null;
-  const { x, y, width, height } = value;
-  if (!isNumber(x) || !isNumber(y) || !isNumber(width) || !isNumber(height)) return null;
-  if (x < 0 || y < 0 || width < 0 || height < 0) return null;
-  return x + width <= SCENE.width && y + height <= SCENE.height ? { x, y, width, height } : null;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

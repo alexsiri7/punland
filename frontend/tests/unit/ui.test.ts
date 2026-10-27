@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
-import { hotspotRect } from '../../src/assets/registry';
 import { loadContent } from '../../src/content';
 import { type DialogueTurn, type GameState, newGame } from '../../src/domain';
 import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
+import { fakeBounds } from './fakes/renderer';
 import { readBytes } from './support/files';
 
 // The DOM UI (presentation/ui, docs/ARCHITECTURE.md section 5): the UI bar, the speech line and
@@ -49,7 +49,7 @@ describe('the DOM UI', () => {
         frames.push(callback);
         return () => {};
       },
-      hotspotBounds: (id: string) => hotspotRect(content.rooms[game.state.room]!.model, id),
+      hotspotBounds: (id: string) => fakeBounds(content.rooms[game.state.room]!.model, id),
       anchor: () => head,
     };
     const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name), left: () => {} }, dialogue);

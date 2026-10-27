@@ -20,7 +20,7 @@ export const srcFiles: Record<string, string> = Object.fromEntries(
   ).map(([path, source]) => [path.replace(/^\/src\//, ''), source]),
 );
 
-type Layer = 'domain' | 'rules' | 'content' | 'assets' | 'services' | 'presentation' | 'phaser2d' | 'three3d' | 'app';
+type Layer = 'domain' | 'rules' | 'content' | 'assets' | 'services' | 'presentation' | 'three3d' | 'app';
 
 /** Layer -> the layers it may import (section 2, "Allowed imports"). */
 const ALLOWED: Record<Layer, readonly Layer[] | 'all'> = {
@@ -30,13 +30,12 @@ const ALLOWED: Record<Layer, readonly Layer[] | 'all'> = {
   assets: ['assets', 'domain'],
   services: ['services', 'domain'],
   presentation: ['presentation', 'domain', 'assets'],
-  phaser2d: ['phaser2d', 'presentation', 'domain', 'assets'],
   three3d: ['three3d', 'presentation', 'domain', 'assets'],
   app: 'all',
 };
 
 /** Each renderer's engine, importable only from that renderer's own folder. */
-const ENGINES: Record<string, Layer> = { phaser: 'phaser2d', three: 'three3d' };
+const ENGINES: Record<string, Layer> = { three: 'three3d' };
 
 const PURE: readonly Layer[] = ['domain', 'rules'];
 const BROWSER_GLOBALS = ['document', 'window', 'localStorage', 'fetch', 'navigator'];
@@ -44,7 +43,7 @@ const BROWSER_GLOBALS = ['document', 'window', 'localStorage', 'fetch', 'navigat
 function layerOf(path: string): Layer | null {
   const [top, sub] = path.split('/');
   if (top === 'presentation') {
-    if (sub === 'phaser2d' || sub === 'three3d') return sub;
+    if (sub === 'three3d') return sub;
     return 'presentation';
   }
   const layers: readonly string[] = ['domain', 'rules', 'content', 'assets', 'services', 'app'];

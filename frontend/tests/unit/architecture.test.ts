@@ -50,18 +50,17 @@ describe('An import that breaks the layering', () => {
 });
 
 describe('One engine per renderer', () => {
-  // Requirement: Layered code. Only presentation/phaser2d imports Phaser, and only
-  // presentation/three3d imports Three.js; any other import fails, naming the file and the import.
+  // Requirement: Layered code. Only presentation/three3d imports Three.js; any other import
+  // fails, naming the file and the import.
   it('is reported with the file and the import', () => {
     const violations = layerViolations({
-      'presentation/phaser2d/scene.ts': "import Phaser from 'phaser';",
       'presentation/three3d/scene.ts':
         "import { Scene } from 'three';\nimport { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';",
-      'presentation/ui/bar.ts': "import Phaser from 'phaser';",
+      'presentation/ui/bar.ts': "import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';",
       'app/main.ts': "import { Mesh } from 'three';",
     });
     expect(violations).toEqual([
-      { file: 'presentation/ui/bar.ts', import: 'phaser', rule: 'phaser only in presentation/phaser2d' },
+      { file: 'presentation/ui/bar.ts', import: 'three/addons/loaders/GLTFLoader.js', rule: 'three only in presentation/three3d' },
       { file: 'app/main.ts', import: 'three', rule: 'three only in presentation/three3d' },
     ]);
   });

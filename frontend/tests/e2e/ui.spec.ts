@@ -8,7 +8,7 @@ test.use({ actionTimeout: 5_000 });
 
 test('A floor click clears the name of a hotspot that has keyboard focus', async ({ page }) => {
   // The canvas keeps focus on the tabbed button through a floor click, so its blur never fires:
-  // the walk itself (RoomScene -> app/main.ts -> ui.walked) has to clear the name.
+  // the walk itself (app/game.ts -> ui.walked) has to clear the name.
   await newGame(page);
   await hotspot(page, content.board).focus();
   await expect(game(page)).toHaveAttribute('data-hover', content.board);
@@ -23,7 +23,7 @@ test('Without WebGL, the 3D renderer says so on #game', async ({ page }) => {
       return id.startsWith('webgl') ? null : getContext.call(this, id, options);
     } as typeof getContext;
   });
-  await page.goto('/?renderer=3d');
+  await page.goto('/');
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(game(page).getByRole('alert')).toContainText('WebGL');
 });

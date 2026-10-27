@@ -1,7 +1,7 @@
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
 import type { DialogueTurn, SaveGame } from '../../src/domain';
-import { expect, test } from './fixtures';
+import { expect } from './fixtures';
 
 /**
  * The public interface the acceptance tests for spec change #1 play the game through
@@ -37,11 +37,9 @@ export const content = {
   flyer: /flyer/i,
   /**
    * A point on the flyer, in scene pixels, clear of the player when they stand on the pavement:
-   * pinned to the pub door in the 2D art, and standing on the pavement in front of it in 3D.
+   * it stands on the pavement in front of the pub door.
    */
-  get flyerSprite(): { x: number; y: number } {
-    return isThreeD() ? { x: 737, y: 525 } : { x: 730, y: 410 };
-  },
+  flyerSprite: { x: 737, y: 525 },
   brokenGuitar: /broken guitar/i,
   /** A character in the pub interior with a conversation goal (getting a job at the pub). */
   bartender: /bartender/i,
@@ -75,44 +73,19 @@ export const goal = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('list', { name: 'Goals' }).getByRole('checkbox', { name });
 export const conversation = (page: Page): Locator => page.getByRole('dialog');
 
-/**
- * The renderers while both exist (docs/ARCHITECTURE.md, "Renderer choice"): `?renderer=2d`
- * draws the room's art layers, `?renderer=3d` its models. Without one, the game's default, 3D.
- */
-export type Renderer = '2d' | '3d';
-
-/**
- * The renderer the running Playwright project plays with (playwright.config.ts): the suite runs
- * once in the default renderer, 3D, and once in 2D.
- */
-function projectRenderer(): Renderer | undefined {
-  return test.info().project.metadata.renderer === '2d' ? '2d' : undefined;
-}
-
-/** Whether this run plays in 3D, for tests that need a later 3D step: `test.fail(isThreeD(), 'needs B7')`. */
-export const isThreeD = (): boolean => projectRenderer() !== '2d';
-
-/** The opening room's scene model, which the 3D renderer draws it from (models spec). */
+/** The opening room's scene model, which the renderer draws it from (models spec). */
 export const openingSceneModel = '/models/scenes/opening.glb';
 
-/** The protagonist's model, which the 3D renderer draws the player with in every room. */
-const playerModel = '/models/characters/protagonist.glb';
+/** The protagonist's model, which the renderer draws the player with in every room. */
+export const playerModel = '/models/characters/protagonist.glb';
 
-/** The game's page, with the project's renderer unless the test asks for one. */
-function gamePage(renderer = projectRenderer()): string {
-  return renderer ? `/?renderer=${renderer}` : '/';
-}
-
-export async function newGame(page: Page, renderer = projectRenderer()): Promise<void> {
-  const threeD = renderer !== '2d';
+export async function newGame(page: Page): Promise<void> {
   const requested: string[] = [];
-  if (threeD) page.on('request', (request) => requested.push(new URL(request.url()).pathname));
-  await page.goto(gamePage(renderer));
+  page.on('request', (request) => requested.push(new URL(request.url()).pathname));
+  await page.goto('/');
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
-  if (threeD) {
-    await expect.poll(() => requested, 'the 3D renderer loads the player model').toContain(playerModel);
-  }
+  await expect.poll(() => requested, 'the renderer loads the player model').toContain(playerModel);
 }
 
 export async function enterPub(page: Page): Promise<void> {
@@ -130,8 +103,8 @@ export async function clickScene(page: Page, at: { x: number; y: number }): Prom
 }
 
 /**
- * The centre of a hotspot's button, in page pixels. In 3D the button lies over the hotspot's
- * model but lets the pointer through to the canvas, so pointing there points at the model.
+ * The centre of a hotspot's button, in page pixels. The button lies over the hotspot's model
+ * but lets the pointer through to the canvas, so pointing there points at the model.
  */
 async function hotspotCentre(page: Page, name: string | RegExp): Promise<{ x: number; y: number }> {
   const box = await hotspot(page, name).boundingBox();
@@ -139,13 +112,13 @@ async function hotspotCentre(page: Page, name: string | RegExp): Promise<{ x: nu
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
-/** Moves the pointer over the room where a hotspot is drawn, whichever renderer draws it. */
+/** Moves the pointer over the room where a hotspot is drawn. */
 export async function pointAtHotspot(page: Page, name: string | RegExp): Promise<void> {
   const at = await hotspotCentre(page, name);
   await page.mouse.move(at.x, at.y);
 }
 
-/** Clicks the room where a hotspot is drawn, whichever renderer draws it. */
+/** Clicks the room where a hotspot is drawn. */
 export async function clickHotspot(page: Page, name: string | RegExp): Promise<void> {
   const at = await hotspotCentre(page, name);
   await page.mouse.click(at.x, at.y);
@@ -271,7 +244,7 @@ export async function seedSave(page: Page, save: Save): Promise<void> {
 }
 
 export async function continueGame(page: Page): Promise<void> {
-  await page.goto(gamePage());
+  await page.goto('/');
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(game(page)).toHaveAttribute('data-scene', /\S/);
 }
