@@ -7,10 +7,11 @@
  * expected-to-fail markers.
  */
 
+import type { ContentFiles, ContentIssue } from '../../../src/content';
 import type { Content as DomainContent, FloorPoint, GameState, Hotspot, Room } from '../../../src/domain';
 import type { Command, GameEvent } from '../../../src/rules';
 
-export type { Command, FloorPoint, GameEvent, GameState };
+export type { Command, ContentFiles, FloorPoint, GameEvent, GameState };
 
 /**
  * Content as the domain has it, with the entities A7 (#33) adds: rooms place them through a
@@ -24,15 +25,6 @@ export type Content = Omit<DomainContent, 'rooms'> & {
 };
 
 type EntityTarget = { entity: string; at: FloorPoint } | { node: string };
-
-/** Content files by their path under src/, e.g. `content/rooms/opening.json`, parsed. */
-export type ContentFiles = Record<string, unknown>;
-
-export interface ContentIssue {
-  file: string;
-  field: string;
-  message: string;
-}
 
 export interface ContractBreach {
   file: string;

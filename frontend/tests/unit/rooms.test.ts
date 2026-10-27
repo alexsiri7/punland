@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { items } from '../../src/content/items';
+import { loadContent } from '../../src/content';
 import { PROTAGONIST } from '../../src/content/protagonist';
-import { ACTION_TYPES, rooms, START_ROOM } from '../../src/content/rooms';
-import { type FloorPoint, insidePolygon } from '../../src/domain/geometry';
-import { SCENE_HEIGHT, SCENE_WIDTH } from '../../src/presentation/theme';
+import type { FloorPoint } from '../../src/domain/geometry';
 
-// Rooms are content data: adding one must not need a code change, so this checks that every
-// room file holds together (progress spec, "Story as content").
+// Rooms are content data: adding one must not need a code change. The content validator checks
+// that every room file holds together (content.test.ts); this checks each room against its art.
 
 // The layer fields RoomScene reads; scripts/render-art.mjs writes them.
 const art = import.meta.glob<{ layers: { actor?: string; foot?: FloorPoint }[] }>('../../public/rooms/*/art.json', {
@@ -14,75 +12,20 @@ const art = import.meta.glob<{ layers: { actor?: string; foot?: FloorPoint }[] }
   import: 'default',
 });
 
-/** The player walks in straight lines, which only stay on a convex floor. */
-function convex(poly: FloorPoint[]): boolean {
-  let sign = 0;
-  for (let i = 0; i < poly.length; i++) {
-    const [a, b, c] = [poly[i], poly[(i + 1) % poly.length], poly[(i + 2) % poly.length]];
-    if (!a || !b || !c) return false;
-    const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
-    if (cross === 0) continue;
-    if (sign !== 0 && Math.sign(cross) !== sign) return false;
-    sign = Math.sign(cross);
-  }
-  return true;
-}
+const { rooms, start } = loadContent();
 
 describe('room content', () => {
-  it('has the start room', () => {
-    expect(rooms[START_ROOM]).toBeDefined();
+  it('starts a new game outside The Three Crows', () => {
+    expect(start.room).toBe('opening');
   });
 
   describe.each(Object.entries(rooms))('%s', (id, room) => {
-    it('has a convex floor the player starts on', () => {
-      expect(room.walkable.length).toBeGreaterThanOrEqual(3);
-      expect(convex(room.walkable)).toBe(true);
-      expect(insidePolygon(room.start, room.walkable)).toBe(true);
-    });
+    const actors = (art[`../../public/rooms/${id}/art.json`]?.layers ?? []).map((layer) => layer.actor);
 
-    it('has hotspots inside the scene, each reachable on foot', () => {
-      expect(new Set(room.hotspots.map((h) => h.id)).size).toBe(room.hotspots.length);
+    it('has art for each hotspot that comes and goes', () => {
       for (const h of room.hotspots) {
-        expect(h.rect.x).toBeGreaterThanOrEqual(0);
-        expect(h.rect.y).toBeGreaterThanOrEqual(0);
-        expect(h.rect.x + h.rect.width).toBeLessThanOrEqual(SCENE_WIDTH);
-        expect(h.rect.y + h.rect.height).toBeLessThanOrEqual(SCENE_HEIGHT);
-        expect(insidePolygon(h.walkTo, room.walkable), h.id).toBe(true);
-      }
-    });
-
-    it('has hotspot actions the room engine knows', () => {
-      for (const h of room.hotspots) {
-        expect(Object.keys(ACTION_TYPES), h.id).toContain(h.action.type);
-        if (h.action.type === 'say') expect(h.action.line, h.id).toMatch(/\S/);
-      }
-    });
-
-    it('has pickups and item uses that name real items', () => {
-      const actors = (art[`../../public/rooms/${id}/art.json`]?.layers ?? []).map((layer) => layer.actor);
-      for (const h of room.hotspots) {
-        if (h.action.type === 'pickup') {
-          expect(Object.keys(items), h.id).toContain(h.action.item);
-          // The room engine hides a hotspot that comes and goes by its art actor of the same id.
-          expect(actors, h.id).toContain(h.id);
-        }
-        if (h.shownWith !== undefined) expect(actors, h.id).toContain(h.id);
-        for (const use of h.uses ?? []) {
-          expect(Object.keys(items), h.id).toContain(use.item);
-          if (use.removes) expect(Object.keys(items), h.id).toContain(use.removes);
-          expect(use.say, h.id).toMatch(/\S/);
-        }
-      }
-    });
-
-    it('has exits that lead onto the floor of an existing room', () => {
-      for (const h of room.hotspots) {
-        if (h.action.type !== 'exit') continue;
-        const to = rooms[h.action.room];
-        expect(to, h.id).toBeDefined();
-        // Worlds are entered from the world switcher, never through a door.
-        expect(to?.world, h.id).toBe(room.world);
-        if (h.action.at) expect(insidePolygon(h.action.at, to?.walkable ?? []), h.id).toBe(true);
+        // The room engine hides a hotspot that comes and goes by its art actor of the same id.
+        if (h.action.type === 'pickup' || h.shownWith !== undefined) expect(actors, h.id).toContain(h.id);
       }
     });
 

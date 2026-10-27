@@ -1,8 +1,18 @@
 import type { FloorPoint, Rect } from './geometry';
 
 /**
+ * Ids of things that are in the content. Only the content validators (src/content/validate.ts)
+ * make them, so an id in a `Content` names something that exists. Lookups by id take any
+ * string: commands and saves hand ids in unchecked.
+ */
+export type RoomId = string & { readonly __brand: 'RoomId' };
+export type ItemId = string & { readonly __brand: 'ItemId' };
+export type WorldId = string & { readonly __brand: 'WorldId' };
+export type HotspotId = string & { readonly __brand: 'HotspotId' };
+
+/**
  * The game's content as the rules read it (progress spec, "Story as content"): the shapes of
- * the data files in src/content/, which loads them (loadContent()).
+ * the data files in src/content/, which checks and loads them (loadContent()).
  */
 export interface Content {
   /** In the world switcher's order. */
@@ -12,15 +22,15 @@ export interface Content {
   /** By item id. */
   items: Readonly<Record<string, Item>>;
   /** Where a new game starts, and what it carries. */
-  start: { room: string; items: readonly string[] };
+  start: { room: RoomId; items: readonly ItemId[] };
 }
 
 export interface World {
-  id: string;
+  id: WorldId;
   /** Accessible name, shown on the world switcher. */
   name: string;
   /** The room the player arrives in the first time they enter the world. */
-  start: string;
+  start: RoomId;
   /** Why the world can't be entered yet; an unlocked world leaves it out. */
   locked?: string;
 }
@@ -36,22 +46,23 @@ export interface Item {
 export type HotspotAction =
   | { type: 'say'; line: string }
   /** `at`: where the player stands in the other room; that room's `start` when left out. */
-  | { type: 'exit'; room: string; at?: FloorPoint }
+  | { type: 'exit'; room: RoomId; at?: FloorPoint }
   /** The item goes into the inventory, and the hotspot is gone for good. */
-  | { type: 'pickup'; item: string }
+  | { type: 'pickup'; item: ItemId }
   /** A conversation with `character`, the id of its sheet in the backend. */
   | { type: 'talk'; character: string };
 
 /** Using an item on a hotspot that accepts it: the cat says `say`. */
 export interface ItemUse {
-  item: string;
+  item: ItemId;
   say: string;
-  /** An item id taken out of the inventory. */
-  removes?: string;
+  /** Taken out of the inventory. */
+  removes?: ItemId;
 }
 
 export interface Hotspot {
-  id: string;
+  /** Unique in its room. */
+  id: HotspotId;
   /** Accessible name, shown on hover. */
   name: string;
   /** Shown before the name in the UI bar's action line on hover, e.g. "Go in". */
@@ -69,8 +80,8 @@ export interface Hotspot {
 }
 
 export interface Room {
-  /** The world the room is in, a `World` id. */
-  world: string;
+  /** The world the room is in. */
+  world: WorldId;
   /** UI bar location label, e.g. "PUNLAND · HIGH STREET". */
   label: string;
   /** UI bar action line when nothing is hovered. */

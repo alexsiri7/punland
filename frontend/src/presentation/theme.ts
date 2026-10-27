@@ -1,3 +1,5 @@
+import { SCENE } from '../domain';
+
 /**
  * Tune Story design tokens (docs/design/STYLE.md). Scenes and UI take their colours
  * and fonts from here, never from ad-hoc hex values.
@@ -29,6 +31,6 @@ export const fonts = {
 } as const;
 
 /** Scene art is 1280 x 640; the UI bar sits under it (STYLE.md, UI bar). */
-export const SCENE_WIDTH = 1280;
-export const SCENE_HEIGHT = 640;
+export const SCENE_WIDTH = SCENE.width;
+export const SCENE_HEIGHT = SCENE.height;
 export const UI_BAR_HEIGHT = 160;
