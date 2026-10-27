@@ -290,7 +290,7 @@ Every model file must follow this. A placeholder model follows it too, so a desi
 - a box guitar;
 - a room shell with a floor, the scene's `hit_*` boxes and `cam_main` matched to today's 2D art.
 
-The output is committed, and each one is marked `"placeholder": true` in the registry. `tests/unit/placeholders.test.ts` checks that the script reproduces the committed files byte for byte, so after changing the script, run it and commit its output with it. B1 writes the protagonist, the bartender (a crow), the flyer and the broken guitar; the room shells come with B3. A designer replaces a placeholder by writing a file of the same name, running `npm test` (contract check) and `npm run test:e2e`, then flipping `placeholder` to `false`.
+The output is committed, and each one is marked `"placeholder": true` in the registry. `tests/unit/placeholders.test.ts` checks that the script reproduces the committed files still marked `placeholder` byte for byte, so after changing the script, run it and commit its output with it. B1 writes the protagonist, the bartender (a crow), the flyer and the broken guitar; the room shells come with B3. A designer replaces a placeholder by writing a file of the same name and flipping `placeholder` to `false`, then running `npm test` (contract check) and `npm run test:e2e`. The script no longer writes a file whose entry is not a placeholder.
 
 ## 9. Tests
 
@@ -299,7 +299,7 @@ The output is committed, and each one is marked `"placeholder": true` in the reg
 | Layering | `tests/unit/architecture.test.ts` | A1. The architecture spec, "Layered code". |
 | Domain | `tests/unit/walk.test.ts`, `tests/unit/game-save.test.ts` | Pure. Floor geometry, and `toSave`/`fromSave`. |
 | Rules | `tests/unit/rules.test.ts`, `tests/unit/rules.acceptance.test.ts` | Pure. Every command and effect, plus the "Playing without a renderer" script. |
-| Content and registry | `tests/unit/content.test.ts`, `tests/unit/assets.test.ts`, `tests/unit/models.acceptance.test.ts`, `tests/unit/placeholders.test.ts` | The validators, against the real files and broken copies, with the glb contract over every `model3d` file and the broken fixtures (`tests/fixtures/models/glb.ts`). The placeholders match their script. |
+| Content and registry | `tests/unit/content.test.ts`, `tests/unit/assets.test.ts`, `tests/unit/models.acceptance.test.ts`, `tests/unit/contract.test.ts`, `tests/unit/placeholders.test.ts` | The validators, against the real files and broken copies, with the glb contract over every `model3d` file and broken fixtures for each of its rules (`tests/fixtures/models/glb.ts`). The placeholders match their script. |
 | App and session | `tests/unit/session.test.ts`, `tests/unit/game.test.ts` | The session: the `data-*` mirror and autosave. The app: a game played with the fake renderer (`tests/unit/fakes/renderer.ts`). |
 | Behaviour | `tests/e2e/*.spec.ts` | Unchanged public interface. Renderer-specific tests are listed below. |
 

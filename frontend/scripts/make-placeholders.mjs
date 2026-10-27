@@ -5,11 +5,12 @@
 //
 // glTF JSON and buffers are written by hand, so there is no dependency. The output is committed
 // and must not drift: tests/unit/placeholders.test.ts checks that this script writes the
-// committed bytes. A designer's file replaces a placeholder at the same path (section 8).
+// committed bytes. A designer's file replaces a placeholder at the same path (section 8), and
+// once the registry marks it `"placeholder": false` this script leaves it alone.
 //
 // Each part is one node with one mesh, and its material is named after the part. Characters
 // pivot their limbs and head at nodes, so the clips are node transform animations with no skin.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -406,8 +407,12 @@ function concat(parts) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const publicDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
+  const frontend = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const publicDir = join(frontend, 'public');
+  const { models } = JSON.parse(readFileSync(join(frontend, 'src', 'assets', 'models.json'), 'utf8'));
+  const replaced = new Set(models.flatMap(({ model3d }) => (model3d?.placeholder === false ? [model3d.file] : [])));
   for (const [path, bytes] of Object.entries(placeholders())) {
+    if (replaced.has(path)) continue;
     mkdirSync(dirname(join(publicDir, path)), { recursive: true });
     writeFileSync(join(publicDir, path), bytes);
     console.log(`public/${path}  ${bytes.byteLength} bytes`);
