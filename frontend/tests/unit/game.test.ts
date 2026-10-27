@@ -97,4 +97,23 @@ describe('the game, drawn by a renderer', () => {
     expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'flyer', visible: false });
     expect(button('Open mic flyer')).toBeNull();
   });
+
+  it('takes input only once the latest room asked for is drawn', async () => {
+    const drawn: Array<() => void> = [];
+    renderer.show = () => new Promise((resolve) => drawn.push(resolve));
+    game.dispatch({ type: 'activate', hotspot: 'door' });
+    await walk();
+    game.dispatch({ type: 'activate', hotspot: 'door' });
+    await walk();
+    expect([game.state.room, drawn.length]).toEqual(['opening', 2]);
+
+    drawn[0]!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(button('Pub door')).toBeNull();
+
+    drawn[1]!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(button('Pub door')).not.toBeNull();
+    expect([container.dataset.scene, container.dataset.player]).toEqual(['opening', '705,590']);
+  });
 });

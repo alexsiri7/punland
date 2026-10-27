@@ -1,5 +1,6 @@
 import type { FloorPoint, Rect } from '../../../src/domain';
 import type { AnimationName, Pick, Renderer, ScenePoint, SceneView } from '../../../src/presentation/renderer';
+import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../../../src/presentation/theme';
 
 /** A call the renderer was told to make, by method name. */
 export type RendererCall =
@@ -11,7 +12,7 @@ export type RendererCall =
 
 /**
  * A renderer for jsdom (docs/ARCHITECTURE.md, section 5): it draws nothing and records what it
- * is told. Each view is drawn at once. Its canvas is 1280 x 800 at the page's origin, so a
+ * is told. Each view is drawn at once. Its canvas is the scene and the UI bar at the page's origin, so a
  * pointer's client position is in scene pixels, and frames come only from `step`.
  */
 export class FakeRenderer implements Renderer {
@@ -24,7 +25,7 @@ export class FakeRenderer implements Renderer {
   async mount(container: HTMLElement): Promise<void> {
     this.calls.push({ method: 'mount' });
     const canvas = container.ownerDocument.createElement('canvas');
-    canvas.getBoundingClientRect = () => new DOMRect(0, 0, 1280, 800);
+    canvas.getBoundingClientRect = () => new DOMRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT + UI_BAR_HEIGHT);
     container.append(canvas);
     this.element = canvas;
   }
@@ -49,7 +50,7 @@ export class FakeRenderer implements Renderer {
   }
 
   pick(screen: ScenePoint): Pick {
-    if (!this.view || screen.y >= 640) return { kind: 'none' };
+    if (!this.view || screen.y >= SCENE_HEIGHT) return { kind: 'none' };
     return { kind: 'floor', at: { x: screen.x, y: screen.y } };
   }
 
