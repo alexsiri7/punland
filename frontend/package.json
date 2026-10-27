@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Tune Story (Punland): browser point-and-click adventure, Phaser + Vite",
+  "description": "Tune Story (Punland): browser point-and-click adventure, Three.js + Vite",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -15,7 +15,6 @@
   "dependencies": {
     "@fontsource/bebas-neue": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
-    "phaser": "^4.2.1",
     "three": "^0.186.1"
   },
   "devDependencies": {

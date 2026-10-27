@@ -8,7 +8,7 @@ import type { GameSession } from './session';
  * data-scene (room id), data-world (its world), data-player ("x,y" in scene pixels),
  * data-hover (the hotspot under the pointer), data-say (the player's line, empty when
  * silent), data-act (the act being played) and data-player-animation (the clip the player
- * plays, the same in 2D and 3D). The player, their speech and the act follow the session's
+ * plays). The player, their speech and the act follow the session's
  * events, and the clip follows the app's animator (app/animation.ts). The room follows the
  * view, which says when it has drawn it and takes clicks there, and hover follows the UI
  * (presentation/ui), which reports it: it is the pointer's and not the session's.

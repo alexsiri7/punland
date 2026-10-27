@@ -1,8 +1,8 @@
 import { expect, test } from './fixtures';
-import { isThreeD, newGame } from './play';
+import { newGame, openingSceneModel, playerModel } from './play';
 
 // docs/design/STYLE.md: the Tune Story look. Fonts are self-hosted (the CSP allows fonts
-// from 'self' only) and the opening room's art comes from its layer files.
+// from 'self' only) and the opening room is drawn from its models.
 
 test('the title screen uses the sign font for the title and the UI font for the menu', async ({ page }) => {
   await page.goto('/');
@@ -15,21 +15,11 @@ test('the title screen uses the sign font for the title and the UI font for the 
   );
 });
 
-test('the opening scene loads its art layers', async ({ page }) => {
-  test.fail(isThreeD(), 'loads the 2D art layers: B7 replaces it with the scene models');
-  const art: string[] = [];
+test('the opening scene loads its models', async ({ page }) => {
+  const models: string[] = [];
   page.on('response', (res) => {
-    if (res.url().includes('/rooms/opening/') && res.ok()) art.push(new URL(res.url()).pathname);
+    if (res.url().includes('/models/') && res.ok()) models.push(new URL(res.url()).pathname);
   });
   await newGame(page);
-  await expect
-    .poll(() => art.sort())
-    .toEqual(
-      expect.arrayContaining([
-        '/rooms/opening/art.json',
-        '/rooms/opening/background.jpg',
-        '/rooms/opening/cat.png',
-        '/rooms/opening/fore.png',
-      ]),
-    );
+  await expect.poll(() => models).toEqual(expect.arrayContaining([openingSceneModel, playerModel]));
 });

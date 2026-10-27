@@ -10,8 +10,8 @@ const UI_GROUND = new Color(palette.uiGround);
 
 /**
  * The 3D renderer (docs/ARCHITECTURE.md, sections 5 and 7): each view is a Room of glb models
- * from the registry, drawn with Three.js in the 1280 x 640 scene at the top of a canvas sized
- * like the 2D one, the 160 px UI bar's ground under it. The canvas fits its container and is
+ * from the registry, drawn with Three.js in the 1280 x 640 scene at the top of the canvas, the
+ * 160 px UI bar's ground under it. The canvas fits its container and is
  * centred in it, with the grain overlay over the scene.
  */
 export class Three3dRenderer implements Renderer {

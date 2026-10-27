@@ -1,7 +1,32 @@
-import { hotspotRect } from '../../../src/assets/registry';
 import type { FloorPoint, Rect } from '../../../src/domain';
 import type { AnimationName, Pick, Renderer, ScenePoint, SceneView } from '../../../src/presentation/renderer';
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../../../src/presentation/theme';
+
+/** Each hotspot's bounds in scene pixels, by its room's scene model: fixed, as no model is drawn. */
+const BOUNDS: Readonly<Record<string, Readonly<Record<string, Rect>>>> = {
+  'scene/opening': {
+    door: { x: 634, y: 208, width: 142, height: 312 },
+    board: { x: 868, y: 452, width: 100, height: 110 },
+    flyer: { x: 714, y: 390, width: 46, height: 58 },
+  },
+  'scene/pub': {
+    door: { x: 60, y: 138, width: 162, height: 332 },
+    bartender: { x: 940, y: 164, width: 140, height: 192 },
+  },
+  'scene/feed': {
+    page: { x: 400, y: 40, width: 480, height: 460 },
+    likes: { x: 960, y: 430, width: 80, height: 90 },
+  },
+  'scene/dream': {
+    stage: { x: 600, y: 316, width: 440, height: 136 },
+    flyer: { x: 780, y: 222, width: 92, height: 92 },
+  },
+};
+
+/** A hotspot's bounds in the room drawn from the scene model `scene`, as the fake renderer gives them. */
+export function fakeBounds(scene: string, hotspot: string): Rect | null {
+  return BOUNDS[scene]?.[hotspot] ?? null;
+}
 
 /** A call the renderer was told to make, by method name. */
 export type RendererCall =
@@ -18,9 +43,9 @@ export type RendererCall =
  */
 export class FakeRenderer implements Renderer {
   readonly calls: RendererCall[] = [];
-  readonly picksHotspots = false;
+  readonly picksHotspots: boolean = false;
   private element: HTMLCanvasElement | null = null;
-  private view: SceneView | null = null;
+  protected view: SceneView | null = null;
   private at: FloorPoint = { x: 0, y: 0 };
   private readonly frames = new Set<(dtMs: number) => void>();
 
@@ -57,7 +82,7 @@ export class FakeRenderer implements Renderer {
   }
 
   hotspotBounds(hotspot: string): Rect | null {
-    return this.view && hotspotRect(this.view.model, hotspot);
+    return this.view && fakeBounds(this.view.model, hotspot);
   }
 
   /** The player's head is 200 scene px over their feet. */
