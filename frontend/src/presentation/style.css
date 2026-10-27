@@ -136,6 +136,24 @@ body {
 }
 
 /*
+ * The 3D renderer's grain (src/presentation/three3d/renderer.ts, which lays it over the scene):
+ * STYLE.md's noise at about 16%. The 2D art has it baked in.
+ */
+.grain {
+  position: absolute;
+  pointer-events: none;
+  background: url('/textures/grain.svg') repeat;
+}
+
+/* Said on #game when the renderer can't draw at all, such as 3D without WebGL. */
+.game-message {
+  margin: 0;
+  padding: 2rem;
+  font-family: var(--font-ui);
+  color: var(--ui-text);
+}
+
+/*
  * The UI over the canvas (src/presentation/ui/): lined up with it by overlay.ts, which sets
  * --s, the canvas scale, and --scene-height and --ui-bar-height from theme.ts. Sizes are scene
  * pixels times --s. Only the controls take the pointer;

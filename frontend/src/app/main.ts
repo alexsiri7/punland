@@ -21,6 +21,6 @@ void initTitleScreen(document, {
     container.hidden = false;
     const session = new GameSession(content, save ? fromSave(save, content) : newGame(content), store);
     session.save();
-    await playGame(container, session, createRenderer(), new BackendDialogue());
+    await playGame(container, session, await createRenderer(location.search), new BackendDialogue());
   },
 });
