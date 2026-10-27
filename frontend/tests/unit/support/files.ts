@@ -1,7 +1,8 @@
 /**
  * Files under frontend/ read as bytes, for what the browser can't load in a unit test: the
- * model files under public/. Vitest runs in Node, but the project has no @types/node, so
- * node:fs is loaded by a name TypeScript doesn't resolve, typed with the one function used.
+ * model files under public/, and the stylesheet (Vitest's `?raw` import of a .css file is empty).
+ * Vitest runs in Node, but the project has no @types/node, so node:fs is loaded by a name
+ * TypeScript doesn't resolve, typed with the one function used.
  */
 
 const NODE_FS = 'node:fs';
