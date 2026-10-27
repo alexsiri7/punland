@@ -92,12 +92,13 @@ type Known = Record<'room' | 'item' | 'world', ReadonlySet<string>>;
 function readWorlds(file: Field, known: Known): World[] {
   const seen = new Set<string>();
   return file.get('worlds').list((world) => {
-    const id = world.get('id');
-    if (seen.has(id.text())) id.problem('is used by another world');
-    seen.add(id.text());
+    const idField = world.get('id');
+    const id = idField.text();
+    if (seen.has(id)) idField.problem('is used by another world');
+    seen.add(id);
     const locked = world.get('locked').optional((field) => field.text());
     return {
-      id: id.text() as WorldId,
+      id: id as WorldId,
       name: world.get('name').text(),
       start: world.get('start').id('room', known.room),
       ...(locked !== undefined && { locked }),
@@ -131,14 +132,15 @@ function readRoom(room: Field, known: Known): Room {
 
   const seen = new Set<string>();
   const hotspots = room.get('hotspots').list((hotspot): Hotspot => {
-    const id = hotspot.get('id');
-    if (seen.has(id.text())) id.problem('is used by another hotspot in this room');
-    seen.add(id.text());
+    const idField = hotspot.get('id');
+    const id = idField.text();
+    if (seen.has(id)) idField.problem('is used by another hotspot in this room');
+    seen.add(id);
     const uses = hotspot.get('uses').optional((field) => field.list((use) => readUse(use, known)));
     const dreamMaterial = hotspot.get('dreamMaterial').optional((field) => field.text());
     const shownWith = hotspot.get('shownWith').optional((field) => field.text());
     return {
-      id: id.text() as HotspotId,
+      id: id as HotspotId,
       name: hotspot.get('name').text(),
       verb: hotspot.get('verb').text(),
       rect: inScene(hotspot.get('rect')),

@@ -61,6 +61,13 @@ describe('content validation', () => {
       message: /another hotspot/,
     },
     {
+      problem: 'a missing hotspot id',
+      file: OPENING,
+      edit: (room) => delete hotspot(room, 'board').id,
+      field: 'hotspots[1].id',
+      message: /is missing/,
+    },
+    {
       problem: 'an unknown item in a pickup',
       file: OPENING,
       edit: (room) => (hotspot(room, 'flyer').action.item = 'kazoo'),
@@ -146,6 +153,15 @@ describe('content validation', () => {
     },
   ])('reports $problem with its file and field', ({ file, edit, field, message }) => {
     expect(validateContent(broken(file, edit))).toEqual([{ file, field, message: expect.stringMatching(message) }]);
+  });
+
+  // A changed world id also leaves the rooms that were in that world in an unknown one.
+  it.each<{ problem: string; edit: (file: Json) => void; message: RegExp }>([
+    { problem: 'a duplicate world id', edit: (file) => (file.worlds[1].id = file.worlds[0].id), message: /another world/ },
+    { problem: 'a world id that is not a string', edit: (file) => (file.worlds[1].id = 7), message: /must be a string/ },
+  ])('reports $problem once, in worlds.json', ({ edit, message }) => {
+    const issues = validateContent(broken(WORLDS, edit)).filter((issue) => issue.file === WORLDS);
+    expect(issues).toEqual([{ file: WORLDS, field: 'worlds[1].id', message: expect.stringMatching(message) }]);
   });
 
   it('reports a missing file', () => {
