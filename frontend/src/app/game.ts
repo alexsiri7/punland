@@ -16,9 +16,10 @@ export function sceneView(session: GameSession): SceneView {
     entities: current.hotspots.map((h): SceneEntity => {
       const { target } = h;
       const visible = session.isPresent(h);
-      if (!('entity' in target)) return { hotspot: h.id, visible };
+      if (!('entity' in target)) return { hotspot: h.id, node: target.node, visible };
       const entity = content.characters[target.entity] ?? content.objects[target.entity];
-      return entity ? { hotspot: h.id, model: entity.model, at: target.at, visible } : { hotspot: h.id, visible };
+      if (!entity) throw new Error(`entity "${target.entity}" is not in the content`);
+      return { hotspot: h.id, model: entity.model, at: target.at, visible };
     }),
     player: { model: content.protagonist.model, at: state.at },
   };

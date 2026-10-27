@@ -35,8 +35,13 @@ export const content = {
   board: /tonight|board/i,
   /** The Open Mic flyer on the pub door: something in the opening scene the cat can pick up. */
   flyer: /flyer/i,
-  /** A point on the flyer, in scene pixels, clear of the player when they stand on the pavement. */
-  flyerSprite: { x: 730, y: 410 },
+  /**
+   * A point on the flyer, in scene pixels, clear of the player when they stand on the pavement:
+   * pinned to the pub door in the 2D art, and standing on the pavement in front of it in 3D.
+   */
+  get flyerSprite(): { x: number; y: number } {
+    return isThreeD() ? { x: 737, y: 525 } : { x: 730, y: 410 };
+  },
   brokenGuitar: /broken guitar/i,
   /** A character in the pub interior with a conversation goal (getting a job at the pub). */
   bartender: /bartender/i,

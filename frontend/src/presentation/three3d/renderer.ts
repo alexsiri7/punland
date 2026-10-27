@@ -1,5 +1,4 @@
 import { BasicShadowMap, Color, WebGLRenderer } from 'three';
-import { hotspotRect } from '../../assets/registry';
 import type { FloorPoint, Rect } from '../../domain';
 import type { Pick, Renderer, ScenePoint, SceneView } from '../renderer';
 import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
@@ -80,13 +79,9 @@ export class Three3dRenderer implements Renderer {
     this.engine();
     this.view = view;
     this.at = view.player.at;
-    this.room?.dispose();
     this.room = null;
     const room = await Room.build(view, this.models);
-    if (view !== this.view) {
-      room.dispose();
-      return;
-    }
+    if (view !== this.view) return;
     room.placePlayer(this.at);
     this.room = room;
   }
@@ -108,10 +103,9 @@ export class Three3dRenderer implements Renderer {
     return { kind: 'floor', at: { x: screen.x, y: screen.y } };
   }
 
-  /** A placed entity's projected model; a part of the scene has its 2D rect until B3 gives it a `hit_*` node. */
+  /** The projected bounds of a placed entity's model, or of a part of the scene's `hit_*` node. */
   hotspotBounds(hotspot: string): Rect | null {
-    if (!this.view) return null;
-    return this.room?.entityBounds(hotspot) ?? hotspotRect(this.view.model, hotspot);
+    return this.room?.hotspotBounds(hotspot) ?? null;
   }
 
   anchor(who: string, name: 'head' | 'hand_r'): ScenePoint | null {
@@ -138,7 +132,6 @@ export class Three3dRenderer implements Renderer {
     this.gl?.dispose();
     this.gl?.domElement.remove();
     this.grain?.remove();
-    this.room?.dispose();
     this.gl = null;
     this.room = null;
   }

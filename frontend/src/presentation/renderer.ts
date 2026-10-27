@@ -19,10 +19,13 @@ export interface SceneView {
   player: { model: ModelId; at: FloorPoint };
 }
 
-/** A hotspot of the room; one that places a character or object has its model and the floor point it stands on. */
+/**
+ * A hotspot of the room: one that places a character or object has its model and the floor point
+ * it stands on, and a part of the scene has the node that draws it in the scene model.
+ */
 export type SceneEntity = { hotspot: string; visible: boolean } & (
   | { model: ModelId; at: FloorPoint }
-  | { model?: undefined }
+  | { model?: undefined; node: string }
 );
 
 /** What is under a point of the canvas. */
