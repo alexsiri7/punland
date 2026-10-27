@@ -406,13 +406,17 @@ function concat(parts) {
   return all;
 }
 
+// The placeholders to write, leaving out any file the registry marks a designer's (`placeholder: false`).
+export function placeholdersToWrite(models) {
+  const replaced = new Set(models.flatMap(({ model3d }) => (model3d?.placeholder === false ? [model3d.file] : [])));
+  return Object.fromEntries(Object.entries(placeholders()).filter(([path]) => !replaced.has(path)));
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const frontend = join(dirname(fileURLToPath(import.meta.url)), '..');
   const publicDir = join(frontend, 'public');
   const { models } = JSON.parse(readFileSync(join(frontend, 'src', 'assets', 'models.json'), 'utf8'));
-  const replaced = new Set(models.flatMap(({ model3d }) => (model3d?.placeholder === false ? [model3d.file] : [])));
-  for (const [path, bytes] of Object.entries(placeholders())) {
-    if (replaced.has(path)) continue;
+  for (const [path, bytes] of Object.entries(placeholdersToWrite(models))) {
     mkdirSync(dirname(join(publicDir, path)), { recursive: true });
     writeFileSync(join(publicDir, path), bytes);
     console.log(`public/${path}  ${bytes.byteLength} bytes`);
