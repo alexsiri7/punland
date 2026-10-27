@@ -141,6 +141,7 @@ export class RoomScene extends Phaser.Scene {
       case 'arrived':
       case 'worldChanged':
       case 'gathered':
+      case 'conversationStarted':
       case 'saved':
         break;
       default:

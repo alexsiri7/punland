@@ -38,7 +38,9 @@ export type HotspotAction =
   /** `at`: where the player stands in the other room; that room's `start` when left out. */
   | { type: 'exit'; room: string; at?: FloorPoint }
   /** The item goes into the inventory, and the hotspot is gone for good. */
-  | { type: 'pickup'; item: string };
+  | { type: 'pickup'; item: string }
+  /** A conversation with `character`, the id of its sheet in the backend. */
+  | { type: 'talk'; character: string };
 
 /** Using an item on a hotspot that accepts it: the cat says `say`. */
 export interface ItemUse {

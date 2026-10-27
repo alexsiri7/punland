@@ -332,3 +332,132 @@ body {
   color: var(--label-text);
   cursor: not-allowed;
 }
+
+/*
+ * The conversation panel (ui/dialogue.ts) over the UI bar and the foot of the scene: who speaks
+ * and their line on the left, the numbered replies, one's own reply and Leave on the right.
+ */
+.dialogue {
+  position: absolute;
+  top: calc((var(--scene-height) - 160px) * var(--s));
+  left: 0;
+  width: 100%;
+  height: calc((var(--ui-bar-height) + 160px) * var(--s));
+  padding: calc(24px * var(--s)) calc(32px * var(--s));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto 1fr;
+  column-gap: calc(40px * var(--s));
+  align-content: start;
+  background: var(--ui-ground);
+  border-top: calc(1px * var(--s)) solid var(--divider);
+  pointer-events: auto;
+}
+
+.dialogue-name {
+  grid-column: 1;
+  margin: 0 0 calc(8px * var(--s));
+  font: 400 calc(30px * var(--s)) / 1 var(--font-sign);
+  letter-spacing: calc(2px * var(--s));
+  text-transform: uppercase;
+  color: var(--sign-gold);
+}
+
+.dialogue-said {
+  grid-column: 1;
+  margin: 0 0 calc(10px * var(--s));
+  font-size: calc(15px * var(--s));
+  font-style: italic;
+  color: var(--muted-text);
+}
+
+.dialogue-line {
+  grid-column: 1;
+  margin: 0;
+  font-size: calc(20px * var(--s));
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ui-text);
+}
+
+.dialogue-options {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--s));
+}
+
+.dialogue-options button,
+.dialogue-own input,
+.dialogue-own button,
+.dialogue-leave {
+  font: 500 calc(16px * var(--s)) / 1.25 var(--font-ui);
+  border: 1px solid var(--slot-edge);
+  border-radius: calc(8px * var(--s));
+  background: var(--slot);
+  color: var(--ui-text);
+}
+
+.dialogue-options button {
+  display: flex;
+  gap: calc(12px * var(--s));
+  width: 100%;
+  padding: calc(9px * var(--s)) calc(14px * var(--s));
+  text-align: left;
+  cursor: pointer;
+}
+
+.dialogue-number {
+  color: var(--sign-gold);
+}
+
+.dialogue-own {
+  grid-column: 2;
+  display: flex;
+  gap: calc(8px * var(--s));
+  position: absolute;
+  right: calc(32px * var(--s));
+  bottom: calc(24px * var(--s));
+  width: calc(50% - 52px * var(--s));
+}
+
+.dialogue-own input {
+  flex: 1;
+  min-width: 0;
+  padding: calc(9px * var(--s)) calc(12px * var(--s));
+}
+
+.dialogue-own button,
+.dialogue-leave {
+  padding: calc(9px * var(--s)) calc(16px * var(--s));
+  cursor: pointer;
+}
+
+.dialogue-leave {
+  position: absolute;
+  left: calc(32px * var(--s));
+  bottom: calc(24px * var(--s));
+  color: var(--muted-text);
+}
+
+.dialogue button:hover,
+.dialogue button:focus-visible,
+.dialogue input:focus-visible {
+  border-color: var(--sign-gold);
+  color: var(--sign-gold);
+  outline: none;
+}
+
+.dialogue-own input::placeholder {
+  color: var(--label-text);
+}
+
+.dialogue button:disabled,
+.dialogue input:disabled {
+  color: var(--label-text);
+  cursor: wait;
+}

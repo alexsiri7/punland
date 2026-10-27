@@ -4,11 +4,13 @@ import {
   clickHotspot,
   clickScene,
   content,
+  conversation,
   game,
   newGame,
   openingSceneModel,
   playerPosition,
   pointAtHotspot,
+  stubDialogue,
 } from './play';
 
 // Acceptance tests for openspec/specs/models/spec.md that the player can see, with the 3D
@@ -48,8 +50,9 @@ test('Replacing a placeholder', async ({ page }) => {
   await expect.poll(() => replaced).toBe(true);
   await clickHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-scene', content.pubInterior);
+  await stubDialogue(page, () => ({ line: 'Evening.', options: [], goal_reached: false, ended: true }));
   await clickHotspot(page, content.bartender);
-  await expect(game(page)).toHaveAttribute('data-say', /\S/);
+  await expect(conversation(page)).toContainText('Evening.');
 });
 
 test('Hovering a model', async ({ page }) => {

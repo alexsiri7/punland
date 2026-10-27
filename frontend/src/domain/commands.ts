@@ -10,7 +10,9 @@ export type Command =
   | { type: 'select'; item: string | null }
   | { type: 'enterWorld'; world: string }
   /** Advances walking; runs what the walk was for on arrival. */
-  | { type: 'tick'; dtMs: number };
+  | { type: 'tick'; dtMs: number }
+  /** From the dialogue panel, when a reply reaches the conversation's goal. */
+  | { type: 'dialogueResult'; character: string; goalReached: boolean };
 
 /** What changed, for the renderer, the UI and autosave. */
 export type GameEvent =
@@ -25,5 +27,7 @@ export type GameEvent =
   | { type: 'worldChanged'; world: string }
   | { type: 'hotspotShown' | 'hotspotHidden'; hotspot: string }
   | { type: 'gathered'; material: string }
+  /** The player talks to a character: the dialogue panel takes over. */
+  | { type: 'conversationStarted'; character: string }
   /** State worth persisting changed. */
   | { type: 'saved' };

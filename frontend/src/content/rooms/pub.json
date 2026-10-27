@@ -22,10 +22,10 @@
     {
       "id": "bartender",
       "name": "Bartender",
-      "verb": "Look at",
+      "verb": "Talk to",
       "rect": { "x": 940, "y": 164, "width": 140, "height": 192 },
       "walkTo": { "x": 880, "y": 560 },
-      "action": { "type": "say", "line": "A crow in an apron, polishing a glass that is already clean." },
+      "action": { "type": "talk", "character": "bartender" },
       "uses": [
         {
           "item": "flyer",

@@ -52,6 +52,9 @@ function step(content: Content, state: GameState, command: Command, events: Game
       return enterWorld(content, state, command.world, events);
     case 'tick':
       return tick(content, state, command.dtMs, events);
+    case 'dialogueResult':
+      // What a reached goal does comes with acts and goals (#11).
+      return state;
     default:
       return command satisfies never;
   }
@@ -93,6 +96,9 @@ function runAction(content: Content, state: GameState, hotspot: Hotspot, events:
       break;
     case 'pickup':
       next = pickUp(next, action.item, hotspot, events);
+      break;
+    case 'talk':
+      events.push({ type: 'conversationStarted', character: action.character });
       break;
     default:
       action satisfies never;

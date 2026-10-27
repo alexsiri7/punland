@@ -88,6 +88,14 @@ const content: Content = {
           action: { type: 'say', line: 'A bar.' },
           uses: [{ item: 'flyer', say: 'Pinned up.', removes: 'flyer' }],
         },
+        {
+          id: 'keeper',
+          name: 'Keeper',
+          verb: 'Talk to',
+          rect,
+          walkTo: { x: 700, y: 550 },
+          action: { type: 'talk', character: 'keeper' },
+        },
       ],
     },
     feed: { world: 'online', label: 'FEED', place, hint: '', start: { x: 100, y: 550 }, walkable: floor, hotspots: [] },
@@ -314,6 +322,21 @@ describe('exit', () => {
   });
 });
 
+describe('talk', () => {
+  it('starts a conversation with the character, leaving the state as it is', () => {
+    const inPub = play(start(), [activate('door')]).state;
+    const { state, events } = play(inPub, [activate('keeper')]);
+    expect(state).toEqual({ ...inPub, at: { x: 700, y: 550 } });
+    expect(events.slice(-2)).toEqual([{ type: 'conversationStarted', character: 'keeper' }, { type: 'saved' }]);
+  });
+
+  it('changes nothing yet when a conversation reaches its goal', () => {
+    const state = start();
+    const result: Command = { type: 'dialogueResult', character: 'keeper', goalReached: true };
+    expect(apply(content, state, result)).toEqual({ state, events: [] });
+  });
+});
+
 describe('enterWorld', () => {
   it('enters a world at its start the first time, and comes back to the spot the player left', () => {
     const walked = play(start(), [{ type: 'walk', to: { x: 250, y: 580 } }]).state;
@@ -372,7 +395,9 @@ describe('apply', () => {
     { type: 'walk', to: { x: 2000, y: 0 } },
     activate('door'),
     activate('bar'),
+    activate('keeper'),
     activate('flyer'),
+    { type: 'dialogueResult', character: 'keeper', goalReached: true },
     select('guitar'),
     select(null),
     enterWorld('dream'),

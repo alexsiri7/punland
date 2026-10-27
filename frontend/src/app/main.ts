@@ -4,6 +4,7 @@ import { loadContent } from '../content';
 import { fromSave, newGame } from '../domain';
 import { startGame } from '../presentation/phaser2d/game';
 import { mountUi } from '../presentation/ui';
+import { BackendDialogue } from '../services/dialogue';
 import { BackendSaveStore, LocalSaveStore } from '../services/save';
 import { createMirror } from './mirror';
 import { GameSession } from './session';
@@ -21,7 +22,7 @@ void initTitleScreen(document, {
     const session = new GameSession(content, save ? fromSave(save, content) : newGame(content), store);
     session.save();
     const mirror = createMirror(container, session);
-    const ui = mountUi(container, session, mirror);
+    const ui = mountUi(container, session, mirror, new BackendDialogue());
     startGame(container, session, {
       shown(room) {
         ui.shown(room);

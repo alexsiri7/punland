@@ -11,7 +11,7 @@ import type { HotspotAction, Room } from '../domain/content';
 export type { Hotspot, HotspotAction, ItemUse, Room } from '../domain/content';
 
 /** Every action type, typed so it can't drift from HotspotAction; content is checked against it. */
-export const ACTION_TYPES: Record<HotspotAction['type'], true> = { say: true, exit: true, pickup: true };
+export const ACTION_TYPES: Record<HotspotAction['type'], true> = { say: true, exit: true, pickup: true, talk: true };
 
 const files = import.meta.glob<Room>('./rooms/*.json', { eager: true, import: 'default' });
 

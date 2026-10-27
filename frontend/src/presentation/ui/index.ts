@@ -1,4 +1,5 @@
 import type { Session } from '../session';
+import { createDialoguePanel, type DialogueBackend } from './dialogue';
 import { createHotspotLayer, type HotspotLayer } from './hotspots';
 import { createInventoryBar } from './inventory';
 import { createOverlay, type DrawnRoom } from './overlay';
@@ -6,6 +7,7 @@ import { createSpeech } from './speech';
 import { createUiBar } from './uiBar';
 import { createWorldSwitcher, type WorldSwitcher } from './worlds';
 
+export type { DialogueBackend } from './dialogue';
 export type { DrawnRoom, ScenePoint } from './overlay';
 
 export interface Ui {
@@ -17,11 +19,17 @@ export interface Ui {
 
 /**
  * All of the game's text and controls, as DOM over the canvas (docs/ARCHITECTURE.md, section 5):
- * the UI bar, the speech line, the hotspot buttons, the inventory and the world switcher. They
- * show the session's events and send it commands; a new part (the dialogue panel, #8) is
- * created here and appended to the overlay's root. The hotspot under the pointer goes to `mirror`.
+ * the UI bar, the speech line, the hotspot buttons, the inventory, the world switcher and the
+ * dialogue panel, which talks to `dialogue`. They show the session's events and send it
+ * commands; a new part is created here and appended to the overlay's root. The hotspot under
+ * the pointer goes to `mirror`.
  */
-export function mountUi(container: HTMLElement, session: Session, mirror: { hover(name: string): void }): Ui {
+export function mountUi(
+  container: HTMLElement,
+  session: Session,
+  mirror: { hover(name: string): void },
+  dialogue: DialogueBackend,
+): Ui {
   const doc = container.ownerDocument;
   const overlay = createOverlay(container);
   const bar = createUiBar(doc, session, mirror);
@@ -33,11 +41,19 @@ export function mountUi(container: HTMLElement, session: Session, mirror: { hove
     },
   });
   const speech = createSpeech(doc);
+  const conversation = createDialoguePanel(doc, dialogue, {
+    goalReached: (character) => session.dispatch({ type: 'dialogueResult', character, goalReached: true }),
+  });
   let hotspots: HotspotLayer | null = null;
   let switcher: WorldSwitcher | null = null;
   let drawn: DrawnRoom | null = null;
-  overlay.root.append(bar.element, inventory.element, speech.element);
+  overlay.root.append(bar.element, inventory.element, speech.element, conversation.element);
 
+  // Until characters are content of their own (#33), a character goes by the name of the hotspot that talks to them.
+  const characterName = (character: string) =>
+    session.content.rooms[session.state.room]?.hotspots.find(
+      (h) => h.action.type === 'talk' && h.action.character === character,
+    )?.name ?? character;
   const renderInventory = () => inventory.render(session.state.inventory.carried, session.state.selected);
   session.subscribe((event) => {
     switch (event.type) {
@@ -58,16 +74,23 @@ export function mountUi(container: HTMLElement, session: Session, mirror: { hove
       case 'hotspotHidden':
         hotspots?.remove(event.hotspot);
         break;
+      case 'conversationStarted':
+        conversation.open(event.character, characterName(event.character));
+        break;
+      case 'moved':
+        // Walking away ends the conversation.
+        conversation.close();
+        break;
       case 'hotspotShown':
       case 'roomChanged':
         // The room is redrawn; until it is shown, its old controls must not take input.
+        conversation.close();
         drawn = null;
         hotspots?.destroy();
         switcher?.destroy();
         hotspots = null;
         switcher = null;
         break;
-      case 'moved':
       case 'arrived':
       case 'worldChanged':
       case 'gathered':

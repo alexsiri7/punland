@@ -1,23 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
 import { loadContent } from '../../src/content';
-import { newGame } from '../../src/domain';
-import { type DrawnRoom, mountUi } from '../../src/presentation/ui';
+import { type DialogueTurn, newGame } from '../../src/domain';
+import { type DialogueBackend, type DrawnRoom, mountUi } from '../../src/presentation/ui';
 
 // The DOM UI (presentation/ui, docs/ARCHITECTURE.md section 5): the UI bar, the speech line and
-// the room's controls, driven by the session and by hover.
+// the room's controls and the dialogue panel, driven by the session and by hover.
 
 const content = loadContent();
 
 describe('the DOM UI', () => {
   let container: HTMLElement;
   let hovered: string[];
+  let asked: { character: string; reply: string | null }[];
+  let answers: ((turn: DialogueTurn | null) => void)[];
+  const dialogue: DialogueBackend = {
+    turn: (character, reply) => {
+      asked.push({ character, reply });
+      return new Promise((resolve) => answers.push(resolve));
+    },
+  };
 
   beforeEach(() => {
     vi.useFakeTimers();
     container = document.createElement('div');
     document.body.append(container);
     hovered = [];
+    asked = [];
+    answers = [];
   });
 
   afterEach(() => {
@@ -27,7 +37,7 @@ describe('the DOM UI', () => {
 
   function mount(head = { x: 560, y: 300 }) {
     const game = new GameSession(content, newGame(content), { save: async () => {} });
-    const ui = mountUi(container, game, { hover: (name) => hovered.push(name) });
+    const ui = mountUi(container, game, { hover: (name) => hovered.push(name) }, dialogue);
     const room: DrawnRoom = {
       canvas: document.createElement('canvas'),
       head: () => head,
@@ -106,5 +116,109 @@ describe('the DOM UI', () => {
     expect(container.querySelectorAll('.hotspots')).toHaveLength(1);
     expect(button('Hotspots', 'Open mic board')).toBeNull();
     expect(text('.ui-bar-label')).toBe(content.rooms.pub!.label);
+  });
+
+  describe('the dialogue panel', () => {
+    const OPTIONS = ['Got any work?', 'Nice pub.', 'Any good?'];
+    const turn = (line: string, extra: Partial<DialogueTurn> = {}): DialogueTurn => ({
+      line,
+      options: OPTIONS.map((text) => ({ text, reaches_goal: false })),
+      goal_reached: false,
+      ended: false,
+      ...extra,
+    });
+
+    /** Walks into the pub and talks to the bartender. */
+    function talk() {
+      const mounted = mount();
+      const { game, ui, room } = mounted;
+      game.dispatch({ type: 'activate', hotspot: 'door' });
+      while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
+      ui.shown(room);
+      game.dispatch({ type: 'activate', hotspot: 'bartender' });
+      while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
+      const panel = container.querySelector<HTMLElement>('[role="dialog"]')!;
+      const options = () => [...panel.querySelectorAll('.dialogue-options button')].map((b) => b.textContent);
+      const field = panel.querySelector('input')!;
+      return { ...mounted, panel, options, field };
+    }
+
+    async function answer(next: DialogueTurn | null) {
+      answers.shift()!(next);
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+    }
+
+    it("opens on talking to a character, with their opening line, three numbered replies and one's own", async () => {
+      const { panel, options, field } = talk();
+      expect(panel.hidden).toBe(false);
+      expect(panel.getAttribute('aria-label')).toBe('Bartender');
+      expect(asked).toEqual([{ character: 'bartender', reply: null }]);
+      await answer(turn('Evening.'));
+      expect(panel.querySelector('.dialogue-line')?.textContent).toBe('Evening.');
+      expect(options()).toEqual(OPTIONS.map((text, i) => `${i + 1}${text}`));
+      expect(field.closest('form')?.hidden).toBe(false);
+    });
+
+    it('sends a picked reply, by click or by its number, and a typed one', async () => {
+      const { panel, field } = talk();
+      await answer(turn('Evening.'));
+      panel.querySelector<HTMLButtonElement>('.dialogue-options button')!.click();
+      expect(panel.querySelector('.dialogue-said')?.textContent).toBe(OPTIONS[0]);
+      await answer(turn('Maybe.'));
+      panel.querySelector<HTMLButtonElement>('.dialogue-options button')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: '2', bubbles: true }),
+      );
+      await answer(turn('It is.'));
+      field.value = '  I play the kazoo. ';
+      field.closest('form')!.requestSubmit();
+      expect(asked.map((a) => a.reply)).toEqual([null, OPTIONS[0], OPTIONS[1], 'I play the kazoo.']);
+      expect(field.value).toBe('');
+    });
+
+    it('types a number into the reply field without picking that option', async () => {
+      const { field } = talk();
+      await answer(turn('Evening.'));
+      field.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }));
+      expect(asked.map((a) => a.reply)).toEqual([null]);
+    });
+
+    it('tells the session when a reply reaches the goal, and offers no more replies once it ends', async () => {
+      const { game, panel, options, field } = talk();
+      const dispatch = vi.spyOn(game, 'dispatch');
+      await answer(turn('Evening.'));
+      panel.querySelector<HTMLButtonElement>('.dialogue-options button')!.click();
+      await answer(turn('Fine. Start Friday.', { options: [], goal_reached: true, ended: true }));
+      expect(dispatch).toHaveBeenCalledWith({ type: 'dialogueResult', character: 'bartender', goalReached: true });
+      expect(options()).toEqual([]);
+      expect(field.closest('form')?.hidden).toBe(true);
+    });
+
+    it("ends the conversation in character when the backend doesn't answer", async () => {
+      const { panel, options, field } = talk();
+      await answer(null);
+      expect(panel.querySelector('.dialogue-line')?.textContent).toBe("Bartender doesn't answer.");
+      expect(options()).toEqual([]);
+      expect(field.closest('form')?.hidden).toBe(true);
+    });
+
+    it('closes on Leave, on Escape and on walking away, dropping an answer still on its way', async () => {
+      const { game, panel } = talk();
+      panel.querySelector<HTMLButtonElement>('.dialogue-leave')!.click();
+      expect(panel.hidden).toBe(true);
+      await answer(turn('Too late.'));
+      expect(panel.querySelector('.dialogue-line')?.textContent).toBe('…');
+
+      game.dispatch({ type: 'activate', hotspot: 'bartender' });
+      game.dispatch({ type: 'tick', dtMs: 100 });
+      expect(panel.hidden).toBe(false);
+      panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(panel.hidden).toBe(true);
+
+      game.dispatch({ type: 'activate', hotspot: 'bartender' });
+      game.dispatch({ type: 'tick', dtMs: 100 });
+      game.dispatch({ type: 'walk', to: { x: 300, y: 580 } });
+      game.dispatch({ type: 'tick', dtMs: 100 });
+      expect(panel.hidden).toBe(true);
+    });
   });
 });

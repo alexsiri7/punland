@@ -29,7 +29,6 @@ async function talkToBartender(page: Page): Promise<void> {
 }
 
 test('Starting a conversation', async ({ page }) => {
-  test.fail(true, 'needs #6, #8');
   // Requirement: Improvised conversations. Talking to a character shows an AI-written line.
   const requests: unknown[] = [];
   await stubDialogue(page, (body) => {
@@ -45,7 +44,6 @@ test('Starting a conversation', async ({ page }) => {
 });
 
 test('Picking an option', async ({ page }) => {
-  test.fail(true, 'needs #6, #8');
   // Requirement: Three options or your own. Each turn offers three suggested replies.
   const replies: (string | null)[] = [];
   await stubDialogue(page, (body) => {
@@ -62,7 +60,6 @@ test('Picking an option', async ({ page }) => {
 });
 
 test('Typing a reply', async ({ page }) => {
-  test.fail(true, 'needs #6, #8');
   // Requirement: Three options or your own. Each turn offers a field to type your own reply.
   const replies: (string | null)[] = [];
   await stubDialogue(page, (body) => {
@@ -78,7 +75,7 @@ test('Typing a reply', async ({ page }) => {
 });
 
 test('Reaching the goal', async ({ page }) => {
-  test.fail(true, 'needs #6, #8, #11');
+  test.fail(true, 'needs #11');
   // Requirement: Conversation goals. A reply that reaches the goal runs the related puzzle step.
   await stubDialogue(page, (body) =>
     body.reply ? reply('Fine. Start Friday.', { options: [], goal_reached: true, ended: true }) : reply('Evening.'),
@@ -91,7 +88,6 @@ test('Reaching the goal', async ({ page }) => {
 });
 
 test('AI unavailable', async ({ page }) => {
-  test.fail(true, 'needs #8');
   // Requirement: Leaving and failure. If the AI is unavailable the character says so in
   // character and the player keeps playing.
   // The backend answers with its canned line when it cannot reach the model (#6). A failed
@@ -105,7 +101,6 @@ test('AI unavailable', async ({ page }) => {
 });
 
 test('Limit reached', async ({ page }) => {
-  test.fail(true, 'needs #7, #8');
   // Requirement: Spending limits. At the turn limit the character ends the conversation in character.
   await stubDialogue(page, () => reply("That's enough chat for tonight, kid.", { options: [], ended: true }));
   await talkToBartender(page);

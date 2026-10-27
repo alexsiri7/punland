@@ -1,5 +1,6 @@
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
+import type { DialogueTurn } from '../../src/domain';
 import { expect } from './fixtures';
 
 /**
@@ -19,8 +20,8 @@ import { expect } from './fixtures';
  * reader can play too.
  *
  * The room attributes (data-scene, data-player, data-hover, data-say) and the Hotspots group
- * are built (#4), the Inventory list (#5), and data-world and the Worlds switcher (#9); the
- * rest is not yet. The issue that builds a piece may settle on a different
+ * are built (#4), the Inventory list (#5), data-world and the Worlds switcher (#9), and the
+ * conversation dialog (#8); the rest is not yet. The issue that builds a piece may settle on a different
  * selector or content name: change it here, in one place, in the PR that removes the test's
  * expected-to-fail marker.
  */
@@ -167,18 +168,13 @@ function apiPath(prefix: string): (url: URL) => boolean {
   return (url) => url.pathname.startsWith(prefix);
 }
 
+export type { DialogueTurn };
+
 /**
  * Stands in for the backend's dialogue endpoint (#6): `turn` gets the request body
  * ({ character, reply }; reply is null when the conversation starts) and returns the
  * response the game should see.
  */
-export interface DialogueTurn {
-  line: string;
-  options: { text: string; reaches_goal: boolean }[];
-  goal_reached: boolean;
-  ended: boolean;
-}
-
 export async function stubDialogue(
   page: Page,
   turn: (body: { character: string; reply: string | null }) => DialogueTurn,
