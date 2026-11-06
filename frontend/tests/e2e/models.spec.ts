@@ -9,6 +9,7 @@ import {
   hotspot,
   newGame,
   openingSceneModel,
+  playerModel,
   playerPosition,
   pointAtHotspot,
   stubDialogue,
@@ -19,8 +20,6 @@ import {
 
 test.use({ actionTimeout: 5_000 });
 
-const protagonistModel = '/models/characters/protagonist.glb';
-
 test('Opening scene in 3D', async ({ page }) => {
   // Requirement: 3D rooms. Rooms are drawn in 3D from their scene model, with the player
   // character's model standing on the floor.
@@ -29,7 +28,7 @@ test('Opening scene in 3D', async ({ page }) => {
     if (response.ok()) loaded.push(new URL(response.url()).pathname);
   });
   await newGame(page);
-  await expect.poll(() => loaded).toEqual(expect.arrayContaining([openingSceneModel, protagonistModel]));
+  await expect.poll(() => loaded).toEqual(expect.arrayContaining([openingSceneModel, playerModel]));
   const webgl = await page
     .locator('#game canvas')
     .evaluate((canvas: HTMLCanvasElement) => !!(canvas.getContext('webgl2') ?? canvas.getContext('webgl')));
@@ -41,7 +40,7 @@ test('Replacing a placeholder', async ({ page }) => {
   // Requirement: Placeholder models. A placeholder replaced by a model that follows the contract
   // shows the new model, with no code or content change, and hotspots and exits still work.
   let replaced = false;
-  await page.route(`**${protagonistModel}`, (route) => {
+  await page.route(`**${playerModel}`, (route) => {
     replaced = true;
     return route.fulfill({ status: 200, contentType: 'model/gltf-binary', body: Buffer.from(fixtures.character()) });
   });
