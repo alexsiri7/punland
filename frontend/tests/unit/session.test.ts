@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMirror } from '../../src/app/mirror';
 import { GameSession } from '../../src/app/session';
-import { loadContent } from '../../src/content';
 import { type Command, fromSave, type GameEvent, isSaveGame, newGame, type SaveGame } from '../../src/domain';
 import { speechMs } from '../../src/presentation/ui/speech';
+import { content } from './fixtures/content';
 
-const content = loadContent();
 const NOW = new Date('2026-10-26T12:00:00.000Z');
 
 /** A save as the game wrote it before the session (#29): no `at`. */
@@ -13,16 +12,9 @@ const V1_SAVE: SaveGame = {
   version: 1,
   room: 'pub',
   savedAt: '2026-10-24T12:00:00.000Z',
-  inventory: { items: ['broken-guitar', 'lesson-flyer'], pickedUp: ['lesson-flyer'] },
-  journey: { left: { dream: { room: 'dream' } }, gathered: ['same-song'] },
+  inventory: { items: ['guitar', 'flyer'], pickedUp: ['flyer'] },
+  journey: { left: { dream: { room: 'dream' } }, gathered: ['open-mic'] },
 };
-
-/** A new game, on the High Street. */
-const onHighStreet = () => ({
-  ...newGame(content),
-  room: 'high-street',
-  at: { ...content.rooms['high-street']!.start },
-});
 
 function session(state = newGame(content)) {
   const saves: SaveGame[] = [];
@@ -42,35 +34,35 @@ function play(game: GameSession, ...commands: Command[]): void {
 
 describe('GameSession', () => {
   it('applies each command through the rules and tells listeners, with the state already changed', () => {
-    const { game, events } = session(onHighStreet());
+    const { game, events } = session();
     const seen: string[] = [];
     game.subscribe((event) => {
       if (event.type === 'pickedUp') seen.push(...game.state.inventory.carried);
     });
-    play(game, { type: 'activate', hotspot: 'lesson-flyer' });
-    expect(events).toContainEqual({ type: 'pickedUp', item: 'lesson-flyer', hotspot: 'lesson-flyer' });
-    expect(seen).toEqual(['broken-guitar', 'lesson-flyer']);
-    const flyer = content.rooms['high-street']!.hotspots.find((h) => h.id === 'lesson-flyer')!;
+    play(game, { type: 'activate', hotspot: 'flyer' });
+    expect(events).toContainEqual({ type: 'pickedUp', item: 'flyer', hotspot: 'flyer' });
+    expect(seen).toEqual(['guitar', 'flyer']);
+    const flyer = content.rooms.street!.hotspots.find((h) => h.id === 'flyer')!;
     expect(game.isPresent(flyer)).toBe(false);
   });
 
   it('saves the state on every saved event, stamped with the time, in the save format', () => {
-    const { game, saves } = session(onHighStreet());
+    const { game, saves } = session();
     play(game, { type: 'walk', to: { x: 900, y: 585 } });
     expect(saves).toEqual([]);
-    play(game, { type: 'activate', hotspot: 'lesson-flyer' }, { type: 'activate', hotspot: 'shop' });
+    play(game, { type: 'activate', hotspot: 'flyer' }, { type: 'activate', hotspot: 'door' });
     expect(saves).toHaveLength(2);
     expect(saves[1]).toEqual({
       version: 1,
-      room: 'music-shop',
-      at: content.rooms['music-shop']!.start,
+      room: 'pub',
+      at: content.rooms.pub!.start,
       savedAt: NOW.toISOString(),
-      inventory: { items: ['broken-guitar', 'lesson-flyer'], pickedUp: ['lesson-flyer'] },
-      journey: { left: {}, gathered: [] },
+      inventory: { items: ['guitar', 'flyer'], pickedUp: ['flyer'] },
+      journey: { left: {}, gathered: ['open-mic'] },
       flags: {},
-      act: '1',
+      act: 'one',
       goals: [],
-      stats: { followers: 0, musicians: 0, practice: 0, instruments: 1 },
+      stats: { fame: 0, skill: 1 },
     });
     expect(saves.every(isSaveGame)).toBe(true);
   });
@@ -80,19 +72,19 @@ describe('GameSession', () => {
     expect(game.state.room).toBe('pub');
     expect(game.state.at).toEqual(content.rooms.pub!.start);
     play(game, { type: 'activate', hotspot: 'door' });
-    expect(game.state.room).toBe('opening');
+    expect(game.state.room).toBe('street');
     expect(saves).toEqual([
       {
         version: 1,
-        room: 'opening',
-        at: { x: 705, y: 590 },
+        room: 'street',
+        at: { x: 510, y: 560 },
         savedAt: NOW.toISOString(),
         inventory: V1_SAVE.inventory,
         journey: V1_SAVE.journey,
         flags: {},
-        act: '1',
+        act: 'one',
         goals: [],
-        stats: { followers: 0, musicians: 0, practice: 0, instruments: 1 },
+        stats: { fame: 0, skill: 1 },
       },
     ]);
   });
@@ -101,10 +93,10 @@ describe('GameSession', () => {
     const { game } = session();
     const heard: GameEvent[] = [];
     const unsubscribe = game.subscribe((event) => heard.push(event));
-    game.dispatch({ type: 'select', item: 'broken-guitar' });
+    game.dispatch({ type: 'select', item: 'guitar' });
     unsubscribe();
     game.dispatch({ type: 'select', item: null });
-    expect(heard).toEqual([{ type: 'selected', item: 'broken-guitar' }]);
+    expect(heard).toEqual([{ type: 'selected', item: 'guitar' }]);
   });
 });
 
@@ -126,21 +118,21 @@ describe('the #game mirror', () => {
     expect(container.dataset.scene).toBeUndefined();
     mirror.shown();
     expect({ ...container.dataset }).toEqual({
-      scene: 'opening',
+      scene: 'street',
       world: 'street',
-      player: '560,590',
+      player: '100,550',
       hover: '',
       say: '',
-      act: '1',
+      act: 'one',
       playerAnimation: 'idle',
     });
   });
 
   it('follows the act as it changes', () => {
-    const { game } = session({ ...newGame(content), room: 'pub', goals: ['working-guitar', 'own-song'] });
+    const { game } = session({ ...newGame(content), room: 'pub', goals: ['guitar'] });
     createMirror(container, game).shown();
     game.dispatch({ type: 'dialogueResult', character: 'bartender', goalReached: true });
-    expect(container.dataset.act).toBe('2');
+    expect(container.dataset.act).toBe('two');
   });
 
   it('follows the player as they walk, and changes room only when the view shows the new one', () => {
@@ -149,40 +141,36 @@ describe('the #game mirror', () => {
     mirror.shown();
     game.dispatch({ type: 'walk', to: { x: 900, y: 585 } });
     game.dispatch({ type: 'tick', dtMs: 100 });
-    expect(container.dataset.player).toBe('592,590');
+    expect(container.dataset.player).toBe('132,551');
     play(game, { type: 'activate', hotspot: 'door' });
-    expect(container.dataset.scene).toBe('opening');
+    expect(container.dataset.scene).toBe('street');
     mirror.shown();
     expect(container.dataset.scene).toBe('pub');
-    expect(container.dataset.player).toBe('250,585');
+    expect(container.dataset.player).toBe('300,550');
   });
 
   it('shows what the player says until they are hushed or the line has been up long enough', () => {
     const { game } = session();
     createMirror(container, game).shown();
-    play(game, { type: 'activate', hotspot: 'board' });
-    const [effect] = content.rooms.opening!.hotspots.find((h) => h.id === 'board')!.interactions[0]!.effects;
-    expect(container.dataset.say).toBe(effect && 'say' in effect ? effect.say : '');
+    play(game, { type: 'activate', hotspot: 'sign' });
+    expect(container.dataset.say).toBe('A sign.');
     game.dispatch({ type: 'walk', to: { x: 900, y: 585 } });
     expect(container.dataset.say).toBe('');
-    play(game, { type: 'activate', hotspot: 'board' });
+    play(game, { type: 'activate', hotspot: 'sign' });
     vi.advanceTimersByTime(60_000);
     expect(container.dataset.say).toBe('');
   });
 
   it('shows the lines said one after another in turn, by anyone', () => {
-    const { game } = session({ ...newGame(content), room: 'flat' });
+    const { game } = session({ ...newGame(content), room: 'pub' });
     createMirror(container, game).shown();
-    play(game, { type: 'activate', hotspot: 'song-master' });
-    const [first, second, third] = content.rooms.flat!.hotspots
-      .find((h) => h.id === 'song-master')!
-      .interactions[0]!.effects.flatMap((effect) => ('say' in effect ? [effect.say] : []));
-    expect(container.dataset.say).toBe(first);
-    vi.advanceTimersByTime(speechMs(first!));
-    expect(container.dataset.say).toBe(second);
-    vi.advanceTimersByTime(speechMs(second!));
-    expect(container.dataset.say).toBe(third);
-    vi.advanceTimersByTime(speechMs(third!));
+    play(game, { type: 'activate', hotspot: 'busker' });
+    expect(container.dataset.say).toBe('Evening.');
+    vi.advanceTimersByTime(speechMs('Evening.'));
+    expect(container.dataset.say).toBe('Any requests?');
+    vi.advanceTimersByTime(speechMs('Any requests?'));
+    expect(container.dataset.say).toBe('Not tonight.');
+    vi.advanceTimersByTime(speechMs('Not tonight.'));
     expect(container.dataset.say).toBe('');
   });
 

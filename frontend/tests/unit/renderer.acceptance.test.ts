@@ -1,17 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { playGame } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
-import { loadContent } from '../../src/content';
 import { newGame } from '../../src/domain';
 import type { Pick, ScenePoint } from '../../src/presentation/renderer';
 import { FakeRenderer } from './fakes/renderer';
+import { content } from './fixtures/content';
 
 // Acceptance tests for openspec/specs/architecture/spec.md, requirement "Replaceable renderer".
 // The game ships one renderer (docs/ARCHITECTURE.md, section 5), so the swap is between two
 // renderers behind the interface: one whose hotspot buttons take the pointer, and one that
 // picks hotspots on its canvas, as the 3D renderer does.
-
-const content = loadContent();
 
 /** A renderer that picks the hotspots in its room by their bounds, and lets the pointer through the buttons. */
 class PickingRenderer extends FakeRenderer {
@@ -35,7 +33,7 @@ class PickingRenderer extends FakeRenderer {
   }
 }
 
-/** What the player sees and can do at each stop of the opening -> pub -> opening route. */
+/** What the player sees and can do at each stop of the street -> pub -> street route. */
 async function playRoute(renderer: FakeRenderer): Promise<unknown[]> {
   const container = document.createElement('div');
   document.body.append(container);
@@ -94,6 +92,6 @@ describe('Replaceable renderer', () => {
     const withButtons = await playRoute(new FakeRenderer());
     const withPicking = await playRoute(new PickingRenderer());
     expect(withPicking).toEqual(withButtons);
-    expect(withButtons.map((at) => (at as DOMStringMap).scene)).toEqual(['opening', 'opening', 'pub', 'opening']);
+    expect(withButtons.map((at) => (at as DOMStringMap).scene)).toEqual(['street', 'street', 'pub', 'street']);
   });
 });

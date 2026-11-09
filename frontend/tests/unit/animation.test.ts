@@ -2,15 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONCE_MS } from '../../src/app/animation';
 import { playGame } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
-import { loadContent } from '../../src/content';
 import { type GameState, newGame } from '../../src/domain';
 import { speechMs } from '../../src/presentation/ui/speech';
 import { FakeRenderer } from './fakes/renderer';
+import { content } from './fixtures/content';
 
 // Character animation (models spec): the app tells the renderer the clip each character plays,
 // from the session's events, and mirrors the player's as data-player-animation.
-
-const content = loadContent();
 
 describe('character animation', () => {
   let container: HTMLElement;
@@ -63,7 +61,7 @@ describe('character animation', () => {
   });
 
   it('talks for as long as the line is up, then idles', async () => {
-    game.dispatch({ type: 'activate', hotspot: 'board' });
+    game.dispatch({ type: 'activate', hotspot: 'sign' });
     await walk();
     expect(container.dataset.playerAnimation).toBe('talk');
     await vi.advanceTimersByTimeAsync(speechMs(game.state.saying!.line) - 1);
@@ -73,8 +71,7 @@ describe('character animation', () => {
   });
 
   it('plays pickup once on picking something up, then talks while its line is up, then idles', async () => {
-    await start({ ...newGame(content), room: 'high-street', at: { x: 300, y: 585 } });
-    game.dispatch({ type: 'activate', hotspot: 'lesson-flyer' });
+    game.dispatch({ type: 'activate', hotspot: 'flyer' });
     await walk();
     expect(container.dataset.playerAnimation).toBe('pickup');
     await vi.advanceTimersByTimeAsync(ONCE_MS);
@@ -84,37 +81,34 @@ describe('character animation', () => {
   });
 
   it('plays use once on an accepted use, then idles while a character says its line', async () => {
-    await start({ ...newGame(content), room: 'pub', inventory: { carried: ['guitar'], pickedUp: [] } });
+    await start({ ...newGame(content), room: 'pub' });
     game.dispatch({ type: 'select', item: 'guitar' });
-    game.dispatch({ type: 'activate', hotspot: 'sheryl-caw' });
+    game.dispatch({ type: 'activate', hotspot: 'busker' });
     await walk();
     expect(container.dataset.playerAnimation).toBe('use');
-    expect(played('sheryl-caw')).toEqual(['talk']);
+    expect(played('busker')).toEqual(['talk']);
     await vi.advanceTimersByTimeAsync(ONCE_MS);
     expect(container.dataset.playerAnimation).toBe('idle');
     await vi.advanceTimersByTimeAsync(speechMs(game.state.saying!.line));
-    expect(played('sheryl-caw')).toEqual(['talk', 'idle']);
+    expect(played('busker')).toEqual(['talk', 'idle']);
   });
 
   it('has the characters and the player talk in turn, each while their line is up', async () => {
-    await start({ ...newGame(content), room: 'flat' });
-    game.dispatch({ type: 'activate', hotspot: 'song-master' });
+    await start({ ...newGame(content), room: 'pub' });
+    game.dispatch({ type: 'activate', hotspot: 'busker' });
     await walk();
-    const said = content.rooms.flat!.hotspots
-      .find((h) => h.id === 'song-master')!
-      .interactions[0]!.effects.flatMap((effect) => ('say' in effect ? [effect.say] : []));
-    expect(played('song-master')).toEqual(['talk']);
+    expect(played('busker')).toEqual(['talk']);
     expect(container.dataset.playerAnimation).toBe('idle');
-    await vi.advanceTimersByTimeAsync(speechMs(said[0]!) + speechMs(said[1]!));
-    expect(played('song-master')).toEqual(['talk', 'idle']);
+    await vi.advanceTimersByTimeAsync(speechMs('Evening.') + speechMs('Any requests?'));
+    expect(played('busker')).toEqual(['talk', 'idle']);
     expect(container.dataset.playerAnimation).toBe('talk');
-    await vi.advanceTimersByTimeAsync(speechMs(said[2]!));
+    await vi.advanceTimersByTimeAsync(speechMs('Not tonight.'));
     expect(played()).toEqual(['walk', 'idle', 'talk', 'idle']);
   });
 
   it('plays no use when the item is refused', async () => {
-    game.dispatch({ type: 'select', item: 'broken-guitar' });
-    game.dispatch({ type: 'activate', hotspot: 'board' });
+    game.dispatch({ type: 'select', item: 'guitar' });
+    game.dispatch({ type: 'activate', hotspot: 'sign' });
     await walk();
     expect(played()).toEqual(['walk', 'talk']);
   });

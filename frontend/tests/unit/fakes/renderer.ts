@@ -1,60 +1,10 @@
 import type { FloorPoint, Rect } from '../../../src/domain';
 import type { AnimationName, Pick, Renderer, ScenePoint, SceneView } from '../../../src/presentation/renderer';
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../../../src/presentation/theme';
+import { bounds as fixtureBounds } from '../fixtures/content';
 
-/** Each hotspot's bounds in scene pixels, by its room's scene model: fixed, as no model is drawn. */
-const BOUNDS: Readonly<Record<string, Readonly<Record<string, Rect>>>> = {
-  'scene/opening': {
-    door: { x: 634, y: 208, width: 142, height: 312 },
-    board: { x: 868, y: 452, width: 100, height: 110 },
-    cop: { x: 1040, y: 360, width: 80, height: 190 },
-    street: { x: 412, y: 400, width: 92, height: 144 },
-  },
-  'scene/pub': {
-    door: { x: 60, y: 138, width: 162, height: 332 },
-    bartender: { x: 940, y: 164, width: 140, height: 192 },
-    'sheryl-caw': { x: 700, y: 390, width: 80, height: 145 },
-    'second-crow': { x: 790, y: 390, width: 80, height: 145 },
-    'third-crow': { x: 880, y: 390, width: 80, height: 145 },
-    stage: { x: 240, y: 430, width: 470, height: 52 },
-    fame: { x: 496, y: 160, width: 200, height: 180 },
-    rival: { x: 430, y: 330, width: 80, height: 204 },
-  },
-  'scene/high-street': {
-    back: { x: 60, y: 380, width: 90, height: 160 },
-    shop: { x: 440, y: 262, width: 120, height: 256 },
-    'lesson-flyer': { x: 914, y: 505, width: 32, height: 40 },
-    intercom: { x: 838, y: 380, width: 30, height: 46 },
-    'flat-door': { x: 700, y: 290, width: 112, height: 228 },
-    mayor: { x: 1110, y: 380, width: 90, height: 160 },
-  },
-  'scene/music-shop': {
-    door: { x: 60, y: 150, width: 160, height: 330 },
-    rival: { x: 820, y: 330, width: 80, height: 205 },
-    strings: { x: 760, y: 170, width: 160, height: 100 },
-  },
-  'scene/flat': {
-    door: { x: 60, y: 150, width: 160, height: 330 },
-    'song-master': { x: 780, y: 385, width: 80, height: 155 },
-  },
-  'scene/mayors-office': {
-    door: { x: 60, y: 150, width: 160, height: 330 },
-    mayor: { x: 930, y: 310, width: 100, height: 230 },
-  },
-  'scene/feed': {
-    page: { x: 400, y: 40, width: 480, height: 460 },
-    likes: { x: 960, y: 430, width: 80, height: 90 },
-  },
-  'scene/dream': {
-    stage: { x: 600, y: 316, width: 440, height: 136 },
-    'stolen-song': { x: 780, y: 340, width: 92, height: 205 },
-  },
-};
-
-/** A hotspot's bounds in the room drawn from the scene model `scene`, as the fake renderer gives them. */
-export function fakeBounds(scene: string, hotspot: string): Rect | null {
-  return BOUNDS[scene]?.[hotspot] ?? null;
-}
+/** Hotspot bounds in scene pixels, by hotspot id, by the scene model of the room they are in. */
+export type BoundsTable = Readonly<Record<string, Readonly<Record<string, Rect>>>>;
 
 /** A call the renderer was told to make, by method name. */
 export type RendererCall =
@@ -66,8 +16,9 @@ export type RendererCall =
 
 /**
  * A renderer for jsdom (docs/ARCHITECTURE.md, section 5): it draws nothing and records what it
- * is told. Each view is drawn at once. Its canvas is the scene and the UI bar at the page's origin, so a
- * pointer's client position is in scene pixels, and frames come only from `step`.
+ * is told. Each view is drawn at once, its hotspots at the fixed `bounds` (the fixture content's,
+ * by default). Its canvas is the scene and the UI bar at the page's origin, so a pointer's client
+ * position is in scene pixels, and frames come only from `step`.
  */
 export class FakeRenderer implements Renderer {
   readonly calls: RendererCall[] = [];
@@ -76,6 +27,8 @@ export class FakeRenderer implements Renderer {
   protected view: SceneView | null = null;
   private at: FloorPoint = { x: 0, y: 0 };
   private readonly frames = new Set<(dtMs: number) => void>();
+
+  constructor(private readonly bounds: BoundsTable = fixtureBounds) {}
 
   async mount(container: HTMLElement): Promise<void> {
     this.calls.push({ method: 'mount' });
@@ -110,7 +63,7 @@ export class FakeRenderer implements Renderer {
   }
 
   hotspotBounds(hotspot: string): Rect | null {
-    return this.view && fakeBounds(this.view.model, hotspot);
+    return this.view && (this.bounds[this.view.model]?.[hotspot] ?? null);
   }
 
   /** The player's head is 200 scene px over their feet. */
