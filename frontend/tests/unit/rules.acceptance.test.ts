@@ -9,6 +9,7 @@ import { type Command, load, play } from './support/modules';
 const INVITED = 'I buzz. A crackly voice: "Songwriting? Come on up."';
 const SHERYL_AGREES = 'A guitar that works. Caw! I agree: you can play.';
 const GUITAR_NO_USE = "My guitar's in enough pieces already.";
+const FIRST_SHOW = 'All three crows agree. My first show, at The Three Crows!';
 
 async function newGame() {
   const { loadContent } = await load('content');
@@ -50,5 +51,27 @@ describe('Rules as commands and events', () => {
     const accepted = await play(content, inPub, [select('guitar'), activate('sheryl-caw')]);
     expect(accepted.events).toContainEqual(expect.objectContaining({ type: 'said', line: SHERYL_AGREES }));
     expect(accepted.state.goals).toEqual(['working-guitar']);
+  });
+
+  // Requirement (progress spec): Act 1: the first show, scenario "The first show". Whichever crow
+  // agrees last, Act 1 ends with the cat's first show and Act 2 starts; here the guitar comes last.
+  it('The first show, with the working guitar last', async () => {
+    const { content, state } = await newGame();
+    const inPub = {
+      ...state,
+      room: 'pub',
+      goals: ['own-song', 'lives-here'],
+      inventory: { carried: ['guitar'], pickedUp: [] },
+    };
+    const played = await play(content, inPub, [select('guitar'), activate('sheryl-caw')]);
+    expect(played.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'said', line: SHERYL_AGREES }),
+        expect.objectContaining({ type: 'said', line: FIRST_SHOW }),
+        expect.objectContaining({ type: 'actStarted', act: '2' }),
+      ]),
+    );
+    expect(played.state.stats.followers).toBe(state.stats.followers! + 50);
+    expect(played.state.act).toBe('2');
   });
 });
