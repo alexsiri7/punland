@@ -18,7 +18,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { concat, container, srgbToLinear } from './glb-container.mjs';
 
 // Base tones from docs/design/STYLE.md: the protagonist's table (board 2), the palette's
-// accents and city, and the pub art's bartender (docs/design/rooms/pub.svg).
+// accents, city, sky and light, and the pub art's bartender (docs/design/rooms/pub.svg).
 const COLOURS = {
   fur: '#D88A4A',
   muzzle: '#EBC9A4',
@@ -33,6 +33,20 @@ const COLOURS = {
   apron: '#D9CDB4',
   paper: '#D9CDB4',
   ink: '#C8483B',
+  // The Act 1 cast, from the palette: the beetroot cop, the crows' stools, the dog, the rat and the mare.
+  beetroot: '#C8483B',
+  leaf: '#3E5E44',
+  cap: '#2E3A52',
+  stool: '#2F2D35',
+  dog: '#C98A6C',
+  'dog-ear': '#6E4038',
+  leather: '#2F2D35',
+  rat: '#8E879C',
+  cardigan: '#8A7FA8',
+  mare: '#6E4038',
+  mane: '#E3C58A',
+  hooves: '#2F2D35',
+  sash: '#C8483B',
   // The rooms: STYLE.md's city, sky, light and accents, and the room art's own tones (docs/design/rooms/<room>.svg).
   pavement: '#5E5A62',
   kerb: '#4A464E',
@@ -74,12 +88,21 @@ export function placeholders() {
   return {
     'models/characters/protagonist.glb': glb(protagonist()),
     'models/characters/bartender.glb': glb(bartender()),
+    'models/characters/cop.glb': glb(cop()),
+    'models/characters/crow.glb': glb(crow()),
+    'models/characters/rival.glb': glb(rival()),
+    'models/characters/song-master.glb': glb(songMaster()),
+    'models/characters/mayor.glb': glb(mayor()),
     'models/objects/flyer.glb': glb(flyer()),
     'models/objects/broken-guitar.glb': glb(brokenGuitar()),
     'models/scenes/opening.glb': glb(opening()),
     'models/scenes/pub.glb': glb(pub()),
     'models/scenes/feed.glb': glb(feed()),
     'models/scenes/dream.glb': glb(dream()),
+    'models/scenes/high-street.glb': glb(highStreet()),
+    'models/scenes/music-shop.glb': glb(musicShop()),
+    'models/scenes/flat.glb': glb(flat()),
+    'models/scenes/mayors-office.glb': glb(mayorsOffice()),
   };
 }
 
@@ -209,7 +232,205 @@ function bartender() {
   };
 }
 
-/** The open mic flyer: a flat card standing on its bottom edge. */
+/**
+ * One of the Act 1 cast standing on two legs, `hips` metres up, with the contract's anchors and
+ * the shared clips. `legs`, `body` and `arms` size its parts; `head` is its head's part, shape and
+ * the parts on it; `wearing` goes on the torso and `beside` stands next to it on the floor.
+ */
+function figure({ name, hips, legs, body, arms, head, wearing = [], beside = [] }) {
+  const leg = (side) => ({
+    name: `leg_${side}`,
+    at: [side === 'l' ? legs.apart : -legs.apart, 0, 0],
+    part: legs.part,
+    shape: frustum(4, legs.width, legs.width * 0.8, legs.length - 0.03, [0, -legs.length, 0]),
+    children: [
+      { name: `foot_${side}`, part: legs.foot ?? legs.part, shape: box([-0.05, -legs.length, -0.04], [0.1, 0.04, 0.15]) },
+    ],
+  });
+  const arm = (side) => ({
+    name: `arm_${side}`,
+    at: [side === 'l' ? body.bottom + 0.02 : -body.bottom - 0.02, arms.at, 0],
+    part: arms.part,
+    shape: frustum(4, 0.035, 0.045, arms.length, [0, -arms.length, 0]),
+    children: [
+      { name: `hand_${side}`, part: arms.hand ?? arms.part, shape: box([-0.03, -arms.length - 0.06, -0.03], [0.06, 0.06, 0.06]) },
+      ...(side === 'r' ? [{ name: 'anchor_hand_r', at: [0, -arms.length - 0.04, 0.04] }] : []),
+    ],
+  });
+  return {
+    name,
+    children: [
+      ...beside,
+      {
+        name: 'hips',
+        at: [0, hips, 0],
+        children: [
+          leg('l'),
+          leg('r'),
+          {
+            name: 'torso',
+            part: body.part,
+            shape: frustum(6, body.bottom, body.top, body.height, [0, -0.04, 0]),
+            children: [
+              arm('l'),
+              arm('r'),
+              ...wearing,
+              { name: 'anchor_back', at: [0, body.height / 2, -body.bottom] },
+              {
+                name: 'head',
+                at: [0, body.height - 0.04, 0],
+                part: head.part,
+                shape: head.shape,
+                children: [...head.on, { name: 'anchor_head', at: [0, head.top, 0] }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    clips: clips({ hips: [0, hips, 0], legs: ['leg_l', 'leg_r'], arms: ['arm_l', 'arm_r'] }),
+  };
+}
+
+/** The beetroot cop, about 1.2 m to his leaves: a beetroot on stalk legs, in a police cap. */
+function cop() {
+  return figure({
+    name: 'cop',
+    hips: 0.34,
+    legs: { part: 'leaf', width: 0.025, length: 0.34, apart: 0.07, foot: 'cap' },
+    body: { part: 'beetroot', bottom: 0.07, top: 0.22, height: 0.4 },
+    arms: { part: 'leaf', at: 0.3, length: 0.3 },
+    head: {
+      part: 'beetroot',
+      shape: frustum(6, 0.22, 0.12, 0.2),
+      top: 0.42,
+      on: [
+        { name: 'eyes', part: 'paper', shape: box([-0.09, 0.08, 0.17], [0.18, 0.03, 0.03]) },
+        { name: 'cap', part: 'cap', shape: frustum(6, 0.13, 0.14, 0.09, [0, 0.19, 0]) },
+        { name: 'brim', part: 'cap', shape: box([-0.1, 0.19, 0.08], [0.2, 0.02, 0.1]) },
+        { name: 'badge', part: 'sign-gold', shape: box([-0.025, 0.22, 0.13], [0.05, 0.04, 0.02]) },
+        ...[-0.4, 0.1, 0.5].map((tilt, i) => ({
+          name: `leaf_${i}`,
+          at: [0, 0.27, -0.06],
+          part: 'leaf',
+          shape: rotateX(frustum(3, 0.04, 0, 0.18), tilt - 0.3),
+        })),
+      ],
+    },
+  });
+}
+
+/** One of the Three Crows, about 1.15 m to its crest: a crow perched on a bar stool. */
+function crow() {
+  return figure({
+    name: 'crow',
+    hips: 0.68,
+    beside: [
+      { name: 'stool-seat', part: 'ink', shape: frustum(8, 0.17, 0.17, 0.05, [0, 0.6, 0]) },
+      { name: 'stool-leg', part: 'stool', shape: frustum(4, 0.03, 0.03, 0.6) },
+      { name: 'stool-foot', part: 'stool', shape: frustum(6, 0.14, 0.14, 0.03) },
+    ],
+    legs: { part: 'beak', width: 0.02, length: 0.1, apart: 0.06 },
+    body: { part: 'feathers', bottom: 0.15, top: 0.1, height: 0.3 },
+    arms: { part: 'feathers', at: 0.25, length: 0.24 },
+    head: {
+      part: 'feathers',
+      shape: frustum(5, 0.1, 0.08, 0.17),
+      top: 0.3,
+      on: [
+        { name: 'beak', at: [0, 0.08, 0.06], part: 'beak', shape: rotateX(frustum(4, 0.04, 0, 0.15), Math.PI / 2) },
+        { name: 'eyes', part: 'eyes', shape: box([-0.07, 0.11, 0.05], [0.14, 0.025, 0.03]) },
+        { name: 'crest', at: [0, 0.17, -0.02], part: 'feathers', shape: rotateX(frustum(3, 0.04, 0, 0.12), -0.4) },
+      ],
+    },
+  });
+}
+
+/** The dog, the rival, about 1.6 m: a lean singer in a leather jacket, ears flopping. */
+function rival() {
+  return figure({
+    name: 'rival',
+    hips: 0.74,
+    legs: { part: 'jeans', width: 0.06, length: 0.74, apart: 0.08, foot: 'leather' },
+    body: { part: 'leather', bottom: 0.17, top: 0.15, height: 0.5 },
+    arms: { part: 'leather', at: 0.42, length: 0.48, hand: 'dog' },
+    wearing: [{ name: 'shirt', part: 'paper', shape: box([-0.05, 0.1, 0.13], [0.1, 0.34, 0.03]) }],
+    head: {
+      part: 'dog',
+      shape: frustum(5, 0.11, 0.09, 0.22),
+      top: 0.34,
+      on: [
+        { name: 'snout', part: 'dog', shape: box([-0.05, 0.03, 0.06], [0.1, 0.08, 0.16]) },
+        { name: 'nose', part: 'feathers', shape: box([-0.025, 0.08, 0.21], [0.05, 0.03, 0.02]) },
+        { name: 'eyes', part: 'eyes', shape: box([-0.08, 0.13, 0.08], [0.16, 0.025, 0.02]) },
+        ...['l', 'r'].map((side) => ({
+          name: `ear_${side}`,
+          at: [side === 'l' ? 0.11 : -0.11, 0.2, 0],
+          part: 'dog-ear',
+          shape: rotateZ(frustum(3, 0.05, 0.02, 0.2, [0, -0.2, 0]), side === 'l' ? 0.3 : -0.3, [0, 0, 0]),
+        })),
+      ],
+    },
+  });
+}
+
+/** The Song Master, about 1.2 m: an old rat in a cardigan, with round ears and a long tail. */
+function songMaster() {
+  return figure({
+    name: 'song-master',
+    hips: 0.46,
+    beside: [{ name: 'tail', at: [0, 0.48, -0.12], part: 'rat', shape: rotateX(frustum(4, 0.025, 0.008, 0.5), -2.4) }],
+    legs: { part: 'rat', width: 0.04, length: 0.46, apart: 0.07 },
+    body: { part: 'cardigan', bottom: 0.16, top: 0.11, height: 0.4 },
+    arms: { part: 'cardigan', at: 0.34, length: 0.36, hand: 'rat' },
+    head: {
+      part: 'rat',
+      shape: frustum(5, 0.1, 0.07, 0.16),
+      top: 0.32,
+      on: [
+        { name: 'snout', at: [0, 0.07, 0.06], part: 'rat', shape: rotateX(frustum(4, 0.06, 0, 0.18), Math.PI / 2) },
+        { name: 'nose', part: 'clay', shape: box([-0.015, 0.06, 0.23], [0.03, 0.03, 0.02]) },
+        { name: 'eyes', part: 'feathers', shape: box([-0.06, 0.1, 0.07], [0.12, 0.02, 0.02]) },
+        ...['l', 'r'].map((side) => ({
+          name: `ear_${side}`,
+          at: [side === 'l' ? 0.09 : -0.09, 0.16, 0],
+          part: 'clay',
+          shape: rotateX(frustum(6, 0.06, 0.05, 0.02), Math.PI / 2),
+        })),
+      ],
+    },
+  });
+}
+
+/** The Mayor, about 1.8 m: a mare in a red sash, with a long golden mane. */
+function mayor() {
+  return figure({
+    name: 'mayor',
+    hips: 0.84,
+    legs: { part: 'mare', width: 0.06, length: 0.84, apart: 0.09, foot: 'hooves' },
+    body: { part: 'mare', bottom: 0.2, top: 0.16, height: 0.56 },
+    arms: { part: 'mare', at: 0.48, length: 0.52, hand: 'hooves' },
+    wearing: [{ name: 'sash', part: 'sash', shape: rotateZ(box([-0.22, -0.03, -0.2], [0.44, 0.06, 0.42]), 0.7, [0, 0.3, 0]) }],
+    head: {
+      part: 'mare',
+      shape: frustum(5, 0.1, 0.08, 0.28),
+      top: 0.42,
+      on: [
+        { name: 'muzzle', part: 'mare', shape: rotateX(box([-0.07, -0.02, 0], [0.14, 0.12, 0.26]), -0.5) },
+        { name: 'eyes', part: 'eyes', shape: box([-0.09, 0.2, 0.06], [0.18, 0.025, 0.02]) },
+        ...['l', 'r'].map((side) => ({
+          name: `ear_${side}`,
+          at: [side === 'l' ? 0.06 : -0.06, 0.27, 0],
+          part: 'mare',
+          shape: frustum(3, 0.04, 0, 0.12),
+        })),
+        { name: 'mane', part: 'mane', shape: box([-0.12, -0.4, -0.15], [0.24, 0.76, 0.1]) },
+      ],
+    },
+  });
+}
+
+/** A flyer: a flat card standing on its bottom edge. */
 function flyer() {
   return {
     name: 'flyer',
@@ -306,7 +527,10 @@ function ground([x0, z0], [x1, z1]) {
 
 const rect = (x, y, width, height) => ({ x, y, width, height });
 
-/** The street outside The Three Crows: its green shopfront and lit windows, the board on the pavement, the city down the side street. */
+/**
+ * The street outside The Three Crows: its green shopfront and lit windows, the board on the
+ * pavement, the city down the side street and the sign down the High Street.
+ */
 function opening() {
   const room = shell({ x: 820, y: 610 });
   const wall = room.depthAt(518);
@@ -334,6 +558,7 @@ function opening() {
         shape: room.panel(at, far, 2),
       })),
       { name: 'hit_door', part: 'door', shape: room.panel(rect(634, 208, 142, 312), wall + 0.1, 0.05) },
+      signpost(room, 'street', rect(414, 384, 56, 160), 'sign-gold'),
       {
         name: 'hit_board',
         part: 'chalkboard',
@@ -345,10 +570,12 @@ function opening() {
   };
 }
 
-/** Inside The Three Crows: the brick wall with its window and poster, the street door, and the bar. */
+/** Inside The Three Crows: the brick wall with its window and Wall of Fame, the stage under them, the street door, and the bar. */
 function pub() {
   const room = shell({ x: 640, y: 615 });
   const wall = room.depthAt(470);
+  /** The stage is a low riser from the wall to just behind the floor's back edge. */
+  const stageFront = room.depthAt(522);
   return {
     name: 'pub',
     children: [
@@ -357,7 +584,17 @@ function pub() {
       { name: 'wainscot', part: 'wainscot', shape: room.panel(rect(-40, 384, 1360, 86), wall + 0.03, 0.03) },
       { name: 'beam', part: 'beam', shape: room.panel(rect(-40, -60, 1360, 100), wall + 0.08, 0.08) },
       { name: 'window', part: 'night', shape: room.panel(rect(330, 115, 124, 157), wall + 0.02, 0.02) },
-      { name: 'poster', part: 'paper', shape: room.panel(rect(510, 195, 98, 135), wall + 0.02, 0.02) },
+      {
+        name: 'hit_fame',
+        part: 'wainscot',
+        shape: room.panel(rect(496, 160, 200, 180), wall + 0.02, 0.02),
+        children: [rect(508, 172, 82, 70), rect(602, 172, 82, 70), rect(508, 256, 82, 70), rect(602, 256, 82, 70)].map((at, i) => ({
+          name: `photo_${i}`,
+          part: 'paper',
+          shape: room.panel(at, wall + 0.04, 0.02),
+        })),
+      },
+      { name: 'hit_stage', part: 'bar-top', shape: room.panel(rect(230, 474, 480, 48), stageFront, stageFront - wall) },
       { name: 'sign', part: 'fascia', shape: room.panel(rect(858, 61, 332, 64), wall + 0.04, 0.04) },
       ...[182, 272].map((y, i) => ({ name: `shelf_${i}`, part: 'bar', shape: room.panel(rect(800, y, 461, 10), wall + 0.25, 0.25) })),
       { name: 'bar', part: 'bar', shape: room.panel(rect(733, 362, 560, 108), wall + 0.7, 0.7) },
@@ -421,6 +658,112 @@ function dream() {
           ...[688, 950].map((x, i) => ({ name: `lamp_${i}`, part: 'lamp', shape: room.panel(rect(x - 36, 150, 72, 26), stage - 1, 0.6) })),
         ],
       },
+      room.camera,
+    ],
+  };
+}
+
+/** The hotspot `hit_<id>`: a street's wayfinding sign standing on the pavement over `at`, its name band in `band`. */
+function signpost(room, id, at, band) {
+  const front = room.depthAt(at.y + at.height) + 0.01;
+  return {
+    name: `hit_${id}`,
+    part: 'fascia',
+    shape: room.standing(at, 0.1),
+    children: [{ name: `${id}-sign`, part: band, shape: room.panel(rect(at.x + 6, at.y + 12, at.width - 12, 26), front, 0.01) }],
+  };
+}
+
+/** Further down the High Street: the music shop, the Song Master's door and intercom, the way back and the way to the Mayor's. */
+function highStreet() {
+  const room = shell({ x: 640, y: 610 });
+  const wall = room.depthAt(518);
+  return {
+    name: 'high-street',
+    children: [
+      ...room.floor(518, 'pavement', 'road'),
+      { name: 'skyline', part: 'far-city', shape: room.panel(rect(-40, -100, 1360, 300), wall - 12, 2) },
+      { name: 'shop-facade', part: 'facade', shape: room.panel(rect(150, -60, 470, 578), wall, 1) },
+      { name: 'shopfront', part: 'shopfront', shape: room.panel(rect(170, 180, 430, 338), wall + 0.05, 0.05) },
+      { name: 'shop-fascia', part: 'fascia', shape: room.panel(rect(180, 190, 410, 44), wall + 0.08, 0.03) },
+      { name: 'shop-window', part: 'glow', shape: room.panel(rect(196, 262, 200, 200), wall + 0.07, 0.02) },
+      { name: 'hit_shop', part: 'door', shape: room.panel(rect(440, 262, 120, 256), wall + 0.1, 0.05) },
+      { name: 'flat-facade', part: 'brick', shape: room.panel(rect(620, -60, 420, 578), wall, 1) },
+      ...[rect(660, 40, 90, 120), rect(860, 40, 90, 120)].map((at, i) => ({
+        name: `flat-window_${i}`,
+        part: 'glow',
+        shape: room.panel(at, wall + 0.02, 0.02),
+      })),
+      { name: 'hit_flat-door', part: 'green-door', shape: room.panel(rect(700, 290, 112, 228), wall + 0.06, 0.06) },
+      { name: 'hit_intercom', part: 'sign-gold', shape: room.panel(rect(838, 380, 30, 46), wall + 0.05, 0.04) },
+      { name: 'far-facade', part: 'skyline', shape: room.panel(rect(1040, -60, 300, 578), wall - 1.5, 1) },
+      signpost(room, 'back', rect(112, 380, 56, 160), 'sign-gold'),
+      signpost(room, 'mayor', rect(1112, 380, 56, 160), 'sash'),
+      room.camera,
+    ],
+  };
+}
+
+/** Inside the music shop: guitars on the wall, the counter and its rack of strings, the door out. */
+function musicShop() {
+  const room = shell({ x: 640, y: 615 });
+  const wall = room.depthAt(480);
+  return {
+    name: 'music-shop',
+    children: [
+      ...room.floor(480, 'boards', 'boards'),
+      { name: 'wall', part: 'night', shape: room.panel(rect(-40, -400, 1360, 880), wall, 0.2) },
+      { name: 'wainscot', part: 'wainscot', shape: room.panel(rect(-40, 400, 1360, 80), wall + 0.03, 0.03) },
+      ...[300, 420, 540, 1020, 1140].map((x, i) => ({
+        name: `guitar_${i}`,
+        part: 'guitar',
+        shape: room.panel(rect(x, 150, 70, 180), wall + 0.05, 0.05),
+      })),
+      { name: 'counter', part: 'bar', shape: room.panel(rect(680, 380, 320, 100), wall + 0.6, 0.6) },
+      { name: 'counter-top', part: 'bar-top', shape: room.panel(rect(672, 370, 336, 12), wall + 0.65, 0.7) },
+      { name: 'hit_strings', part: 'paper', shape: room.panel(rect(760, 170, 160, 100), wall + 0.04, 0.04) },
+      { name: 'hit_door', part: 'green-door', shape: room.panel(rect(60, 150, 160, 330), wall + 0.06, 0.06) },
+      room.camera,
+    ],
+  };
+}
+
+/** The Song Master's flat: a small room with a window over the street, a chair and an old upright piano, the door down. */
+function flat() {
+  const room = shell({ x: 640, y: 615 });
+  const wall = room.depthAt(480);
+  return {
+    name: 'flat',
+    children: [
+      ...room.floor(480, 'boards', 'boards'),
+      { name: 'wall', part: 'haze', shape: room.panel(rect(-40, -400, 1360, 880), wall, 0.2) },
+      { name: 'wainscot', part: 'wainscot', shape: room.panel(rect(-40, 400, 1360, 80), wall + 0.03, 0.03) },
+      { name: 'window', part: 'night', shape: room.panel(rect(480, 110, 180, 200), wall + 0.02, 0.02) },
+      { name: 'piano', part: 'bar-top', shape: room.panel(rect(900, 300, 260, 180), wall + 0.5, 0.5) },
+      { name: 'keys', part: 'paper', shape: room.panel(rect(910, 380, 240, 14), wall + 0.55, 0.1) },
+      { name: 'chair', part: 'bar', shape: room.standing(rect(640, 420, 90, 110), 0.4) },
+      { name: 'hit_door', part: 'green-door', shape: room.panel(rect(60, 150, 160, 330), wall + 0.06, 0.06) },
+      room.camera,
+    ],
+  };
+}
+
+/** The Mayor's office: panelled walls, her portrait, a desk and a flag, the door out. */
+function mayorsOffice() {
+  const room = shell({ x: 640, y: 615 });
+  const wall = room.depthAt(480);
+  return {
+    name: 'mayors-office',
+    children: [
+      ...room.floor(480, 'boards', 'boards'),
+      { name: 'wall', part: 'facade', shape: room.panel(rect(-40, -400, 1360, 880), wall, 0.2) },
+      { name: 'wainscot', part: 'wainscot', shape: room.panel(rect(-40, 360, 1360, 120), wall + 0.03, 0.03) },
+      { name: 'portrait', part: 'sign-gold', shape: room.panel(rect(560, 90, 160, 200), wall + 0.03, 0.03) },
+      { name: 'portrait-mane', part: 'mane', shape: room.panel(rect(590, 120, 100, 150), wall + 0.05, 0.02) },
+      { name: 'flag', part: 'sash', shape: room.panel(rect(1000, 120, 90, 140), wall + 0.3, 0.02) },
+      { name: 'flagpole', part: 'beam', shape: room.panel(rect(1090, 100, 8, 380), wall + 0.3, 0.04) },
+      { name: 'desk', part: 'bar', shape: room.panel(rect(420, 380, 440, 100), wall + 0.8, 0.8) },
+      { name: 'hit_door', part: 'green-door', shape: room.panel(rect(60, 150, 160, 330), wall + 0.06, 0.06) },
       room.camera,
     ],
   };

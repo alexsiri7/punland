@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Dream room art: the songwriting dream, the dream world's placeholder room (worlds spec, "Placeholder worlds"). Drawn to docs/design/STYLE.md; the cat is board 2's, as in art/opening/scene.svg.
-     The flyer actor is street dream material: the room engine only shows it once the cat has picked up the flyer outside The Three Crows.
+     The stolen-song actor is street dream material: the dog, singing the Song Master's song, shown once the cat has heard him on the pub stage.
      Layers follow docs/design/STYLE.md "Scene build": one <g id="layer-*"> per layer, back to front.
      Rendered to PNG by frontend/scripts/render-art.mjs; do not hand-edit the PNGs. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="A dusk dream: rooftops of Punland float upside down in a violet sky crossed by drifting music staves; an empty little stage sits on a slab of pavement hanging in the air; the Open Mic flyer drifts above it, glowing; the ginger cat in his blue hoodie stands on a floating kerb, eyes on the stage">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="A dusk dream: rooftops of Punland float upside down in a violet sky crossed by drifting music staves; an empty little stage sits on a slab of pavement hanging in the air; the dog in his leather jacket stands before it, singing the Song Master's song back at the cat; the ginger cat in his blue hoodie stands on a floating kerb, eyes on the stage">
 <style>
 .p-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
 .p-sign{font-family:'Bebas Neue',sans-serif;text-anchor:middle}
@@ -86,13 +86,23 @@
 </g>
 
 <g id="layer-actors">
-<g id="flyer">
-<polygon points="770,230 870,230 878,330 778,330" fill="#FFE3A0" opacity="0.14"></polygon>
-<rect x="796" y="240" width="44" height="60" fill="#D9CDB4" transform="rotate(-6 818 270)"></rect>
-<rect x="826" y="240" width="14" height="60" fill="#C2B59A" transform="rotate(-6 818 270)"></rect>
-<text x="818" y="264" class="p-sign" fill="#C8483B" style="font-size:15px" transform="rotate(-6 818 270)">OPEN MIC</text>
-<path d="M804 274 H832 M804 282 H826" class="p-line" stroke="#2A1C1A" style="stroke-width:1.2" transform="rotate(-6 818 270)"></path>
-<path d="M776 226 L770 216 M866 226 L874 214 M818 222 V210" class="p-line" stroke="#FFE3A0" style="stroke-width:1.5" opacity="0.8"></path>
+<g id="stolen-song" transform="translate(826 545)">
+<polygon points="-26,0 26,0 90,18 51,20" fill="#141218" opacity="0.45"></polygon>
+<rect x="-18" y="-118" width="14" height="116" fill="#26262C"></rect><rect x="4" y="-118" width="14" height="116" fill="#1C1C21"></rect>
+<rect x="-23" y="-8" width="20" height="8" rx="2" fill="#2F2D35"></rect><rect x="3" y="-8" width="20" height="8" rx="2" fill="#1E1E24"></rect>
+<polygon points="-30,-206 30,-206 34,-112 -34,-112" fill="#2F2D35"></polygon>
+<polygon points="8,-206 30,-206 34,-112 12,-112" fill="#1E1E24"></polygon>
+<polygon points="-9,-206 9,-206 4,-150 -4,-150" fill="#D9CDB4"></polygon>
+<path d="M-30 -198 L-40 -124" class="p-line" stroke="#2F2D35" style="stroke-width:12"></path>
+<path d="M30 -198 L40 -124" class="p-line" stroke="#1E1E24" style="stroke-width:12"></path>
+<circle cx="-40" cy="-118" r="6" fill="#C98A6C"></circle><circle cx="40" cy="-118" r="6" fill="#A86E54"></circle>
+<polygon points="-20,-206 20,-206 22,-248 0,-258 -22,-248" fill="#C98A6C"></polygon>
+<polygon points="6,-206 20,-206 22,-248 8,-254" fill="#A86E54"></polygon>
+<polygon points="-11,-222 11,-222 9,-204 -9,-204" fill="#A86E54"></polygon>
+<rect x="-5" y="-226" width="10" height="5" rx="2" fill="#2F2D35"></rect>
+<polygon points="-22,-250 -34,-246 -30,-212 -20,-222" fill="#6E4038"></polygon>
+<polygon points="22,-250 34,-246 30,-212 20,-222" fill="#5A332D"></polygon>
+<path d="M-14 -236 H-5 M5 -236 H14" class="p-line" stroke="#2F2D35" style="stroke-width:2"></path>
 </g>
 <g id="cat" transform="translate(300 585)">
 <polygon points="-30,0 30,0 100,20 34,22" fill="#141218" opacity="0.45"></polygon>

@@ -2,7 +2,7 @@
 <!-- Opening room art: outside The Three Crows. Source: Tune Story design canvas, board 3 (docs/design/canvas/Pub.dc.html).
      Layers follow docs/design/STYLE.md "Scene build": one <g id="layer-*"> per layer, back to front.
      Rendered to PNG by frontend/scripts/render-art.mjs; do not hand-edit the PNGs. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Dusk on a dense Punland high street: a friendly lanky ginger cat in a blue hoodie waves outside The Three Crows, a big leaning Victorian corner pub that runs out of frame, its door a head taller than him; a side street recedes past string lights to distant towers and a crane; crows perch on the pub sign and a crooked lamp post; railings guard the stairs down to The Holding Pen, live music below">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Dusk on a dense Punland high street: a friendly lanky ginger cat in a blue hoodie waves outside The Three Crows, a big leaning Victorian corner pub that runs out of frame, its door a head taller than him; a side street recedes past string lights to distant towers and a crane; crows perch on the pub sign and a crooked lamp post; railings guard the stairs down to The Holding Pen, live music below; a beetroot police guard in a cap stands on the pavement, and a signpost points down the High Street">
 <style>
 .p-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
 .p-sign{font-family:'Bebas Neue',sans-serif;text-anchor:middle}
@@ -245,6 +245,12 @@
 </g>
 
 <g id="layer-props">
+<g transform="translate(414 0)">
+<polygon points="0,544 56,544 76,556 18,558" fill="#141218" opacity="0.45"></polygon>
+<rect x="0" y="384" width="56" height="160" fill="#1A2822"></rect><rect x="38" y="384" width="18" height="160" fill="#142019"></rect>
+<rect x="6" y="396" width="44" height="26" fill="#E3C58A"></rect>
+<text x="28" y="416" class="p-sign" fill="#1A2822" style="font-size:15px;letter-spacing:1px">HIGH ST ←</text>
+</g>
 <polygon points="994,524 1146,524 1150,556 990,556" fill="#141218"></polygon>
 <path d="M998 534 H1142 M996 546 H1146" class="p-line" stroke="#2F2D35" style="stroke-width:2"></path>
 <polygon points="996,524 1144,524 1160,482 980,482" fill="#FFE3A0" opacity="0.14"></polygon>
@@ -271,10 +277,18 @@
 </g>
 
 <g id="layer-actors">
-<g id="flyer">
-<rect x="720" y="396" width="34" height="46" fill="#D9CDB4" transform="rotate(3 737 419)"></rect>
-<text x="737" y="416" class="p-sign" fill="#C8483B" style="font-size:12px" transform="rotate(3 737 419)">OPEN MIC</text>
-<path d="M726 424 H748 M726 430 H744" class="p-line" stroke="#2A1C1A" style="stroke-width:1.2" transform="rotate(3 737 419)"></path>
+<g id="cop" transform="translate(1080 550)">
+<polygon points="-18,0 18,0 66,18 39,20" fill="#141218" opacity="0.45"></polygon>
+<path d="M-8 0 V-58 M8 0 V-58" class="p-line" stroke="#3E5E44" style="stroke-width:5"></path>
+<rect x="-14" y="-5" width="12" height="5" rx="2" fill="#2E3A52"></rect><rect x="2" y="-5" width="12" height="5" rx="2" fill="#2E3A52"></rect>
+<polygon points="0,-50 -32,-96 -30,-150 0,-176 30,-150 32,-96" fill="#C8483B"></polygon>
+<polygon points="0,-50 0,-176 30,-150 32,-96" fill="#A23A30"></polygon>
+<path d="M-30 -120 L-46 -86 M30 -120 L44 -90" class="p-line" stroke="#3E5E44" style="stroke-width:4"></path>
+<path d="M-14 -138 H-4 M4 -138 H14" class="p-line" stroke="#D9CDB4" style="stroke-width:3"></path>
+<polygon points="-20,-168 20,-168 22,-184 -22,-184" fill="#2E3A52"></polygon>
+<polygon points="-26,-168 26,-168 30,-162 -18,-162" fill="#26304A"></polygon>
+<rect x="-4" y="-182" width="8" height="8" fill="#E3C58A"></rect>
+<path d="M-4 -184 L-12 -206 M0 -184 L2 -212 M4 -184 L14 -204" class="p-line" stroke="#3E5E44" style="stroke-width:4"></path>
 </g>
 <g id="cat" transform="translate(560 590)">
 <polygon points="-30,0 30,0 100,20 34,22" fill="#141218" opacity="0.45"></polygon>
