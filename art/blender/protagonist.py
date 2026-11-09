@@ -220,14 +220,7 @@ def torso(body: Body) -> None:
         "hoodie-band",
         TORSO_SKIN,
     )
-    # The hood, down and bunched round the back of the neck.
-    body.hull(
-        ring((0, 1.1, -0.05), 0.1, 0.05) + ring((0, 1.2, -0.08), 0.08, 0.035), "hoodie", "chest"
-    )
-    for x in (1, -1):
-        body.hull(
-            limb((0.1 * x, 1.08, 0.0), (0.06 * x, 1.15, 0.06), 0.035, 0.025, 5), "hoodie", "chest"
-        )
+    hood(body)
     for x in (1, -1):
         string = [(x * 0.035 + dx, y) for y in (1.07, 0.95) for dx in (-0.004, 0.004)]
         body.decal(hoodie, string, 0.005, "drawstrings", "chest")
@@ -244,6 +237,20 @@ def torso(body: Body) -> None:
             for dx, dy in ((-0.014, -0.012), (0.014, 0.012))
         ]
         body.decal(hoodie, outline, 0.005, "strap", TORSO_SKIN)
+
+
+def hood(body: Body) -> None:
+    """The hood, up as #69 asks (board 2 draws it down): over the back and top of the head,
+    framing the face, the ears through it."""
+    face = [(0, 1.39, 0.08), (0.1, 1.365, 0.085), (0.155, 1.25, 0.085), (0.13, 1.12, 0.075)]
+    crown = [(0, 1.395, -0.04), (0.11, 1.37, -0.03), (0.165, 1.24, -0.02)]
+    back = [(0, 1.32, -0.11), (0.12, 1.28, -0.095), (0, 1.17, -0.13), (0.13, 1.12, -0.08)]
+    neck = [(0.11, 1.06, 0.05), (0.1, 1.05, -0.06), (0, 1.05, -0.09)]
+    body.hull(
+        [(sx * px, py, pz) for px, py, pz in face + crown + back + neck for sx in (1, -1)],
+        "hoodie",
+        blend((0, "chest"), (1.13, "head"), soft=0.03),
+    )
 
 
 def arm(body: Body, side: str, x: int) -> None:

@@ -18,6 +18,8 @@ KEY = (-6, 9, 2)
 #: The share of the base tone the shade side keeps: the ambient plus the key light's ramp step
 #: (look.ts).
 SHADE = 0.25 + 0.75 * 0.52
+#: A room's scene in pixels, the floor points' frame (SCENE in frontend/src/domain/geometry.ts).
+SCENE_WIDTH, SCENE_HEIGHT = 1280, 640
 UI_GROUND = "#1C1D22"
 PAVEMENT = "#5E5A62"
 
@@ -172,10 +174,11 @@ def in_scene(rig: Rig, folder: str, repo: str, room: str) -> None:
 
 
 def floor_point(cam: bpy.types.Object, x: float, y: float) -> Vector:
-    """Where the ray from `cam` through the scene pixel (x, y) of 1280 x 640 meets the ground."""
+    """Where the ray from `cam` through the scene pixel (x, y) meets the ground."""
     cam.data.sensor_fit = "VERTICAL"
     tan = math.tan(cam.data.angle_y / 2)
-    local = Vector(((2 * x / 1280 - 1) * tan * 2, (1 - 2 * y / 640) * tan, -1))
+    aspect = SCENE_WIDTH / SCENE_HEIGHT
+    local = Vector(((2 * x / SCENE_WIDTH - 1) * tan * aspect, (1 - 2 * y / SCENE_HEIGHT) * tan, -1))
     origin = cam.matrix_world.translation
     ray = cam.matrix_world.to_3x3() @ local
     return origin + ray * (-origin.z / ray.z)
