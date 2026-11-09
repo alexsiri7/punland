@@ -247,7 +247,7 @@ Each scene, character and object is one registry entry, keyed by a `ModelId` tha
 {
   "models": [
     { "id": "scene/opening", "kind": "scene",
-      "model3d": { "file": "models/scenes/opening.glb", "placeholder": true } },
+      "model3d": { "file": "models/scenes/opening.glb", "placeholder": false } },
     { "id": "character/protagonist", "kind": "character",
       "model3d": { "file": "models/characters/protagonist.glb", "placeholder": true, "height": 1.5 } },
     { "id": "object/flyer", "kind": "object",
