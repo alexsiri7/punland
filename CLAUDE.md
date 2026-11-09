@@ -116,7 +116,9 @@ backend/
   src/punland_api/config.py  settings from env vars
   tests/                     pytest
 art/blender/            the Blender sources: <id>.py builds a model from scratch with bpy and exports its glb to
-                        frontend/public/models/ (protagonist.py so far), lib/ the helpers they share (ARCHITECTURE.md §8)
+                        frontend/public/models/ (protagonist.py so far), lib/ the helpers they share (rig.py: a biped's
+                        armature and anchors from its joints; clips.py: the five clips for it), examples/rig_demo.py
+                        a throwaway second biped, not shipped (ARCHITECTURE.md §8)
 openspec/specs/         the specs (source of truth for behaviour)
 docs/design/            STYLE.md (the look) + canvas/ (the owner's design boards) + rooms/ (each room's 2D reference art)
 ```
