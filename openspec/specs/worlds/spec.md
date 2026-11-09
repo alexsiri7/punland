@@ -17,6 +17,12 @@ The game SHALL show the three worlds and let the player switch to any world that
 - WHEN a world is locked
 - THEN it is shown as locked and cannot be entered
 
+#### Scenario: The dream opens
+- GIVEN a new game
+- THEN the dream world is locked
+- AND WHEN the dog has played the Song Master's song on the pub stage
+- THEN the dream world unlocks
+
 ### Requirement: Things cross worlds
 Items and facts from one world SHALL be usable in the others where the story allows.
 

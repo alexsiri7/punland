@@ -12,6 +12,7 @@ The game SHALL show one room at a time, with the player character in it.
 #### Scenario: Opening scene
 - WHEN a new game starts
 - THEN the player is outside the pub (The Three Crows) where the bus has dropped them off
+- AND the first character there to talk to is a beetroot cop, who says the music stars go to The Three Crows and points to the pub
 
 ### Requirement: Click to walk
 The player character MUST walk to the point the player clicks on the floor of the room.
@@ -37,6 +38,17 @@ Rooms SHALL have exits that take the player to other rooms.
 #### Scenario: Entering the pub
 - WHEN the player clicks the pub door in the opening scene
 - THEN the player enters the pub interior room
+
+#### Scenario: Down the High Street
+- WHEN the player takes the way down the High Street from the opening scene
+- THEN the High Street is shown, with the music shop, the Song Master's flyer and his intercom
+
+### Requirement: The Three Crows
+The pub SHALL have three crows behind the bar, a stage and a Wall of Fame.
+
+#### Scenario: Looking at the Wall of Fame
+- WHEN the player looks at the Wall of Fame
+- THEN the cat describes its photos: the Rolling Stones as a pile of rocks, the Beetles with 60s haircuts, Tuna and Pike Turner, and Katty Purry
 
 ### Requirement: Placeholder art
 The skeleton SHALL work with placeholder art, and replacing a room's art MUST NOT require changing game logic. A room's art is its art layer files while rooms are drawn in 2D, and its scene model once they are drawn in 3D (models spec).
