@@ -6,9 +6,7 @@
 // keeps saving and resuming while the backend is down.
 
 import { apiBase } from './api';
-import type { InventoryState } from '../domain/inventory';
-import type { JourneyState } from '../domain/journey';
-import type { SaveGame } from '../domain/save';
+import { isSaveGame, type SaveGame } from '../domain/save';
 import { playerId } from './player';
 import { safeLocalStorage } from './storage';
 
@@ -19,52 +17,6 @@ export interface SaveStore {
 }
 
 export const SAVE_KEY = 'punland.save.v1';
-
-type Fields = Record<string, unknown>;
-
-const isObject = (value: unknown): value is Fields => typeof value === 'object' && value !== null;
-const isStrings = (value: unknown): value is string[] =>
-  Array.isArray(value) && value.every((v) => typeof v === 'string');
-
-function isInventory(value: unknown): value is InventoryState {
-  return isObject(value) && isStrings(value.items) && isStrings(value.pickedUp);
-}
-
-const isPoint = (value: unknown): boolean =>
-  isObject(value) && typeof value.x === 'number' && typeof value.y === 'number';
-
-function isPlace(value: unknown): boolean {
-  return isObject(value) && typeof value.room === 'string' && (value.at === undefined || isPoint(value.at));
-}
-
-function isJourney(value: unknown): value is JourneyState {
-  return (
-    isObject(value) && isStrings(value.gathered) && isObject(value.left) && Object.values(value.left).every(isPlace)
-  );
-}
-
-const isFlag = (value: unknown): boolean => ['boolean', 'number', 'string'].includes(typeof value);
-const isRecordOf = (value: unknown, ok: (v: unknown) => boolean): boolean =>
-  isObject(value) && !Array.isArray(value) && Object.values(value).every(ok);
-const isFlags = (value: unknown): boolean => isRecordOf(value, isFlag);
-const isStats = (value: unknown): boolean => isRecordOf(value, (v) => typeof v === 'number' && Number.isFinite(v));
-
-/** A save this game can resume. Fields it doesn't know (from a newer game) are ignored. */
-export function isSaveGame(value: unknown): value is SaveGame {
-  if (!isObject(value)) return false;
-  return (
-    value.version === 1 &&
-    typeof value.room === 'string' &&
-    typeof value.savedAt === 'string' &&
-    (value.at === undefined || isPoint(value.at)) &&
-    (value.inventory === undefined || isInventory(value.inventory)) &&
-    (value.journey === undefined || isJourney(value.journey)) &&
-    (value.flags === undefined || isFlags(value.flags)) &&
-    (value.act === undefined || typeof value.act === 'string') &&
-    (value.goals === undefined || isStrings(value.goals)) &&
-    (value.stats === undefined || isStats(value.stats))
-  );
-}
 
 /** Browser-local save. Unreadable or malformed data counts as "no save". */
 export class LocalSaveStore implements SaveStore {
