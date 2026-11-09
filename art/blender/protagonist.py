@@ -5,7 +5,7 @@ ears, narrow shoulders, hands past the hem, a slight forward slouch.
 
     blender -b --factory-startup --python art/blender/protagonist.py -- \\
         --out frontend/public/models/characters/protagonist.glb \\
-        [--previews docs/screenshots/blender-pilot]
+        [--previews docs/screenshots/blender/protagonist]
 
 Built from scratch every run. Points are in glTF axes, metres: +Y up, facing +Z, his left +X.
 """
@@ -15,9 +15,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib.build import Body, Rig, blend, disc, limb, ring
+from lib.build import Body, blend, disc, limb, ring
+from lib.clips import clips
 from lib.export import arguments, empty_scene, export_glb
 from lib.palette import material
+from lib.rig import SIDES, Biped, anchors, armature
+from lib.rig import torso as torso_skin
 
 # Base tones from board 2: STYLE.md's table for the big parts, the board's own art for the details.
 COLOURS = {
@@ -45,8 +48,6 @@ COLOURS = {
 #: Metres, with the ears; the registry's `height` for character/protagonist.
 HEIGHT = 1.5
 
-SIDES = {"l": 1, "r": -1}
-
 #: The tail's joints, from under the hem down his left side, hooking up at the tip.
 TAIL = [
     (0.02, 0.64, -0.09),
@@ -56,36 +57,23 @@ TAIL = [
     (0.12, 0.31, -0.04),
 ]
 
-# The skeleton: 24 joints. Legs and arms hang straight down, the spine and neck lean forward a
-# little (the slouch).
-BONES = [
-    ("root", (0, 0, 0), (0, 0, 0.12), None),
-    ("hips", (0, 0.6, 0), (0, 0.74, 0), "root"),
-    ("spine", (0, 0.74, 0), (0, 0.92, 0.01), "hips"),
-    ("chest", (0, 0.92, 0.01), (0, 1.08, 0.03), "spine"),
-    ("neck", (0, 1.08, 0.03), (0, 1.13, 0.04), "chest"),
-    ("head", (0, 1.13, 0.04), (0, 1.38, 0.04), "neck"),
-    *[
-        (f"ear_{s}", (0.075 * x, 1.33, 0.03), (0.1 * x, 1.5, 0.02), "head")
-        for s, x in SIDES.items()
-    ],
-    *[
-        bone
-        for s, x in SIDES.items()
-        for bone in (
-            (f"upper_arm_{s}", (0.15 * x, 1.06, 0.03), (0.18 * x, 0.83, 0.02), "chest"),
-            (f"forearm_{s}", (0.18 * x, 0.83, 0.02), (0.19 * x, 0.61, 0.04), f"upper_arm_{s}"),
-            (f"hand_{s}", (0.19 * x, 0.61, 0.04), (0.19 * x, 0.51, 0.05), f"forearm_{s}"),
-            (f"thigh_{s}", (0.075 * x, 0.62, 0), (0.075 * x, 0.36, 0), "hips"),
-            (f"shin_{s}", (0.075 * x, 0.36, 0), (0.075 * x, 0.09, 0), f"thigh_{s}"),
-            (f"foot_{s}", (0.075 * x, 0.09, 0), (0.075 * x, 0.03, 0.13), f"shin_{s}"),
-        )
-    ],
-    *[
-        (f"tail_{i + 1}", TAIL[i], TAIL[i + 1], f"tail_{i}" if i else "hips")
-        for i in range(len(TAIL) - 1)
-    ],
-]
+# Legs and arms hang straight down, the spine and neck lean forward a little (the slouch).
+BIPED = Biped(
+    spine=(
+        (0, 0.6, 0),
+        (0, 0.74, 0),
+        (0, 0.92, 0.01),
+        (0, 1.08, 0.03),
+        (0, 1.13, 0.04),
+        (0, 1.38, 0.04),
+    ),
+    arm=((0.15, 1.06, 0.03), (0.18, 0.83, 0.02), (0.19, 0.61, 0.04), (0.19, 0.51, 0.05)),
+    leg=((0.075, 0.62, 0), (0.075, 0.36, 0), (0.075, 0.09, 0), (0.075, 0.03, 0.13)),
+    back=(0.02, 0.85, -0.17),
+    ears=((0.075, 1.33, 0.03), (0.1, 1.5, 0.02)),
+    tail=tuple(TAIL),
+    hand=(0.19, 0.54, 0.06),
+)
 
 #: The torso's rings, bottom to top: (height, half width, half depth, how far forward).
 TORSO = [
@@ -94,7 +82,7 @@ TORSO = [
     (1.0, 0.15, 0.1, 0.02),
     (1.1, 0.11, 0.08, 0.035),
 ]
-TORSO_SKIN = blend((0, "hips"), (0.74, "spine"), (0.92, "chest"))
+TORSO_SKIN = torso_skin(BIPED)
 
 
 def build_body(body: Body) -> None:
@@ -361,145 +349,16 @@ def guitar(body: Body) -> None:
     )
 
 
-def anchors(rig: Rig) -> None:
-    rig.anchor("anchor_head", (0, 1.58, 0.04), "head")
-    rig.anchor("anchor_hand_r", (-0.19, 0.54, 0.06), "hand_r")
-    rig.anchor("anchor_back", (0.02, 0.85, -0.17), "chest")
-
-
-def legs(left_thigh, left_shin, left_foot, right_thigh, right_shin, right_foot):
-    return {
-        "thigh_l": {"turn": (left_thigh, 0, 0)},
-        "shin_l": {"turn": (left_shin, 0, 0)},
-        "foot_l": {"turn": (left_foot, 0, 0)},
-        "thigh_r": {"turn": (right_thigh, 0, 0)},
-        "shin_r": {"turn": (right_shin, 0, 0)},
-        "foot_r": {"turn": (right_foot, 0, 0)},
-    }
-
-
-def mirrored(pose):
-    """The pose with left and right swapped, turns about y and z flipped."""
-    swap = {"_l": "_r", "_r": "_l"}
-    out = {}
-    for bone, parts in pose.items():
-        name = bone[:-2] + swap[bone[-2:]] if bone[-2:] in swap else bone
-        turn = parts.get("turn", (0, 0, 0))
-        out[name] = {**parts, "turn": (turn[0], -turn[1], -turn[2])}
-        if "move" in parts:
-            mx, my, mz = parts["move"]
-            out[name]["move"] = (-mx, my, mz)
-    return out
-
-
-# Turns are degrees about his own axes: +x tips a bone that hangs down backwards and one that
-# points up forwards; +y turns to his left.
-REST_ARMS = {
-    "upper_arm_l": {"turn": (0, 0, 4)},
-    "upper_arm_r": {"turn": (0, 0, -4)},
-    "forearm_l": {"turn": (-6, 0, 0)},
-    "forearm_r": {"turn": (-6, 0, 0)},
-}
-
-
-def clips(rig: Rig) -> None:
-    breathe_in = {
-        **REST_ARMS,
-        "chest": {"turn": (-2, 0, 0)},
-        "head": {"turn": (-2, 0, 0)},
-        "tail_2": {"turn": (0, 0, 8)},
-        "tail_3": {"turn": (0, 0, 10)},
-    }
-    breathe_out = {
-        **REST_ARMS,
-        "chest": {"turn": (2, 0, 0)},
-        "head": {"turn": (2, 0, 0)},
-        "ear_r": {"turn": (0, 0, -10)},
-        "tail_2": {"turn": (0, 0, -8)},
-        "tail_3": {"turn": (0, 0, -10)},
-    }
-    rig.clip("idle", {0: breathe_in, 24: breathe_out, 48: breathe_in})
-
-    # A stride: left foot down in front, right pushing off behind; then the right leg passes.
-    contact = {
-        **legs(-26, 6, -12, 22, 22, 18),
-        "hips": {"move": (0, -0.035, 0), "turn": (0, 6, 0)},
-        "spine": {"turn": (4, -4, 0)},
-        "chest": {"turn": (0, -6, 0)},
-        "head": {"turn": (-3, 4, 0)},
-        "upper_arm_l": {"turn": (24, 0, 4)},
-        "forearm_l": {"turn": (-6, 0, 0)},
-        "upper_arm_r": {"turn": (-26, 0, -4)},
-        "forearm_r": {"turn": (-24, 0, 0)},
-        "tail_1": {"turn": (18, 0, 10)},
-        "tail_2": {"turn": (0, 0, -6)},
-    }
-    passing = {
-        **legs(4, 4, -4, -14, 60, 8),
-        "hips": {"move": (0, 0.01, 0)},
-        "spine": {"turn": (5, 0, 0)},
-        "head": {"turn": (-3, 0, 0)},
-        **REST_ARMS,
-        "tail_1": {"turn": (22, 0, 0)},
-        "tail_2": {"turn": (0, 0, 6)},
-    }
-    rig.clip(
-        "walk", {0: contact, 5: passing, 10: mirrored(contact), 15: mirrored(passing), 20: contact}
-    )
-
-    gesture = {
-        **REST_ARMS,
-        "upper_arm_r": {"turn": (-30, 0, -10)},
-        "forearm_r": {"turn": (-60, 0, 0)},
-        "hand_r": {"turn": (0, 0, 0)},
-    }
-    rig.clip(
-        "talk",
-        {
-            0: {**gesture, "head": {"turn": (-3, 0, 0)}},
-            9: {
-                **gesture,
-                "head": {"turn": (4, 4, 0)},
-                "forearm_r": {"turn": (-70, 0, 0)},
-                "ear_l": {"turn": (0, 0, 8)},
-            },
-            18: {**gesture, "head": {"turn": (-2, -3, 0)}, "forearm_r": {"turn": (-55, 0, 0)}},
-            27: {**gesture, "head": {"turn": (3, 2, 0)}, "forearm_r": {"turn": (-68, 0, 0)}},
-            36: {**gesture, "head": {"turn": (-3, 0, 0)}},
-        },
-    )
-
-    # Crouch and reach: hips down as far as the bent knees take them, the feet kept flat.
-    reach = {
-        **legs(-30, 58, -28, -30, 58, -28),
-        "hips": {"move": (0, -0.065, 0)},
-        "spine": {"turn": (22, 0, 0)},
-        "chest": {"turn": (14, 0, 0)},
-        "head": {"turn": (-14, 0, 0)},
-        "upper_arm_r": {"turn": (-45, 0, 0)},
-        "forearm_r": {"turn": (-10, 0, 0)},
-        "upper_arm_l": {"turn": (10, 0, 6)},
-    }
-    rig.clip("pickup", {0: REST_ARMS, 7: reach, 15: REST_ARMS})
-    use = {
-        **REST_ARMS,
-        "chest": {"turn": (4, 0, 0)},
-        "upper_arm_r": {"turn": (-75, 0, -6)},
-        "forearm_r": {"turn": (-20, 0, 0)},
-    }
-    rig.clip("use", {0: REST_ARMS, 7: use, 15: REST_ARMS})
-
-
 def main() -> None:
     args = arguments(__doc__.splitlines()[0])
     empty_scene()
     materials = {part: material(part, hex_colour) for part, hex_colour in COLOURS.items()}
-    rig = Rig("protagonist", BONES)
+    rig = armature("protagonist", BIPED)
     body = Body(materials)
     build_body(body)
     body.finish("protagonist-body", rig.object)
-    anchors(rig)
-    clips(rig)
+    anchors(rig, BIPED)
+    clips(rig, BIPED)
     export_glb(os.path.abspath(args.out))
     if args.previews:
         from lib.preview import previews
