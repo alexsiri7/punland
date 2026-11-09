@@ -1,0 +1,55 @@
+{
+  "model": "scene/mayors-office",
+  "world": "street",
+  "label": "PUNLAND · THE MAYOR'S OFFICE",
+  "place": { "verb": "In", "name": "The Mayor's office" },
+  "hint": "A portrait, a flag, and a very long mane.",
+  "start": { "x": 250, "y": 585 },
+  "walkable": [
+    { "x": 60, "y": 525 },
+    { "x": 1240, "y": 525 },
+    { "x": 1240, "y": 615 },
+    { "x": 40, "y": 615 }
+  ],
+  "hotspots": [
+    {
+      "id": "door",
+      "name": "Door",
+      "verb": "Go out",
+      "target": { "node": "door" },
+      "walkTo": { "x": 150, "y": 545 },
+      "interactions": [
+        {
+          "verb": "go",
+          "effects": [{ "goTo": "high-street", "at": { "x": 1140, "y": 575 } }]
+        }
+      ]
+    },
+    {
+      "id": "mayor",
+      "name": "The Mayor",
+      "verb": "Talk to",
+      "target": { "entity": "mayor", "at": { "x": 980, "y": 540 } },
+      "walkTo": { "x": 860, "y": 565 },
+      "interactions": [
+        {
+          "verb": "look",
+          "when": [{ "not": { "flag": "mane-given" } }],
+          "effects": [
+            { "say": "A guitar string? Hold still, young cat.", "by": "mayor" },
+            {
+              "say": "There: one from my own mane. Play something good for Punland.",
+              "by": "mayor"
+            },
+            { "give": "mane-string" },
+            { "set": "mane-given", "to": true }
+          ]
+        },
+        {
+          "verb": "look",
+          "effects": [{ "say": "Good luck with the music.", "by": "mayor" }]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "model": "scene/flat",
+  "world": "street",
+  "label": "PUNLAND · THE SONG MASTER'S FLAT",
+  "place": { "verb": "In", "name": "The Song Master's flat" },
+  "hint": "An old piano, a chair, and the same lesson for everyone.",
+  "start": { "x": 250, "y": 585 },
+  "walkable": [
+    { "x": 60, "y": 525 },
+    { "x": 1240, "y": 525 },
+    { "x": 1240, "y": 615 },
+    { "x": 40, "y": 615 }
+  ],
+  "hotspots": [
+    {
+      "id": "door",
+      "name": "Door",
+      "verb": "Go down",
+      "target": { "node": "door" },
+      "walkTo": { "x": 150, "y": 545 },
+      "interactions": [
+        {
+          "verb": "go",
+          "effects": [{ "goTo": "high-street", "at": { "x": 756, "y": 575 } }]
+        }
+      ]
+    },
+    {
+      "id": "song-master",
+      "name": "Song Master",
+      "verb": "Listen to",
+      "target": { "entity": "song-master", "at": { "x": 820, "y": 540 } },
+      "walkTo": { "x": 700, "y": 565 },
+      "interactions": [
+        {
+          "verb": "look",
+          "when": [{ "not": { "flag": "song-lesson" } }],
+          "effects": [
+            {
+              "say": "Sit. Here's the lesson I give everyone: a dream, a problem, and a rhyme.",
+              "by": "song-master"
+            },
+            {
+              "say": "\"I came to the city / to find my dream / my guitar is broken / my clothes ain't clean.\"",
+              "by": "song-master"
+            },
+            { "say": "A song! I'll play it to the second crow." },
+            { "set": "song-lesson", "to": true }
+          ]
+        },
+        {
+          "verb": "look",
+          "effects": [
+            {
+              "say": "That's the lesson. Now go and play it.",
+              "by": "song-master"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

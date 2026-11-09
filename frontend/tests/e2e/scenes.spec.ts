@@ -7,11 +7,14 @@ import {
   enterPub,
   game,
   hotspot,
+  conversation,
   newGame,
   openingSceneModel,
   playerPosition,
   pointAtHotspot,
   scenePixel,
+  stubDialogue,
+  toHighStreet,
 } from './play';
 
 // Acceptance tests for openspec/specs/scenes/spec.md.
@@ -19,10 +22,20 @@ import {
 test.use({ actionTimeout: 5_000 });
 
 test('Opening scene', async ({ page }) => {
-  // Requirement: Rooms. The game shows one room at a time, with the player character in it.
+  // Requirement: Rooms. The game shows one room at a time, with the player character in it,
+  // and the first character there to talk to is the beetroot cop.
+  const asked: unknown[] = [];
+  await stubDialogue(page, (body) => {
+    asked.push(body);
+    return { line: 'All the music stars go to The Three Crows.', options: [], goal_reached: false, ended: true };
+  });
   await newGame(page);
   await expect.poll(() => playerPosition(page)).not.toBeNull();
   await expect(hotspot(page, content.pubDoor)).toBeAttached();
+  await clickHotspot(page, content.cop);
+  await expect(conversation(page)).toHaveAccessibleName(content.cop);
+  await expect(conversation(page)).toContainText('The Three Crows');
+  expect(asked).toEqual([{ character: 'cop', reply: null }]);
 });
 
 test('Walking', async ({ page }) => {
@@ -61,6 +74,31 @@ test('Entering the pub', async ({ page }) => {
   await clickHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
   await expect.poll(() => playerPosition(page)).toEqual(content.outsidePub);
+});
+
+test('Down the High Street', async ({ page }) => {
+  // Requirement: Exits. The way down the High Street from the opening scene shows the High
+  // Street, with the music shop, the Song Master's flyer and his intercom.
+  await newGame(page);
+  await toHighStreet(page);
+  for (const name of [content.musicShop, content.lessonFlyer, content.intercom]) {
+    await expect(hotspot(page, name)).toBeAttached();
+  }
+  await clickHotspot(page, content.backToPub);
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+});
+
+test('Looking at the Wall of Fame', async ({ page }) => {
+  // Requirement: The Three Crows. The pub's Wall of Fame has its visual-pun photos.
+  await newGame(page);
+  await enterPub(page);
+  for (const name of [content.sherylCaw, content.secondCrow, content.thirdCrow, /stage/i]) {
+    await expect(hotspot(page, name)).toBeAttached();
+  }
+  await clickHotspot(page, content.wallOfFame);
+  for (const photo of [/pile of rocks/, /Beetles/, /Tuna and Pike Turner/, /Katty Purry/]) {
+    await expect(game(page)).toHaveAttribute('data-say', photo);
+  }
 });
 
 test('Swapping art (scene model)', async ({ page }) => {

@@ -1,10 +1,29 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { clickHotspot, clickScene, content, game, hotspot, inventoryItem, newGame, playerPosition, worlds } from './play';
+import {
+  clickHotspot,
+  clickScene,
+  content,
+  continueGame,
+  game,
+  hotspot,
+  inventoryItem,
+  newGame,
+  playerPosition,
+  seedSave,
+  worlds,
+} from './play';
 
 // Acceptance tests for openspec/specs/worlds/spec.md.
 
 test.use({ actionTimeout: 5_000 });
+
+/** A game outside the pub with the dream open: the dog has played the Song Master's song. */
+async function dreamOpen(page: Page): Promise<void> {
+  const flags = { 'song-stolen': true };
+  await seedSave(page, { room: content.opening, act: '1', goals: [], stats: content.newStats, flags });
+  await continueGame(page);
+}
 
 /** The Online and Dream buttons the player can choose right now. */
 async function unlockedOtherWorlds(page: Page): Promise<Locator[]> {
@@ -35,7 +54,7 @@ async function stopsAt(page: Page, near: { x: number; y: number }): Promise<{ x:
 
 test('Switching', async ({ page }) => {
   // Requirement: Switching worlds. The player can switch to any unlocked world.
-  await newGame(page);
+  await dreamOpen(page);
   await expect(worlds(page).getByRole('button', { name: 'Street' })).toBeVisible();
   await expect(game(page)).toHaveAttribute('data-world', 'street');
   await clickScene(page, content.pavement);
@@ -65,26 +84,42 @@ test('Locked world', async ({ page }) => {
 });
 
 test('Something done in the street turns up in the dream', async ({ page }) => {
-  // Requirement: Things cross worlds. In the Act 1 placeholder content, picking up the Open
-  // Mic flyer is dream material.
-  await newGame(page);
-  await worlds(page).getByRole('button', { name: 'Dream' }).click();
-  await expect(game(page)).toHaveAttribute('data-world', 'dream');
-  await expect(hotspot(page, content.flyer)).toHaveCount(0);
-  await worlds(page).getByRole('button', { name: 'Street' }).click();
-  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
-  await clickHotspot(page, content.flyer);
-  // The cat walks to the flyer first; switching worlds on the way would call the pickup off.
-  await expect(inventoryItem(page, content.flyer)).toBeVisible();
-  await worlds(page).getByRole('button', { name: 'Dream' }).click();
-  await expect(game(page)).toHaveAttribute('data-world', 'dream');
-  await clickHotspot(page, content.flyer);
+  // Requirement: Things cross worlds. In Act 1, hearing the dog play the Song Master's song on
+  // the pub stage is dream material: the cat writes a song of his own about it.
+  const flags = { 'song-lesson': true };
+  await seedSave(page, { room: 'pub', act: '1', goals: [], stats: content.newStats, flags });
+  await continueGame(page);
+  await clickHotspot(page, content.rivalOnStage);
   await expect(game(page)).toHaveAttribute('data-say', /\S/);
+  await worlds(page).getByRole('button', { name: 'Dream' }).click();
+  await expect(game(page)).toHaveAttribute('data-world', 'dream');
+  await clickHotspot(page, content.dreamSong);
+  await expect(game(page)).toHaveAttribute('data-say', /\S/);
+  await expect(inventoryItem(page, content.ownSong)).toBeVisible();
+  await expect(hotspot(page, content.dreamSong)).toHaveCount(0);
+});
+
+test('The dream opens', async ({ page }) => {
+  // Requirement: Switching worlds. The dream is locked in a new game, and unlocks once the dog
+  // has played the Song Master's song on the pub stage.
+  await newGame(page);
+  const dream = worlds(page).getByRole('button', { name: 'Dream' });
+  await expect(dream).toBeDisabled();
+  await expect(dream).toHaveAccessibleDescription(/locked/i);
+
+  const flags = { 'song-lesson': true };
+  await seedSave(page, { room: 'pub', act: '1', goals: [], stats: content.newStats, flags });
+  await continueGame(page);
+  await expect(dream).toBeDisabled();
+  await clickHotspot(page, content.rivalOnStage);
+  await expect(dream).toBeEnabled();
+  await dream.click();
+  await expect(game(page)).toHaveAttribute('data-world', 'dream');
 });
 
 test('Visiting a placeholder world', async ({ page }) => {
   // Requirement: Placeholder worlds. The online and dream worlds each have a placeholder room.
-  await newGame(page);
+  await dreamOpen(page);
   const unlocked = await unlockedOtherWorlds(page);
   expect(unlocked.length, 'an unlocked online or dream world').toBeGreaterThan(0);
   for (const world of unlocked) {

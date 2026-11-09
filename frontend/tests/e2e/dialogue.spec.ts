@@ -9,7 +9,7 @@ import { clickHotspot, content, conversation, enterPub, game, goal, newGame, stu
 
 test.use({ actionTimeout: 5_000 });
 
-const OPTIONS = ['Got any work going?', 'Nice pub.', 'Is the open mic any good?'];
+const OPTIONS = ['Got any work going?', 'Nice pub.', 'Who plays here?'];
 
 function reply(line: string, extra: Partial<DialogueTurn> = {}): DialogueTurn {
   return {
@@ -80,10 +80,54 @@ test('Reaching the goal', async ({ page }) => {
     body.reply ? reply('Fine. Start Friday.', { options: [], goal_reached: true, ended: true }) : reply('Evening.'),
   );
   await talkToBartender(page);
-  await expect(goal(page, content.jobGoal)).not.toBeChecked();
+  await expect(goal(page, content.livesHereGoal)).not.toBeChecked();
   await conversation(page).getByRole('button', { name: OPTIONS[0] }).click();
   await expect(conversation(page)).toContainText('Fine. Start Friday.');
-  await expect(goal(page, content.jobGoal)).toBeChecked();
+  await expect(goal(page, content.livesHereGoal)).toBeChecked();
+});
+
+test('Talking to the beetroot cop', async ({ page }) => {
+  // Requirement: Act 1 conversations. The beetroot cop outside the pub is a character to talk to.
+  const asked: unknown[] = [];
+  await stubDialogue(page, (body) => {
+    asked.push(body);
+    return reply('All the music stars go to The Three Crows. That way.');
+  });
+  await newGame(page);
+  await clickHotspot(page, content.cop);
+  await expect(conversation(page)).toHaveAccessibleName(content.cop);
+  await expect(conversation(page)).toContainText('The Three Crows');
+  expect(asked).toEqual([{ character: 'cop', reply: null }]);
+});
+
+test('Talking to a crow', async ({ page }) => {
+  // Requirement: Act 1 conversations. Each of the three crows behind the bar is a character to
+  // talk to, and one of them is Sheryl Caw.
+  const asked: string[] = [];
+  await stubDialogue(page, (body) => {
+    asked.push(body.character);
+    return reply('Caw.');
+  });
+  await newGame(page);
+  await enterPub(page);
+  for (const crow of [content.sherylCaw, content.secondCrow, content.thirdCrow]) {
+    await clickHotspot(page, crow);
+    await expect(conversation(page)).toHaveAccessibleName(crow);
+    await conversation(page).getByRole('button', { name: 'Leave' }).click();
+    await expect(conversation(page)).toBeHidden();
+  }
+  expect(asked).toEqual(['sheryl-caw', 'second-crow', 'third-crow']);
+});
+
+test('Convincing the bartender', async ({ page }) => {
+  // Requirement: Act 1 conversations. Convincing the bartender the cat is staying reaches her
+  // goal: she gets him a kitchen job, and the third crow says he'll vouch for him.
+  const convinced = reply("You're staying? Leave him to me.", { options: [], goal_reached: true, ended: true });
+  await stubDialogue(page, (body) => (body.reply ? convinced : reply('Evening.')));
+  await talkToBartender(page);
+  await conversation(page).getByRole('button', { name: OPTIONS[0] }).click();
+  await expect(goal(page, content.livesHereGoal)).toBeChecked();
+  await expect(game(page)).toHaveAttribute('data-say', /vouch for you/i);
 });
 
 test('AI unavailable', async ({ page }) => {

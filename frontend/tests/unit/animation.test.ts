@@ -3,7 +3,7 @@ import { ONCE_MS } from '../../src/app/animation';
 import { playGame } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
 import { loadContent } from '../../src/content';
-import { newGame } from '../../src/domain';
+import { type GameState, newGame } from '../../src/domain';
 import { speechMs } from '../../src/presentation/ui/speech';
 import { FakeRenderer } from './fakes/renderer';
 
@@ -17,13 +17,18 @@ describe('character animation', () => {
   let renderer: FakeRenderer;
   let game: GameSession;
 
-  beforeEach(async () => {
-    vi.useFakeTimers();
+  async function start(state: GameState) {
+    container?.remove();
     container = document.createElement('div');
     document.body.append(container);
     renderer = new FakeRenderer();
-    game = new GameSession(content, newGame(content), { save: async () => {} });
+    game = new GameSession(content, state, { save: async () => {} });
     await playGame(container, game, renderer, { turn: () => new Promise(() => {}) });
+  }
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    await start(newGame(content));
   });
 
   afterEach(() => {
@@ -67,27 +72,44 @@ describe('character animation', () => {
     expect(played()).toEqual(['walk', 'talk', 'idle']);
   });
 
-  it('plays pickup once on picking something up, then idles', async () => {
-    game.dispatch({ type: 'activate', hotspot: 'flyer' });
+  it('plays pickup once on picking something up, then talks while its line is up, then idles', async () => {
+    await start({ ...newGame(content), room: 'high-street', at: { x: 300, y: 585 } });
+    game.dispatch({ type: 'activate', hotspot: 'lesson-flyer' });
     await walk();
     expect(container.dataset.playerAnimation).toBe('pickup');
     await vi.advanceTimersByTimeAsync(ONCE_MS);
-    expect(played()).toEqual(['walk', 'pickup', 'idle']);
-  });
-
-  it('plays use once on an accepted use, then talks while its line is up', async () => {
-    game.dispatch({ type: 'activate', hotspot: 'flyer' });
-    await walk();
-    game.dispatch({ type: 'activate', hotspot: 'door' });
-    await walk();
-    game.dispatch({ type: 'select', item: 'flyer' });
-    game.dispatch({ type: 'activate', hotspot: 'bartender' });
-    await walk();
-    expect(container.dataset.playerAnimation).toBe('use');
-    await vi.advanceTimersByTimeAsync(ONCE_MS);
     expect(container.dataset.playerAnimation).toBe('talk');
     await vi.advanceTimersByTimeAsync(speechMs(game.state.saying!.line));
+    expect(played()).toEqual(['walk', 'pickup', 'talk', 'idle']);
+  });
+
+  it('plays use once on an accepted use, then idles while a character says its line', async () => {
+    await start({ ...newGame(content), room: 'pub', inventory: { carried: ['guitar'], pickedUp: [] } });
+    game.dispatch({ type: 'select', item: 'guitar' });
+    game.dispatch({ type: 'activate', hotspot: 'sheryl-caw' });
+    await walk();
+    expect(container.dataset.playerAnimation).toBe('use');
+    expect(played('sheryl-caw')).toEqual(['talk']);
+    await vi.advanceTimersByTimeAsync(ONCE_MS);
     expect(container.dataset.playerAnimation).toBe('idle');
+    await vi.advanceTimersByTimeAsync(speechMs(game.state.saying!.line));
+    expect(played('sheryl-caw')).toEqual(['talk', 'idle']);
+  });
+
+  it('has the characters and the player talk in turn, each while their line is up', async () => {
+    await start({ ...newGame(content), room: 'flat' });
+    game.dispatch({ type: 'activate', hotspot: 'song-master' });
+    await walk();
+    const said = content.rooms.flat!.hotspots
+      .find((h) => h.id === 'song-master')!
+      .interactions[0]!.effects.flatMap((effect) => ('say' in effect ? [effect.say] : []));
+    expect(played('song-master')).toEqual(['talk']);
+    expect(container.dataset.playerAnimation).toBe('idle');
+    await vi.advanceTimersByTimeAsync(speechMs(said[0]!) + speechMs(said[1]!));
+    expect(played('song-master')).toEqual(['talk', 'idle']);
+    expect(container.dataset.playerAnimation).toBe('talk');
+    await vi.advanceTimersByTimeAsync(speechMs(said[2]!));
+    expect(played()).toEqual(['walk', 'idle', 'talk', 'idle']);
   });
 
   it('plays no use when the item is refused', async () => {

@@ -11,7 +11,7 @@ import { expect } from './fixtures';
  *   data-scene   the room id that is showing
  *   data-player  "x,y": where the player character stands, in scene pixels (1280 x 640)
  *   data-hover   the name of the hotspot under the pointer, empty when there is none
- *   data-say     the line the cat is saying, empty when silent
+ *   data-say     the line being said, by the cat or anyone else, in turn; empty when silent
  *   data-world   the world that is showing: street, online or dream
  *   data-act     the act being played
  *
@@ -26,32 +26,62 @@ import { expect } from './fixtures';
  * place, in the PR that removes the test's expected-to-fail marker.
  */
 
-/** Content the tests rely on: the skeleton's opening rooms and Act 1 placeholders (#4, #5, #11). */
+/** Content the tests rely on: the opening rooms and Act 1, the Three Crows' conditions (#4, #5, #11, #71). */
 export const content = {
   opening: 'opening',
   pubInterior: /pub/,
   pubDoor: /door/i,
-  /** The "Tonight: open mic" board on the pavement: a thing to look at in the opening scene. */
+  /** The chalkboard on the pavement: a thing to look at in the opening scene. */
   board: /tonight|board/i,
-  /** The Open Mic flyer on the pub door: something in the opening scene the cat can pick up. */
-  flyer: /flyer/i,
+  /** The beetroot cop on the pavement outside the pub: the first character to talk to. */
+  cop: /cop/i,
+  /** The way from the opening scene down the High Street, and the High Street's room id. */
+  streetExit: /down the high street/i,
+  highStreet: 'high-street',
+  /** The way back from the High Street to the pub. */
+  backToPub: /to the three crows/i,
+  /** The Song Master's flyer on the High Street: something the cat can pick up. */
+  lessonFlyer: /song master's flyer/i,
   /**
-   * A point on the flyer, in scene pixels, clear of the player when they stand on the pavement:
-   * it stands on the pavement in front of the pub door.
+   * A point on the Song Master's flyer, in scene pixels, clear of the player when they stand on
+   * the High Street's pavement: it stands on the pavement by his intercom.
    */
-  flyerSprite: { x: 737, y: 525 },
+  lessonFlyerSprite: { x: 930, y: 535 },
+  /** A walkable spot on the High Street's pavement, in scene pixels. */
+  highStreetPavement: { x: 600, y: 585 },
+  intercom: /intercom/i,
+  flatDoor: /song master's door/i,
+  songMaster: /song master$/i,
+  musicShop: /music shop/i,
+  strings: /guitar strings/i,
+  toMayor: /to the mayor's/i,
+  mayor: /^the mayor$/i,
   brokenGuitar: /broken guitar/i,
-  /** A character in the pub interior with a conversation goal (getting a job at the pub). */
+  maneString: /mane string/i,
+  /** The guitar the mane string mends: a working guitar. */
+  guitar: /^guitar$/i,
+  ownSong: /my own song/i,
+  /** A character in the pub interior with a conversation goal (the third crow, the kitchen job). */
   bartender: /bartender/i,
+  /** The Three Crows behind the bar, in the order of their conditions. */
+  sherylCaw: /sheryl caw/i,
+  secondCrow: /second crow/i,
+  thirdCrow: /third crow/i,
+  wallOfFame: /wall of fame/i,
+  /** The dog, on the pub stage once the Song Master has taught the cat his song. */
+  rivalOnStage: /dog on stage/i,
+  /** In the dream once the dog has played the song: the cat writes his own. */
+  dreamSong: /stolen song/i,
   /** The Act 1 goal the bartender conversation reaches. */
-  jobGoal: /job/i,
+  livesHereGoal: /lives here/i,
   /**
    * Goal ids of Act 1 and Act 3, in the order the story reaches them; the last one of each
-   * is reached by talking to the bartender. Act 1's are #11's placeholder goals; Act 3's are
-   * stand-ins until the story has an Act 3.
+   * is reached by talking to the bartender. Act 3's are stand-ins until the story has an Act 3.
    */
-  act1Goals: ['fix-guitar', 'pub-job', 'late-slot'],
+  act1Goals: ['working-guitar', 'own-song', 'lives-here'],
   act3Goals: ['act3-first', 'act3-last'],
+  /** The career stats of a new game. */
+  newStats: { followers: 0, musicians: 0, practice: 0, instruments: 1 },
   /** A walkable spot on the pavement outside the pub, in scene pixels. */
   pavement: { x: 900, y: 585 },
   /** Where the player stands on coming into the pub, just inside its street door. */
@@ -158,6 +188,18 @@ export async function useItemOn(page: Page, item: string | RegExp, target: strin
   await clickHotspot(page, target);
 }
 
+/** Selects an inventory item, then clicks another inventory item with it. */
+export async function useItemOnItem(page: Page, item: string | RegExp, other: string | RegExp): Promise<void> {
+  await inventoryItem(page, item).click();
+  await inventoryItem(page, other).click();
+}
+
+/** From the opening scene down the High Street. */
+export async function toHighStreet(page: Page): Promise<void> {
+  await clickHotspot(page, content.streetExit);
+  await expect(game(page)).toHaveAttribute('data-scene', content.highStreet);
+}
+
 /**
  * Matches backend requests by path, whatever origin the build's apiBase() (src/services/api.ts)
  * resolves to: the production API, or another one when the build sets VITE_API_BASE.
@@ -208,7 +250,7 @@ export async function stubSaves(page: Page, store: Map<string, string>): Promise
 }
 
 /** A saved game, as the title screen's Continue loads it, with the fields the tests set; seedSave stamps the rest. */
-export type Save = Required<Pick<SaveGame, 'room' | 'act' | 'goals' | 'stats'>>;
+export type Save = Required<Pick<SaveGame, 'room' | 'act' | 'goals' | 'stats'>> & Pick<SaveGame, 'flags' | 'inventory'>;
 
 let seeds = 0;
 

@@ -7,11 +7,39 @@ const BOUNDS: Readonly<Record<string, Readonly<Record<string, Rect>>>> = {
   'scene/opening': {
     door: { x: 634, y: 208, width: 142, height: 312 },
     board: { x: 868, y: 452, width: 100, height: 110 },
-    flyer: { x: 714, y: 390, width: 46, height: 58 },
+    cop: { x: 1040, y: 360, width: 80, height: 190 },
+    street: { x: 412, y: 400, width: 92, height: 144 },
   },
   'scene/pub': {
     door: { x: 60, y: 138, width: 162, height: 332 },
     bartender: { x: 940, y: 164, width: 140, height: 192 },
+    'sheryl-caw': { x: 700, y: 390, width: 80, height: 145 },
+    'second-crow': { x: 790, y: 390, width: 80, height: 145 },
+    'third-crow': { x: 880, y: 390, width: 80, height: 145 },
+    stage: { x: 240, y: 430, width: 470, height: 52 },
+    fame: { x: 496, y: 160, width: 200, height: 180 },
+    rival: { x: 430, y: 330, width: 80, height: 204 },
+  },
+  'scene/high-street': {
+    back: { x: 60, y: 380, width: 90, height: 160 },
+    shop: { x: 440, y: 262, width: 120, height: 256 },
+    'lesson-flyer': { x: 914, y: 505, width: 32, height: 40 },
+    intercom: { x: 838, y: 380, width: 30, height: 46 },
+    'flat-door': { x: 700, y: 290, width: 112, height: 228 },
+    mayor: { x: 1110, y: 380, width: 90, height: 160 },
+  },
+  'scene/music-shop': {
+    door: { x: 60, y: 150, width: 160, height: 330 },
+    rival: { x: 820, y: 330, width: 80, height: 205 },
+    strings: { x: 760, y: 170, width: 160, height: 100 },
+  },
+  'scene/flat': {
+    door: { x: 60, y: 150, width: 160, height: 330 },
+    'song-master': { x: 780, y: 385, width: 80, height: 155 },
+  },
+  'scene/mayors-office': {
+    door: { x: 60, y: 150, width: 160, height: 330 },
+    mayor: { x: 930, y: 310, width: 100, height: 230 },
   },
   'scene/feed': {
     page: { x: 400, y: 40, width: 480, height: 460 },
@@ -19,7 +47,7 @@ const BOUNDS: Readonly<Record<string, Readonly<Record<string, Rect>>>> = {
   },
   'scene/dream': {
     stage: { x: 600, y: 316, width: 440, height: 136 },
-    flyer: { x: 780, y: 222, width: 92, height: 92 },
+    'stolen-song': { x: 780, y: 340, width: 92, height: 205 },
   },
 };
 

@@ -1,1 +1,1 @@
-{ "objects": [{ "id": "flyer", "name": "Open mic flyer", "model": "object/flyer" }] }
+{ "objects": [{ "id": "lesson-flyer", "name": "Song Master's flyer", "model": "object/flyer" }] }

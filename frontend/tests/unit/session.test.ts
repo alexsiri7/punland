@@ -3,6 +3,7 @@ import { createMirror } from '../../src/app/mirror';
 import { GameSession } from '../../src/app/session';
 import { loadContent } from '../../src/content';
 import { type Command, fromSave, type GameEvent, newGame, type SaveGame } from '../../src/domain';
+import { speechMs } from '../../src/presentation/ui/speech';
 import { isSaveGame } from '../../src/services/save';
 
 const content = loadContent();
@@ -13,9 +14,16 @@ const V1_SAVE: SaveGame = {
   version: 1,
   room: 'pub',
   savedAt: '2026-10-24T12:00:00.000Z',
-  inventory: { items: ['broken-guitar', 'flyer'], pickedUp: ['flyer'] },
-  journey: { left: { dream: { room: 'dream' } }, gathered: ['open-mic'] },
+  inventory: { items: ['broken-guitar', 'lesson-flyer'], pickedUp: ['lesson-flyer'] },
+  journey: { left: { dream: { room: 'dream' } }, gathered: ['same-song'] },
 };
+
+/** A new game, on the High Street. */
+const onHighStreet = () => ({
+  ...newGame(content),
+  room: 'high-street',
+  at: { ...content.rooms['high-street']!.start },
+});
 
 function session(state = newGame(content)) {
   const saves: SaveGame[] = [];
@@ -35,30 +43,31 @@ function play(game: GameSession, ...commands: Command[]): void {
 
 describe('GameSession', () => {
   it('applies each command through the rules and tells listeners, with the state already changed', () => {
-    const { game, events } = session();
+    const { game, events } = session(onHighStreet());
     const seen: string[] = [];
     game.subscribe((event) => {
       if (event.type === 'pickedUp') seen.push(...game.state.inventory.carried);
     });
-    play(game, { type: 'activate', hotspot: 'flyer' });
-    expect(events).toContainEqual({ type: 'pickedUp', item: 'flyer', hotspot: 'flyer' });
-    expect(seen).toEqual(['broken-guitar', 'flyer']);
-    expect(game.isPresent(content.rooms.opening!.hotspots.find((h) => h.id === 'flyer')!)).toBe(false);
+    play(game, { type: 'activate', hotspot: 'lesson-flyer' });
+    expect(events).toContainEqual({ type: 'pickedUp', item: 'lesson-flyer', hotspot: 'lesson-flyer' });
+    expect(seen).toEqual(['broken-guitar', 'lesson-flyer']);
+    const flyer = content.rooms['high-street']!.hotspots.find((h) => h.id === 'lesson-flyer')!;
+    expect(game.isPresent(flyer)).toBe(false);
   });
 
   it('saves the state on every saved event, stamped with the time, in the save format', () => {
-    const { game, saves } = session();
+    const { game, saves } = session(onHighStreet());
     play(game, { type: 'walk', to: { x: 900, y: 585 } });
     expect(saves).toEqual([]);
-    play(game, { type: 'activate', hotspot: 'flyer' }, { type: 'activate', hotspot: 'door' });
+    play(game, { type: 'activate', hotspot: 'lesson-flyer' }, { type: 'activate', hotspot: 'shop' });
     expect(saves).toHaveLength(2);
     expect(saves[1]).toEqual({
       version: 1,
-      room: 'pub',
-      at: content.rooms.pub!.start,
+      room: 'music-shop',
+      at: content.rooms['music-shop']!.start,
       savedAt: NOW.toISOString(),
-      inventory: { items: ['broken-guitar', 'flyer'], pickedUp: ['flyer'] },
-      journey: { left: {}, gathered: ['open-mic'] },
+      inventory: { items: ['broken-guitar', 'lesson-flyer'], pickedUp: ['lesson-flyer'] },
+      journey: { left: {}, gathered: [] },
       flags: {},
       act: '1',
       goals: [],
@@ -83,8 +92,8 @@ describe('GameSession', () => {
         journey: V1_SAVE.journey,
         flags: {},
         act: '1',
-            goals: [],
-          stats: { followers: 0, musicians: 0, practice: 0, instruments: 1 },
+        goals: [],
+        stats: { followers: 0, musicians: 0, practice: 0, instruments: 1 },
       },
     ]);
   });
@@ -129,7 +138,7 @@ describe('the #game mirror', () => {
   });
 
   it('follows the act as it changes', () => {
-    const { game } = session({ ...newGame(content), room: 'pub', goals: ['fix-guitar', 'pub-job'] });
+    const { game } = session({ ...newGame(content), room: 'pub', goals: ['working-guitar', 'own-song'] });
     createMirror(container, game).shown();
     game.dispatch({ type: 'dialogueResult', character: 'bartender', goalReached: true });
     expect(container.dataset.act).toBe('2');
@@ -159,6 +168,22 @@ describe('the #game mirror', () => {
     expect(container.dataset.say).toBe('');
     play(game, { type: 'activate', hotspot: 'board' });
     vi.advanceTimersByTime(60_000);
+    expect(container.dataset.say).toBe('');
+  });
+
+  it('shows the lines said one after another in turn, by anyone', () => {
+    const { game } = session({ ...newGame(content), room: 'flat' });
+    createMirror(container, game).shown();
+    play(game, { type: 'activate', hotspot: 'song-master' });
+    const [first, second, third] = content.rooms.flat!.hotspots
+      .find((h) => h.id === 'song-master')!
+      .interactions[0]!.effects.flatMap((effect) => ('say' in effect ? [effect.say] : []));
+    expect(container.dataset.say).toBe(first);
+    vi.advanceTimersByTime(speechMs(first!));
+    expect(container.dataset.say).toBe(second);
+    vi.advanceTimersByTime(speechMs(second!));
+    expect(container.dataset.say).toBe(third);
+    vi.advanceTimersByTime(speechMs(third!));
     expect(container.dataset.say).toBe('');
   });
 

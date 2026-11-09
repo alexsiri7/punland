@@ -1,0 +1,82 @@
+{
+  "model": "scene/music-shop",
+  "world": "street",
+  "label": "PUNLAND · THE MUSIC SHOP",
+  "place": { "verb": "Inside", "name": "The music shop" },
+  "hint": "Guitars on every wall, and strings on the rack.",
+  "start": { "x": 250, "y": 585 },
+  "walkable": [
+    { "x": 60, "y": 525 },
+    { "x": 1240, "y": 525 },
+    { "x": 1240, "y": 615 },
+    { "x": 40, "y": 615 }
+  ],
+  "hotspots": [
+    {
+      "id": "door",
+      "name": "Door",
+      "verb": "Go out",
+      "target": { "node": "door" },
+      "walkTo": { "x": 150, "y": 545 },
+      "interactions": [
+        {
+          "verb": "go",
+          "effects": [{ "goTo": "high-street", "at": { "x": 500, "y": 575 } }]
+        }
+      ]
+    },
+    {
+      "id": "rival",
+      "name": "Dog at the counter",
+      "verb": "Look at",
+      "target": { "entity": "rival", "at": { "x": 860, "y": 535 } },
+      "walkTo": { "x": 740, "y": 565 },
+      "interactions": [
+        {
+          "verb": "look",
+          "effects": [
+            {
+              "say": "A dog in a leather jacket, leaning on the counter like he owns the place."
+            }
+          ]
+        }
+      ],
+      "presentWhen": [{ "not": { "flag": "song-lesson" } }]
+    },
+    {
+      "id": "strings",
+      "name": "Guitar strings",
+      "verb": "Buy",
+      "target": { "node": "strings" },
+      "walkTo": { "x": 680, "y": 565 },
+      "interactions": [
+        {
+          "verb": "look",
+          "when": [{ "not": { "flag": "string-sold-out" } }, { "not": { "flag": "song-lesson" } }],
+          "effects": [
+            {
+              "say": "The last string? Mine. Better luck next time, kitty.",
+              "by": "rival"
+            },
+            { "say": "He bought the last guitar string in Punland. Now what?" },
+            { "set": "string-sold-out", "to": true }
+          ]
+        },
+        {
+          "verb": "look",
+          "when": [{ "not": { "flag": "string-sold-out" } }],
+          "effects": [
+            {
+              "say": "Sold out. A dog bought the last string this morning. Now what?"
+            },
+            { "set": "string-sold-out", "to": true }
+          ]
+        },
+        {
+          "verb": "look",
+          "effects": [{ "say": "Sold out. Not a string left in Punland." }]
+        }
+      ]
+    }
+  ]
+}

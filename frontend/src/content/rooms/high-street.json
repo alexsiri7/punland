@@ -1,0 +1,104 @@
+{
+  "model": "scene/high-street",
+  "world": "street",
+  "label": "PUNLAND · HIGH STREET",
+  "place": { "verb": "On", "name": "The High Street" },
+  "hint": "Shops, a buzzer marked S.M., and strings for sale.",
+  "start": { "x": 300, "y": 585 },
+  "walkable": [
+    { "x": 80, "y": 540 },
+    { "x": 1200, "y": 540 },
+    { "x": 1220, "y": 610 },
+    { "x": 60, "y": 610 }
+  ],
+  "hotspots": [
+    {
+      "id": "back",
+      "name": "To The Three Crows",
+      "verb": "Walk",
+      "target": { "node": "back" },
+      "walkTo": { "x": 140, "y": 570 },
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "opening", "at": { "x": 440, "y": 575 } }] }]
+    },
+    {
+      "id": "shop",
+      "name": "Music shop",
+      "verb": "Go in",
+      "target": { "node": "shop" },
+      "walkTo": { "x": 500, "y": 560 },
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "music-shop" }] }]
+    },
+    {
+      "id": "lesson-flyer",
+      "name": "Song Master's flyer",
+      "verb": "Pick up",
+      "target": { "entity": "lesson-flyer", "at": { "x": 930, "y": 545 } },
+      "walkTo": { "x": 930, "y": 565 },
+      "interactions": [
+        {
+          "verb": "pickup",
+          "effects": [
+            {
+              "say": "\"Songwriting lessons with the Song Master. Ring the bell.\" Don't mind if I do."
+            },
+            { "pickUp": "lesson-flyer" }
+          ]
+        }
+      ],
+      "presentWhen": [{ "not": { "pickedUp": "lesson-flyer" } }]
+    },
+    {
+      "id": "intercom",
+      "name": "Intercom",
+      "verb": "Press",
+      "target": { "node": "intercom" },
+      "walkTo": { "x": 850, "y": 560 },
+      "interactions": [
+        {
+          "verb": "use",
+          "item": "lesson-flyer",
+          "effects": [
+            {
+              "say": "I hold the flyer up to the buzzer. It doesn't read. I should just press it."
+            }
+          ]
+        },
+        {
+          "verb": "look",
+          "when": [{ "flag": "song-stolen" }],
+          "effects": [{ "say": "I buzz. And buzz. Nobody answers any more." }]
+        },
+        {
+          "verb": "look",
+          "when": [{ "pickedUp": "lesson-flyer" }],
+          "effects": [
+            { "say": "I buzz. A crackly voice: \"Songwriting? Come on up.\"" },
+            { "set": "invited", "to": true }
+          ]
+        },
+        {
+          "verb": "look",
+          "effects": [{ "say": "A buzzer marked \"S.M.\". Whoever that is." }]
+        }
+      ]
+    },
+    {
+      "id": "flat-door",
+      "name": "Song Master's door",
+      "verb": "Go up",
+      "target": { "node": "flat-door" },
+      "walkTo": { "x": 756, "y": 560 },
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "flat" }] }],
+      "presentWhen": [{ "flag": "invited" }, { "not": { "flag": "song-stolen" } }]
+    },
+    {
+      "id": "mayor",
+      "name": "To the Mayor's",
+      "verb": "Go to",
+      "target": { "node": "mayor" },
+      "walkTo": { "x": 1140, "y": 570 },
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "mayors-office" }] }],
+      "presentWhen": [{ "flag": "string-sold-out" }]
+    }
+  ]
+}

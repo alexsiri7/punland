@@ -23,7 +23,7 @@ describe('Story as content', () => {
         {
           verb: 'use',
           item: 'broken-guitar',
-          effects: [{ say: line }, { take: 'broken-guitar' }, { changeStat: 'practice', by: 1 }, { reachGoal: 'fix-guitar' }],
+          effects: [{ say: line }, { take: 'broken-guitar' }, { changeStat: 'practice', by: 1 }, { reachGoal: 'working-guitar' }],
         },
       ],
     });
@@ -36,6 +36,6 @@ describe('Story as content', () => {
     expect(events).toContainEqual(expect.objectContaining({ type: 'said', line }));
     expect(state.inventory.carried).not.toContain('broken-guitar');
     expect(state.stats.practice).toBe(1);
-    expect(state.goals).toContain('fix-guitar');
+    expect(state.goals).toContain('working-guitar');
   });
 });
