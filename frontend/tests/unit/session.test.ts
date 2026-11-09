@@ -2,9 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMirror } from '../../src/app/mirror';
 import { GameSession } from '../../src/app/session';
 import { loadContent } from '../../src/content';
-import { type Command, fromSave, type GameEvent, newGame, type SaveGame } from '../../src/domain';
+import { type Command, fromSave, type GameEvent, isSaveGame, newGame, type SaveGame } from '../../src/domain';
 import { speechMs } from '../../src/presentation/ui/speech';
-import { isSaveGame } from '../../src/services/save';
 
 const content = loadContent();
 const NOW = new Date('2026-10-26T12:00:00.000Z');

@@ -1,6 +1,5 @@
+import { SAVE_KEY } from '../../src/services/save';
 import { expect, test } from './fixtures';
-
-const SAVE_KEY = 'punland.save.v1';
 
 test('opening the game shows the title screen with the working title and New game', async ({ page }) => {
   await page.goto('/');

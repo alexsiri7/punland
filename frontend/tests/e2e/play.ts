@@ -1,6 +1,7 @@
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
 import type { DialogueTurn, SaveGame } from '../../src/domain';
+import { SAVE_KEY } from '../../src/services/save';
 import { expect } from './fixtures';
 
 /**
@@ -265,12 +266,12 @@ export async function seedSave(page: Page, save: Save): Promise<void> {
   // which seeds were already written, so a reload doesn't overwrite what the game saved.
   const seed = `punland.e2e.seed.${++seeds}`;
   await page.addInitScript(
-    ([value, seed]) => {
+    ([key, value, seed]) => {
       if (sessionStorage.getItem(seed) !== null) return;
-      localStorage.setItem('punland.save.v1', value);
+      localStorage.setItem(key, value);
       sessionStorage.setItem(seed, 'written');
     },
-    [game, seed] as const,
+    [SAVE_KEY, game, seed] as const,
   );
   let latest: string | null = game;
   await page.route(apiPath('/saves'), async (route: Route) => {

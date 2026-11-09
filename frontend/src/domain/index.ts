@@ -35,5 +35,5 @@ export {
 export { type FloorPoint, insidePolygon, isConvex, nearestWalkable, type Rect, SCENE } from './geometry';
 export type { InventoryState } from './inventory';
 export type { JourneyState, Place } from './journey';
-export { fromSave, type SaveGame, toSave, type UnstampedSave } from './save';
+export { fromSave, isSaveGame, type SaveGame, toSave, type UnstampedSave } from './save';
 export { type GameState, newGame, type Speaker } from './state';

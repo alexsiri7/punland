@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { SaveGame } from '../../src/domain';
-import { BackendSaveStore, isSaveGame, LocalSaveStore, SAVE_KEY } from '../../src/services/save';
+import { BackendSaveStore, LocalSaveStore, SAVE_KEY } from '../../src/services/save';
 
 const game: SaveGame = { version: 1, room: 'opening', savedAt: '2026-10-24T12:00:00.000Z' };
 
@@ -35,40 +35,6 @@ describe('LocalSaveStore', () => {
     const store = new LocalSaveStore(null);
     await store.save(game);
     expect(await store.load()).toBeNull();
-  });
-});
-
-describe('isSaveGame', () => {
-  it('accepts a save from before inventory and journey were saved', () => {
-    expect(isSaveGame(game)).toBe(true);
-  });
-
-  it('accepts inventory, journey, flags and progress, and ignores fields it does not know', () => {
-    const full = {
-      ...game,
-      inventory: { items: ['flyer'], pickedUp: ['flyer'] },
-      journey: { left: { street: { room: 'pub', at: { x: 1, y: 2 } }, dream: { room: 'dream' } }, gathered: [] },
-      at: { x: 3, y: 4 },
-      flags: { 'pinned-flyer': true, coins: 2, band: 'The Crows' },
-      act: '2',
-      goals: ['act2-first'],
-      stats: { followers: 10, practice: 0 },
-      mood: 'hopeful',
-    };
-    expect(isSaveGame(full)).toBe(true);
-  });
-
-  it('rejects a malformed spot, inventory, journey, flags or progress', () => {
-    expect(isSaveGame({ ...game, at: { x: 1 } })).toBe(false);
-    expect(isSaveGame({ ...game, inventory: { items: 'flyer', pickedUp: [] } })).toBe(false);
-    expect(isSaveGame({ ...game, journey: { left: { street: { at: { x: 1, y: 2 } } }, gathered: [] } })).toBe(false);
-    expect(isSaveGame({ ...game, journey: { left: { street: { room: 'pub', at: 'here' } }, gathered: [] } })).toBe(false);
-    expect(isSaveGame({ ...game, flags: { 'pinned-flyer': null } })).toBe(false);
-    expect(isSaveGame({ ...game, flags: [true] })).toBe(false);
-    expect(isSaveGame({ ...game, act: 2 })).toBe(false);
-    expect(isSaveGame({ ...game, goals: 'pub-job' })).toBe(false);
-    expect(isSaveGame({ ...game, stats: { followers: '10' } })).toBe(false);
-    expect(isSaveGame({ ...game, stats: [10] })).toBe(false);
   });
 });
 
