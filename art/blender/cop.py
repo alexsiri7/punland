@@ -23,12 +23,10 @@ from lib.export import arguments, empty_scene, export_glb
 from lib.palette import material
 from lib.rig import SIDES, Biped, anchors, armature, mirror
 
-# The opening's reference art for the helmet and its trim; STYLE.md's palette, and the other
-# characters' eyes, for the rest.
-# The beetroot is the one tone of its own: the art's poster red reads as a tomato, and the pun
-# needs a beetroot's deep magenta.
+# The opening's reference art for the bulb (its poster red), the helmet and its trim; STYLE.md's
+# palette, and the other characters' eyes, for the rest.
 COLOURS = {
-    "beetroot": "#8C2A55",
+    "beetroot": "#C8483B",
     "leaves": "#3E5E44",
     "stalks": "#2F4A36",
     "helmet": "#2E3A52",
