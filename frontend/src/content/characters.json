@@ -7,16 +7,52 @@
       "model": "character/bartender",
       "onGoal": [
         {
-          "when": [{ "act": "1" }, { "not": { "goal": "pub-job" } }],
-          "effects": [{ "changeStat": "followers", "by": 10 }, { "reachGoal": "pub-job" }]
+          "when": [
+            { "act": "1" },
+            { "not": { "goal": "lives-here" } },
+            { "goal": "working-guitar" },
+            { "goal": "own-song" }
+          ],
+          "effects": [
+            { "set": "kitchen-job", "to": true },
+            { "changeStat": "followers", "by": 10 },
+            {
+              "say": "She says you're staying and you work in her kitchen. Fine: I'll vouch for you.",
+              "by": "third-crow"
+            },
+            { "changeStat": "followers", "by": 50 },
+            { "say": "All three crows agree. My first show, at The Three Crows!" },
+            { "reachGoal": "lives-here" }
+          ]
         },
         {
-          "when": [{ "act": "1" }, { "not": { "goal": "late-slot" } }],
-          "effects": [{ "changeStat": "followers", "by": 50 }, { "reachGoal": "late-slot" }]
+          "when": [{ "act": "1" }, { "not": { "goal": "lives-here" } }],
+          "effects": [
+            { "set": "kitchen-job", "to": true },
+            { "changeStat": "followers", "by": 10 },
+            {
+              "say": "She says you're staying and you work in her kitchen. Fine: I'll vouch for you.",
+              "by": "third-crow"
+            },
+            { "reachGoal": "lives-here" }
+          ]
         },
-        { "when": [{ "act": "2" }, { "not": { "goal": "act2-last" } }], "effects": [{ "reachGoal": "act2-last" }] },
-        { "when": [{ "act": "3" }, { "not": { "goal": "act3-last" } }], "effects": [{ "reachGoal": "act3-last" }] }
+        {
+          "when": [{ "act": "2" }, { "not": { "goal": "act2-last" } }],
+          "effects": [{ "reachGoal": "act2-last" }]
+        },
+        {
+          "when": [{ "act": "3" }, { "not": { "goal": "act3-last" } }],
+          "effects": [{ "reachGoal": "act3-last" }]
+        }
       ]
-    }
+    },
+    { "id": "cop", "name": "Beetroot cop", "model": "character/cop" },
+    { "id": "sheryl-caw", "name": "Sheryl Caw", "model": "character/crow" },
+    { "id": "second-crow", "name": "Second crow", "model": "character/crow" },
+    { "id": "third-crow", "name": "Third crow", "model": "character/crow" },
+    { "id": "rival", "name": "The dog", "model": "character/rival" },
+    { "id": "song-master", "name": "Song Master", "model": "character/song-master" },
+    { "id": "mayor", "name": "The Mayor", "model": "character/mayor" }
   ]
 }

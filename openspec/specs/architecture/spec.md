@@ -22,7 +22,7 @@ Every player action SHALL be a command that the rules layer applies to the game 
 
 #### Scenario: Playing without a renderer
 - GIVEN a new game's state
-- WHEN the commands for picking up the flyer, walking into the pub and using the flyer on the bartender are applied in order
+- WHEN the commands for walking down the High Street, picking up the Song Master's flyer and pressing his intercom are applied in order
 - THEN the resulting state and events are the ones the game shows for those actions, and no renderer or DOM was needed
 
 #### Scenario: Use X on Y

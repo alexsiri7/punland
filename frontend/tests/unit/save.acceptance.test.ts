@@ -9,8 +9,8 @@ const V1_SAVE = {
   version: 1,
   room: 'pub',
   savedAt: '2026-10-24T12:00:00.000Z',
-  inventory: { items: ['broken-guitar', 'flyer'], pickedUp: ['flyer'] },
-  journey: { left: { street: { room: 'pub', at: { x: 300, y: 580 } } }, gathered: ['open-mic'] },
+  inventory: { items: ['broken-guitar', 'lesson-flyer'], pickedUp: ['lesson-flyer'] },
+  journey: { left: { street: { room: 'pub', at: { x: 300, y: 580 } } }, gathered: ['same-song'] },
 };
 
 describe('Serialisable game state', () => {
@@ -24,10 +24,10 @@ describe('Serialisable game state', () => {
     ]);
     const content = loadContent();
     const { state } = await play(content, newGame(content), [
-      { type: 'activate', hotspot: 'flyer' },
-      { type: 'activate', hotspot: 'door' },
+      { type: 'activate', hotspot: 'street' },
+      { type: 'activate', hotspot: 'lesson-flyer' },
     ]);
-    expect(state.room).toBe('pub');
+    expect(state.room).toBe('high-street');
     const restored = fromSave(JSON.parse(JSON.stringify(toSave(state))), content);
     expect(restored).toEqual({ ...state, selected: null, walk: null, saying: null });
   });
@@ -37,7 +37,7 @@ describe('Serialisable game state', () => {
     const [{ loadContent }, { fromSave }] = await Promise.all([load('content'), load('save')]);
     const state = fromSave(V1_SAVE, loadContent());
     expect(state.room).toBe('pub');
-    expect(state.inventory).toEqual({ carried: ['broken-guitar', 'flyer'], pickedUp: ['flyer'] });
+    expect(state.inventory).toEqual({ carried: ['broken-guitar', 'lesson-flyer'], pickedUp: ['lesson-flyer'] });
     expect(state.journey).toEqual(V1_SAVE.journey);
   });
 });

@@ -3,7 +3,7 @@
   "world": "street",
   "label": "PUNLAND · THE THREE CROWS",
   "place": { "verb": "Inside", "name": "The Three Crows" },
-  "hint": "Warm, loud, and the bartender is watching you.",
+  "hint": "Warm, loud, and three crows at the bar decide who plays.",
   "start": { "x": 250, "y": 585 },
   "walkable": [
     { "x": 60, "y": 530 },
@@ -26,17 +26,160 @@
       "verb": "Talk to",
       "target": { "entity": "bartender", "at": { "x": 1010, "y": 535 } },
       "walkTo": { "x": 880, "y": 560 },
+      "interactions": [{ "verb": "talk", "effects": [{ "talk": "bartender" }] }]
+    },
+    {
+      "id": "sheryl-caw",
+      "name": "Sheryl Caw",
+      "verb": "Talk to",
+      "target": { "entity": "sheryl-caw", "at": { "x": 740, "y": 535 } },
+      "walkTo": { "x": 740, "y": 570 },
       "interactions": [
-        { "verb": "talk", "effects": [{ "talk": "bartender" }] },
+        { "verb": "talk", "effects": [{ "talk": "sheryl-caw" }] },
         {
           "verb": "use",
-          "item": "flyer",
+          "item": "guitar",
+          "when": [
+            { "act": "1" },
+            { "not": { "goal": "working-guitar" } },
+            { "goal": "own-song" },
+            { "goal": "lives-here" }
+          ],
           "effects": [
-            { "say": "I slide the flyer over. The bartender pins it up behind the bar." },
-            { "take": "flyer" }
+            {
+              "say": "A guitar that works. Caw! I agree: you can play.",
+              "by": "sheryl-caw"
+            },
+            { "changeStat": "followers", "by": 50 },
+            {
+              "say": "All three crows agree. My first show, at The Three Crows!"
+            },
+            { "reachGoal": "working-guitar" }
+          ]
+        },
+        {
+          "verb": "use",
+          "item": "guitar",
+          "when": [{ "act": "1" }, { "not": { "goal": "working-guitar" } }],
+          "effects": [
+            {
+              "say": "A guitar that works. Caw! I agree: you can play.",
+              "by": "sheryl-caw"
+            },
+            { "reachGoal": "working-guitar" }
           ]
         }
       ]
+    },
+    {
+      "id": "second-crow",
+      "name": "Second crow",
+      "verb": "Talk to",
+      "target": { "entity": "second-crow", "at": { "x": 830, "y": 535 } },
+      "walkTo": { "x": 830, "y": 570 },
+      "interactions": [
+        { "verb": "talk", "effects": [{ "talk": "second-crow" }] },
+        {
+          "verb": "use",
+          "item": "own-song",
+          "when": [
+            { "act": "1" },
+            { "not": { "goal": "own-song" } },
+            { "goal": "working-guitar" },
+            { "goal": "lives-here" }
+          ],
+          "effects": [
+            {
+              "say": "Now that's a song of your own. I agree.",
+              "by": "second-crow"
+            },
+            { "changeStat": "followers", "by": 50 },
+            {
+              "say": "All three crows agree. My first show, at The Three Crows!"
+            },
+            { "reachGoal": "own-song" }
+          ]
+        },
+        {
+          "verb": "use",
+          "item": "own-song",
+          "when": [{ "act": "1" }, { "not": { "goal": "own-song" } }],
+          "effects": [
+            {
+              "say": "Now that's a song of your own. I agree.",
+              "by": "second-crow"
+            },
+            { "reachGoal": "own-song" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "third-crow",
+      "name": "Third crow",
+      "verb": "Talk to",
+      "target": { "entity": "third-crow", "at": { "x": 920, "y": 535 } },
+      "walkTo": { "x": 920, "y": 570 },
+      "interactions": [{ "verb": "talk", "effects": [{ "talk": "third-crow" }] }]
+    },
+    {
+      "id": "stage",
+      "name": "Stage",
+      "verb": "Look at",
+      "target": { "node": "stage" },
+      "walkTo": { "x": 380, "y": 545 },
+      "interactions": [
+        {
+          "verb": "look",
+          "effects": [{ "say": "The stage. The greats all played here. One day, me." }]
+        }
+      ]
+    },
+    {
+      "id": "fame",
+      "name": "Wall of Fame",
+      "verb": "Look at",
+      "target": { "node": "fame" },
+      "walkTo": { "x": 600, "y": 545 },
+      "interactions": [
+        {
+          "verb": "look",
+          "effects": [
+            {
+              "say": "The Wall of Fame: the Rolling Stones, a pile of rocks. The Beetles, beetles with 60s haircuts. Tuna and Pike Turner. Katty Purry."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rival",
+      "name": "Dog on stage",
+      "verb": "Listen to",
+      "target": { "entity": "rival", "at": { "x": 470, "y": 534 } },
+      "walkTo": { "x": 470, "y": 575 },
+      "interactions": [
+        {
+          "verb": "look",
+          "when": [{ "not": { "flag": "song-stolen" } }],
+          "effects": [
+            {
+              "say": "\"I came to the city / to find my dream / my guitar is broken / my clothes ain't clean.\"",
+              "by": "rival"
+            },
+            {
+              "say": "That's the Song Master's song, word for word! I... don't feel well. I need a song of my own."
+            },
+            { "set": "song-stolen", "to": true },
+            { "gather": "same-song" }
+          ]
+        },
+        {
+          "verb": "look",
+          "effects": [{ "say": "He's still up there, playing the same song." }]
+        }
+      ],
+      "presentWhen": [{ "act": "1" }, { "flag": "song-lesson" }]
     }
   ]
 }

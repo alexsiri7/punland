@@ -36,6 +36,21 @@ A conversation MAY have a goal (such as getting past the bouncer). The suggested
 - WHEN a reply reaches the conversation's goal
 - THEN the game records it and the related puzzle step happens
 
+### Requirement: Act 1 conversations
+The beetroot cop, the three crows and the bartender SHALL be characters the cat can talk to; only the bartender's conversation has a goal in Act 1.
+
+#### Scenario: Talking to the beetroot cop
+- WHEN the player talks to the beetroot cop
+- THEN he says the music stars go to The Three Crows
+
+#### Scenario: Talking to a crow
+- WHEN the player talks to one of the three crows
+- THEN it states its condition, and one crow is Sheryl Caw
+
+#### Scenario: Convincing the bartender
+- WHEN the cat convinces the bartender he's staying
+- THEN the goal is reached
+
 ### Requirement: Characters remember
 Characters SHALL remember earlier conversations with the player in the same game.
 

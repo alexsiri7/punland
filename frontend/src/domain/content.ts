@@ -89,6 +89,8 @@ export interface World {
   start: RoomId;
   /** Why the world can't be entered yet; an unlocked world leaves it out. */
   locked?: string;
+  /** With `locked`, the world opens once all of these hold; without them a locked world stays locked. */
+  unlockWhen?: Condition[];
 }
 
 /** A reusable thing a room can place (content/characters.json, content/objects.json). */
@@ -108,7 +110,7 @@ export interface Character extends Entity {
   onGoal?: Reaction[];
 }
 
-/** A reusable prop, e.g. the flyer. */
+/** A reusable prop, e.g. the Song Master's flyer. */
 export interface Prop extends Entity {
   id: ObjectId;
 }
@@ -118,6 +120,18 @@ export interface Item {
   name: string;
   /** What the cat says on using the item on a hotspot that doesn't accept it. */
   noUse: string;
+  /** What using other items on this one does. */
+  uses?: ItemUse[];
+}
+
+/**
+ * Using `item` on the item that has this use, or that item on `item`: the effects run if every
+ * condition in `when` holds. No `goTo`, `pickUp` or `talk`: those go only in a hotspot's interactions.
+ */
+export interface ItemUse {
+  item: ItemId;
+  when?: Condition[];
+  effects: Effect[];
 }
 
 export const VERBS = ['look', 'use', 'talk', 'pickup', 'go'] as const;
@@ -157,8 +171,8 @@ export type Condition =
 
 /** One thing an interaction does. */
 export type Effect =
-  /** The player says the line. */
-  | { say: string }
+  /** The player says the line, or the character `by`. */
+  | { say: string; by?: CharacterId }
   /** Into another room of the same world: at `at`, or that room's `start`. */
   | { goTo: RoomId; at?: FloorPoint }
   /** The item goes into the inventory, and counts as picked up for good. */

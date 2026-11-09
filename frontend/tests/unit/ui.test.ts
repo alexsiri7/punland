@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
 import { loadContent } from '../../src/content';
 import { type DialogueTurn, type GameState, newGame } from '../../src/domain';
+import type { ScenePoint } from '../../src/presentation/renderer';
 import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
+import { speechMs } from '../../src/presentation/ui/speech';
 import { fakeBounds } from './fakes/renderer';
 import { readBytes } from './support/files';
 
@@ -37,7 +39,13 @@ describe('the DOM UI', () => {
     vi.useRealTimers();
   });
 
-  function mount(head = { x: 560, y: 300 }, state: GameState = newGame(content), picksHotspots = false) {
+  /** `head` is the player's head, and `anchors` the heads of the characters by hotspot. */
+  function mount(
+    head = { x: 560, y: 300 },
+    state: GameState = newGame(content),
+    picksHotspots = false,
+    anchors: Record<string, ScenePoint> = {},
+  ) {
     const game = new GameSession(content, state, { save: async () => {} });
     const canvas = document.createElement('canvas');
     const frames: Array<(dtMs: number) => void> = [];
@@ -50,7 +58,7 @@ describe('the DOM UI', () => {
         return () => {};
       },
       hotspotBounds: (id: string) => fakeBounds(content.rooms[game.state.room]!.model, id),
-      anchor: () => head,
+      anchor: (who: string) => (who === 'player' ? head : (anchors[who] ?? null)),
     };
     const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name), left: () => {} }, dialogue);
     ui.shown();
@@ -70,15 +78,20 @@ describe('the DOM UI', () => {
 
   it('puts the hovered hotspot on the action line and reports it for the mirror', () => {
     const { text, button } = mount();
-    button('Hotspots', 'Open mic board').dispatchEvent(new Event('pointerenter'));
-    expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Look at', 'Open mic board']);
-    button('Hotspots', 'Open mic board').dispatchEvent(new Event('pointerleave'));
+    button('Hotspots', 'Chalkboard').dispatchEvent(new Event('pointerenter'));
+    expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Look at', 'Chalkboard']);
+    button('Hotspots', 'Chalkboard').dispatchEvent(new Event('pointerleave'));
     expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Outside', 'The Three Crows']);
-    expect(hovered).toEqual(['Open mic board', '']);
+    expect(hovered).toEqual(['Chalkboard', '']);
   });
 
   it("shows the career stats and the act's goals, and follows them as they change", () => {
-    const { game } = mount(undefined, { ...newGame(content), room: 'pub', goals: ['fix-guitar'] });
+    const { game } = mount(undefined, {
+      ...newGame(content),
+      room: 'pub',
+      goals: ['working-guitar'],
+      inventory: { carried: ['own-song'], pickedUp: [] },
+    });
     const stats = () =>
       [...container.querySelectorAll('[aria-label="Career stats"] li')].map((entry) => entry.textContent);
     const goals = () =>
@@ -86,14 +99,17 @@ describe('the DOM UI', () => {
         (box) => `${box.checked ? '[x]' : '[ ]'}${box.closest('label')!.textContent}`,
       );
     expect(stats()).toEqual(['Followers 0', 'Musicians 0', 'Practice 0', 'Instruments 1']);
-    expect(container.querySelector('.goals-act')?.textContent).toBe('Act 1');
-    expect(goals()).toEqual(['[x] Fix the guitar', '[ ] Get a job at the pub', '[ ] Get the late slot']);
+    expect(container.querySelector('.goals-act')?.textContent).toBe('Act 1: The first show');
+    expect(goals()).toEqual(['[x] A working guitar', '[ ] A song of my own', '[ ] Someone who lives here']);
 
     game.dispatch({ type: 'dialogueResult', character: 'bartender', goalReached: true });
     expect(stats()).toEqual(['Followers 10', 'Musicians 0', 'Practice 0', 'Instruments 1']);
-    expect(goals()).toEqual(['[x] Fix the guitar', '[x] Get a job at the pub', '[ ] Get the late slot']);
+    expect(goals()).toEqual(['[x] A working guitar', '[ ] A song of my own', '[x] Someone who lives here']);
 
-    game.dispatch({ type: 'dialogueResult', character: 'bartender', goalReached: true });
+    game.dispatch({ type: 'select', item: 'own-song' });
+    game.dispatch({ type: 'activate', hotspot: 'second-crow' });
+    while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
+    expect(stats()).toEqual(['Followers 60', 'Musicians 0', 'Practice 0', 'Instruments 1']);
     expect(container.querySelector('.goals-act')?.textContent).toBe('Act 2');
     expect(goals()).toEqual(['[ ] Find a band', '[ ] Play a full set']);
   });
@@ -106,7 +122,7 @@ describe('the DOM UI', () => {
       for (const picksHotspots of [false, true]) {
         container.replaceChildren();
         const { button } = mount(undefined, undefined, picksHotspots);
-        const board = button('Hotspots', 'Open mic board');
+        const board = button('Hotspots', 'Chalkboard');
         expect(getComputedStyle(board).pointerEvents).toBe(picksHotspots ? 'none' : 'auto');
         board.focus();
         expect(document.activeElement).toBe(board);
@@ -121,8 +137,8 @@ describe('the DOM UI', () => {
     button('Inventory', 'Broken guitar').click();
     expect(game.state.selected).toBe('broken-guitar');
     expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Use', 'Broken guitar']);
-    button('Hotspots', 'Open mic board').dispatchEvent(new Event('pointerenter'));
-    expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Use Broken guitar on', 'Open mic board']);
+    button('Hotspots', 'Chalkboard').dispatchEvent(new Event('pointerenter'));
+    expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Use Broken guitar on', 'Chalkboard']);
   });
 
   it('shows what the player says until they are hushed or the line has been up long enough', () => {
@@ -131,10 +147,66 @@ describe('the DOM UI', () => {
     game.dispatch({ type: 'activate', hotspot: 'board' });
     while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
     expect(speech.hidden).toBe(false);
-    expect(speech.textContent).toMatch(/open mic/i);
+    expect(speech.textContent).toMatch(/live music below/i);
     expect([speech.style.left, speech.style.top]).toEqual(['43.75%', '37.5%']);
     vi.advanceTimersByTime(60_000);
     expect(speech.hidden).toBe(true);
+  });
+
+  it('shows lines said one after another in turn, each over its speaker, until they are hushed', () => {
+    const { game, frame } = mount(undefined, { ...newGame(content), room: 'flat' }, false, {
+      'song-master': { x: 960, y: 320 },
+    });
+    const speech = container.querySelector<HTMLElement>('.speech')!;
+    const lines = content.rooms.flat!.hotspots.find((h) => h.id === 'song-master')!.interactions[0]!.effects.flatMap(
+      (effect) => ('say' in effect ? [effect.say] : []),
+    );
+    game.dispatch({ type: 'activate', hotspot: 'song-master' });
+    while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
+    expect(lines).toHaveLength(3);
+    expect(speech.textContent).toBe(lines[0]);
+    expect([speech.style.left, speech.style.top]).toEqual(['75%', '40%']);
+    vi.advanceTimersByTime(speechMs(lines[0]!));
+    expect(speech.textContent).toBe(lines[1]);
+    vi.advanceTimersByTime(speechMs(lines[1]!));
+    expect(speech.textContent).toBe(lines[2]);
+    frame();
+    expect([speech.style.left, speech.style.top]).toEqual(['43.75%', '37.5%']);
+
+    game.dispatch({ type: 'activate', hotspot: 'song-master' });
+    game.dispatch({ type: 'walk', to: { x: 300, y: 580 } });
+    expect(speech.hidden).toBe(true);
+    vi.advanceTimersByTime(60_000);
+    expect(speech.hidden).toBe(true);
+  });
+
+  it('uses a selected item on another inventory item, or selects that one when it does nothing to it', () => {
+    const { game, button } = mount(undefined, {
+      ...newGame(content),
+      inventory: { carried: ['broken-guitar', 'lesson-flyer', 'mane-string'], pickedUp: [] },
+    });
+    button('Inventory', "Song Master's flyer").click();
+    button('Inventory', 'Broken guitar').click();
+    expect(game.state.selected).toBe('broken-guitar');
+    expect(button('Inventory', 'Broken guitar').getAttribute('aria-pressed')).toBe('true');
+
+    button('Inventory', 'Mane string').click();
+    expect(game.state.selected).toBeNull();
+    const items = [...container.querySelectorAll('[aria-label="Inventory"] button')].map((b) => b.ariaLabel);
+    expect(items).toEqual(["Song Master's flyer", 'Guitar']);
+  });
+
+  it('enables a world in the switcher once it unlocks', () => {
+    const { game } = mount(undefined, { ...newGame(content), room: 'pub', flags: { 'song-lesson': true } });
+    const dream = () => container.querySelector<HTMLButtonElement>('.worlds button:nth-of-type(3)')!;
+    expect([dream().textContent, dream().disabled]).toEqual(['Dream', true]);
+    expect(container.querySelector('#world-locked-dream')?.textContent).toMatch(/^Locked: /);
+
+    game.dispatch({ type: 'activate', hotspot: 'rival' });
+    while (game.state.walk) game.dispatch({ type: 'tick', dtMs: 100 });
+    expect(container.querySelectorAll('.worlds')).toHaveLength(1);
+    expect([dream().textContent, dream().disabled]).toEqual(['Dream', false]);
+    expect(container.querySelector('.inventory + .worlds')).not.toBeNull();
   });
 
   it("keeps the line over the player's head as it moves", () => {
@@ -160,8 +232,8 @@ describe('the DOM UI', () => {
 
   it('clears the action line and the hover when the player clicks the floor', () => {
     const { ui, text, button } = mount();
-    button('Hotspots', 'Open mic board').focus();
-    expect(text('.ui-bar-name')).toBe('Open mic board');
+    button('Hotspots', 'Chalkboard').focus();
+    expect(text('.ui-bar-name')).toBe('Chalkboard');
     ui.walked();
     expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Outside', 'The Three Crows']);
     expect(hovered.at(-1)).toBe('');
@@ -176,7 +248,7 @@ describe('the DOM UI', () => {
     expect(container.querySelector('.worlds')).toBeNull();
     ui.shown();
     expect(container.querySelectorAll('.hotspots')).toHaveLength(1);
-    expect(button('Hotspots', 'Open mic board')).toBeNull();
+    expect(button('Hotspots', 'Chalkboard')).toBeNull();
     expect(text('.ui-bar-label')).toBe(content.rooms.pub!.label);
   });
 

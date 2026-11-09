@@ -1,4 +1,4 @@
-import type { Command, Content, GameEvent, GameState, Hotspot } from '../domain';
+import type { Command, Content, GameEvent, GameState, Hotspot, World } from '../domain';
 
 /** The game session presentation plays (app/session.ts): it reads the state and sends commands. */
 export interface Session {
@@ -7,4 +7,5 @@ export interface Session {
   dispatch(command: Command): void;
   subscribe(listener: (event: GameEvent) => void): () => void;
   isPresent(hotspot: Hotspot): boolean;
+  isUnlocked(world: World): boolean;
 }

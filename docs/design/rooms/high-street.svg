@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- High Street room art: further down the street from The Three Crows, with the music shop, the Song Master's door and intercom, and the ways back to the pub and on to the Mayor's.
+     Drawn to docs/design/STYLE.md; the cat is board 2's, as in rooms/feed.svg. The placeholder scene model is laid out over it
+     (frontend/scripts/make-placeholders.mjs), so its shapes, the model and the room's floor points line up.
+     Layers follow docs/design/STYLE.md "Scene build": one <g id="layer-*"> per layer, back to front. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Dusk further down the Punland high street: a green-fronted music shop with a lit window full of guitars, a brick house with a green door, a brass intercom marked S.M. and a flyer on the pavement, signposts back to The Three Crows and on to the Mayor's; the ginger cat in his blue hoodie stands on the pavement">
+<style>
+.p-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p-sign{font-family:'Bebas Neue',sans-serif;text-anchor:middle}
+.p-small{font-family:'Inter',sans-serif;font-weight:500;text-anchor:middle}
+</style>
+<defs>
+<linearGradient id="p-sky" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" style="stop-color:#2E3A52"></stop>
+<stop offset="0.6" style="stop-color:#6E6478"></stop>
+<stop offset="1" style="stop-color:#C98A6C"></stop>
+</linearGradient>
+<filter id="p-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0 0.09  0 0 0 0.16 0"></feColorMatrix></filter>
+</defs>
+
+<g id="layer-sky">
+<rect x="0" y="0" width="1280" height="640" fill="url(#p-sky)"></rect>
+</g>
+
+<g id="layer-far">
+<g fill="#8E879C"><rect x="0" y="120" width="160" height="400"></rect><rect x="1040" y="60" width="240" height="460"></rect></g>
+<g fill="#6E6A82"><rect x="1080" y="100" width="70" height="420"></rect><rect x="20" y="180" width="60" height="340"></rect></g>
+</g>
+
+<g id="layer-mid">
+<rect x="150" y="0" width="470" height="518" fill="#96805F"></rect>
+<rect x="520" y="0" width="100" height="518" fill="#7E6B50"></rect>
+<rect x="170" y="180" width="430" height="338" fill="#2F4A36"></rect>
+<rect x="180" y="190" width="410" height="44" fill="#1A2822"></rect>
+<text x="385" y="223" class="p-sign" fill="#E3C58A" style="font-size:28px;letter-spacing:6px">MUSIC SHOP</text>
+<rect x="196" y="262" width="200" height="200" fill="#E8B566"></rect>
+<g fill="#8A5A34"><rect x="220" y="300" width="22" height="120" rx="8"></rect><rect x="270" y="290" width="22" height="130" rx="8"></rect><rect x="320" y="305" width="22" height="115" rx="8"></rect></g>
+<rect x="440" y="262" width="120" height="256" fill="#1A2822"></rect><rect x="530" y="262" width="30" height="256" fill="#142019"></rect>
+<path d="M170 180 H600 V518 H170 Z" class="p-line" stroke="#2A1C1A" style="stroke-width:4"></path>
+<rect x="620" y="0" width="420" height="518" fill="#6E4038"></rect>
+<rect x="960" y="0" width="80" height="518" fill="#5A332D"></rect>
+<path d="M620 64 H1040 M620 128 H1040 M620 192 H1040 M620 256 H1040 M620 320 H1040 M620 384 H1040 M620 448 H1040" class="p-line" stroke="#5A332D" style="stroke-width:2" opacity="0.7"></path>
+<rect x="660" y="40" width="90" height="120" fill="#E8B566"></rect><rect x="860" y="40" width="90" height="120" fill="#E8B566"></rect>
+<rect x="700" y="290" width="112" height="228" fill="#2F4A36"></rect><rect x="784" y="290" width="28" height="228" fill="#23382F"></rect>
+<path d="M700 290 H812 V518 H700 Z" class="p-line" stroke="#2A1C1A" style="stroke-width:4"></path>
+<rect x="838" y="380" width="30" height="46" fill="#E3C58A"></rect><rect x="856" y="380" width="12" height="46" fill="#C99A54"></rect>
+<circle cx="853" cy="396" r="4" fill="#2A1C1A"></circle>
+<text x="853" y="418" class="p-sign" fill="#2A1C1A" style="font-size:10px">S.M.</text>
+</g>
+
+<g id="layer-ground">
+<rect x="0" y="518" width="1280" height="94" fill="#5E5A62"></rect>
+<rect x="0" y="604" width="1280" height="8" fill="#4A464E"></rect>
+<rect x="0" y="612" width="1280" height="28" fill="#2F2D35"></rect>
+<path d="M100 518 L96 604 M260 518 L258 604 M420 518 L420 604 M580 518 L582 604 M740 518 L744 604 M900 518 L906 604 M1060 518 L1068 604 M1220 518 L1230 604 M0 562 H1280" class="p-line" stroke="#55515A" style="stroke-width:1.5"></path>
+<polygon points="196,518 396,518 440,600 160,600" fill="#FFE3A0" opacity="0.1"></polygon>
+</g>
+
+<g id="layer-props">
+<g transform="translate(112 0)">
+<polygon points="0,544 56,544 76,556 18,558" fill="#141218" opacity="0.45"></polygon>
+<rect x="0" y="384" width="56" height="160" fill="#1A2822"></rect><rect x="38" y="384" width="18" height="160" fill="#142019"></rect>
+<rect x="6" y="396" width="44" height="26" fill="#E3C58A"></rect>
+<text x="28" y="416" class="p-sign" fill="#1A2822" style="font-size:15px;letter-spacing:1px">← PUB</text>
+</g>
+<g transform="translate(1112 0)">
+<polygon points="0,544 56,544 76,556 18,558" fill="#141218" opacity="0.45"></polygon>
+<rect x="0" y="384" width="56" height="160" fill="#1A2822"></rect><rect x="38" y="384" width="18" height="160" fill="#142019"></rect>
+<rect x="6" y="396" width="44" height="26" fill="#C8483B"></rect>
+<text x="28" y="416" class="p-sign" fill="#1A2822" style="font-size:15px;letter-spacing:1px">MAYOR →</text>
+</g>
+</g>
+
+<g id="layer-actors">
+<g id="lesson-flyer" transform="translate(930 545)">
+<polygon points="-16,0 16,0 30,6 -2,6" fill="#141218" opacity="0.45"></polygon>
+<rect x="-16" y="-40" width="32" height="40" fill="#D9CDB4"></rect>
+<rect x="-12" y="-34" width="24" height="7" fill="#C8483B"></rect>
+<path d="M-10 -20 H10 M-10 -13 H6" class="p-line" stroke="#2A1C1A" style="stroke-width:1.2"></path>
+</g>
+<g id="cat" transform="translate(300 585)">
+<polygon points="-30,0 30,0 100,20 34,22" fill="#141218" opacity="0.45"></polygon>
+<ellipse cx="0" cy="0" rx="34" ry="4" fill="#141218" opacity="0.6"></ellipse>
+<g transform="rotate(25 0 -150)">
+<rect x="-3" y="-228" width="6" height="64" fill="#4A3A30"></rect>
+<polygon points="-3,-228 -1.5,-232 0,-228.5 1.5,-231 3,-228" fill="#4A3A30"></polygon>
+<rect x="-4" y="-214" width="8" height="6" fill="#9A968C"></rect>
+</g>
+<g transform="rotate(-8 33 -218)">
+<rect x="29" y="-218" width="9" height="18" rx="2" fill="#3A2E26"></rect>
+<circle cx="28" cy="-212" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="28" cy="-205" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="39" cy="-212" r="1.6" fill="#B9B2A4"></circle>
+<circle cx="39" cy="-205" r="1.6" fill="#B9B2A4"></circle>
+</g>
+<path d="M31 -221 Q41 -228 35 -217" class="p-line" stroke="#CFC9BE" style="stroke-width:0.9"></path>
+<path d="M10 -112 C34 -100 42 -70 32 -48 C27 -37 33 -29 40 -33" class="p-line" stroke="#B86A34" style="stroke-width:8"></path>
+<rect x="-19" y="-114" width="14" height="102" rx="5" fill="#26262C"></rect>
+<rect x="-11" y="-114" width="6" height="102" fill="#1C1C21"></rect>
+<rect x="5" y="-114" width="14" height="102" rx="5" fill="#26262C"></rect>
+<rect x="13" y="-114" width="6" height="102" fill="#1C1C21"></rect>
+<rect x="-21" y="-24" width="16" height="10" rx="3" fill="#E2DDD2"></rect>
+<rect x="5" y="-24" width="16" height="10" rx="3" fill="#C9C3B6"></rect>
+<rect x="-29" y="-16" width="26" height="15" rx="6" fill="#E2DDD2"></rect>
+<path d="M-12 -16 H-9 Q-3 -16 -3 -10 V-3 H-12 Z" fill="#C9C3B6"></path>
+<rect x="3" y="-16" width="26" height="15" rx="6" fill="#C9C3B6"></rect>
+<path d="M20 -16 H23 Q29 -16 29 -10 V-3 H20 Z" fill="#ADA799"></path>
+<rect x="-31" y="-3" width="30" height="4" rx="2" fill="#2A2A30"></rect>
+<rect x="1" y="-3" width="30" height="4" rx="2" fill="#2A2A30"></rect>
+<path d="M-19 -20 H-7 M-19 -16 H-7 M7 -20 H19 M7 -16 H19" class="p-line" stroke="#8A8478" style="stroke-width:1.3"></path>
+<path d="M-22 -194 Q0 -200 22 -194 L28 -120 Q27 -108 20 -108 H-20 Q-27 -108 -28 -120 Z" fill="#4F6A8A"></path>
+<path d="M10 -197 Q17 -196 22 -194 L28 -120 Q27 -108 20 -108 H14 Z" fill="#3E5572"></path>
+<path d="M-27 -116 H27 L28 -112 Q27 -108 20 -108 H-20 Q-27 -108 -28 -112 Z" fill="#46607E"></path>
+<path d="M-15 -146 H15 L18 -122 H-18 Z" fill="#46607E"></path>
+<circle cx="-12" cy="-178" r="4" fill="#E3C58A"></circle>
+<path d="M-21 -188 Q-38 -198 -42 -228" class="p-line" stroke="#4F6A8A" style="stroke-width:13"></path>
+<circle cx="-42" cy="-235" r="6.5" fill="#D88A4A"></circle>
+<path d="M-46 -240 L-48 -246 M-42 -242 L-42 -248 M-38 -240 L-36 -246" class="p-line" stroke="#D88A4A" style="stroke-width:3"></path>
+<path d="M-56 -244 Q-60 -236 -56 -228 M-62 -248 Q-68 -236 -62 -224" class="p-line" stroke="#E8E4DC" style="stroke-width:1.5" opacity="0.6"></path>
+<path d="M21 -188 Q33 -150 31 -108" class="p-line" stroke="#3E5572" style="stroke-width:13"></path>
+<circle cx="31" cy="-102" r="6" fill="#B86A34"></circle>
+<path d="M16 -194 L-22 -118" class="p-line" stroke="#18181C" style="stroke-width:5"></path>
+<rect x="-6" y="-200" width="12" height="8" fill="#B86A34"></rect>
+<path d="M-20 -196 Q-24 -206 -14 -208 Q0 -202 14 -208 Q24 -206 20 -196 Q0 -188 -20 -196 Z" fill="#3E5572"></path>
+<path d="M-5 -194 L-6 -168 M5 -194 L6 -164" class="p-line" stroke="#CFC9BE" style="stroke-width:1.4"></path>
+<polygon points="-21,-226 -19,-262 -5,-237" fill="#D88A4A"></polygon>
+<polygon points="-17,-233 -16,-253 -9,-238" fill="#B97A6E"></polygon>
+<polygon points="5,-237 19,-262 21,-226" fill="#B86A34"></polygon>
+<polygon points="9,-238 16,-253 17,-233" fill="#9E6458"></polygon>
+<circle cx="0" cy="-216" r="24" fill="#D88A4A"></circle>
+<path d="M-2 -240 A24 24 0 0 1 2 -192 A34 34 0 0 0 -2 -240 Z" fill="#B86A34"></path>
+<path d="M-13 -235 Q-2 -247 13 -236 Q7 -237 3 -229 Q-1 -237 -6 -233 Q-9 -236 -13 -235 Z" fill="#B86A34"></path>
+<ellipse cx="0" cy="-203" rx="12" ry="8" fill="#EBC9A4"></ellipse>
+<path d="M6 -210 Q14 -206 10 -198 Q6 -196 2 -195.4 Q10 -201 6 -210 Z" fill="#D6B08A"></path>
+<path d="M-3 -208 H3 L0 -204.5 Z" fill="#9E5A5A"></path>
+<path d="M-10 -204 L-26 -207 M-10 -201 L-25 -199 M10 -204 L26 -207 M10 -201 L25 -199" class="p-line" stroke="#5A3020" style="stroke-width:0.9" opacity="0.6"></path>
+<ellipse cx="-9" cy="-215" rx="4.6" ry="5.4" fill="#F4EFE6"></ellipse>
+<ellipse cx="9" cy="-215" rx="4.6" ry="5.4" fill="#F4EFE6"></ellipse>
+<circle cx="-8.5" cy="-214.5" r="2.6" fill="#16161A"></circle>
+<circle cx="9.5" cy="-214.5" r="2.6" fill="#16161A"></circle>
+<path d="M-13.5 -218 Q-9 -221.5 -4.5 -218 M4.5 -218 Q9 -221.5 13.5 -218" class="p-line" stroke="#3A2418" style="stroke-width:1.6"></path>
+<path d="M-15 -225 Q-10 -227.5 -4 -225.5 M4 -225.5 Q10 -227.5 15 -225" class="p-line" stroke="#7A4524" style="stroke-width:1.8"></path>
+<path d="M-5 -199 Q0.5 -199.5 6 -199 Q3 -193.5 0.5 -193.5 Q-2.5 -193.5 -5 -199 Z" fill="#3A1E1E"></path>
+<path d="M-3 -198.8 H4 L3.4 -197.4 H-2.4 Z" fill="#F4EFE6"></path>
+</g>
+
+</g>
+
+<g id="layer-fore">
+<rect x="0" y="0" width="1280" height="6" fill="#2F2D35" opacity="0.6"></rect>
+</g>
+
+<rect x="0" y="0" width="1280" height="640" filter="url(#p-grain)"></rect>
+</svg>

@@ -23,6 +23,7 @@ const WORLDS = 'content/worlds.json';
 const ITEMS = 'content/items.json';
 const OPENING = 'content/rooms/opening.json';
 const PUB = 'content/rooms/pub.json';
+const HIGH_STREET = 'content/rooms/high-street.json';
 const CHARACTERS = 'content/characters.json';
 const OBJECTS = 'content/objects.json';
 const STATS = 'content/stats.json';
@@ -33,6 +34,20 @@ describe('content validation', () => {
   it('passes today’s content', () => {
     expect(validateContent(files)).toEqual([]);
     expect(loadContent().start).toEqual({ room: 'opening', items: ['broken-guitar'] });
+  });
+
+  it('has a backend sheet for every character the player can talk to', () => {
+    // A character's id names its sheet in the backend (domain/content.ts, CharacterId): without one, talking 404s.
+    const sheets = Object.keys(import.meta.glob('../../../backend/src/punland_api/content/characters/*.json')).map(
+      (path) => path.replace(/^.*\/(.+)\.json$/, '$1'),
+    );
+    const talked = Object.values(loadContent().rooms).flatMap(({ hotspots }) =>
+      hotspots.flatMap(({ interactions }) =>
+        interactions.flatMap(({ effects }) => effects.flatMap((effect) => ('talk' in effect ? [effect.talk] : []))),
+      ),
+    );
+    expect(talked).toEqual(expect.arrayContaining(['bartender', 'cop', 'sheryl-caw', 'second-crow', 'third-crow']));
+    expect(sheets).toEqual(expect.arrayContaining(talked));
   });
 
   it('needs an act to start a new game in', () => {
@@ -58,8 +73,8 @@ describe('content validation', () => {
     {
       problem: 'an unknown item to use',
       file: PUB,
-      edit: (room) => (hotspot(room, 'bartender').interactions[1].item = 'kazoo'),
-      field: 'hotspots[1].interactions[1].item',
+      edit: (room) => (hotspot(room, 'sheryl-caw').interactions[1].item = 'kazoo'),
+      field: 'hotspots[2].interactions[1].item',
       message: /"kazoo" is not a known item/,
     },
     {
@@ -78,8 +93,8 @@ describe('content validation', () => {
     },
     {
       problem: 'an unknown item in a pickup',
-      file: OPENING,
-      edit: (room) => (hotspot(room, 'flyer').interactions[0].effects[1].pickUp = 'kazoo'),
+      file: HIGH_STREET,
+      edit: (room) => (hotspot(room, 'lesson-flyer').interactions[0].effects[1].pickUp = 'kazoo'),
       field: 'hotspots[2].interactions[0].effects[1].pickUp',
       message: /"kazoo" is not a known item/,
     },
@@ -142,7 +157,7 @@ describe('content validation', () => {
     {
       problem: 'an item with a verb other than use',
       file: OPENING,
-      edit: (room) => (hotspot(room, 'board').interactions[0].item = 'flyer'),
+      edit: (room) => (hotspot(room, 'board').interactions[0].item = 'guitar'),
       field: 'hotspots[1].interactions[0].item',
       message: /only with the use verb/,
     },
@@ -163,23 +178,30 @@ describe('content validation', () => {
     {
       problem: 'an unknown entity',
       file: OPENING,
-      edit: (room) => (hotspot(room, 'flyer').target.entity = 'kazoo'),
+      edit: (room) => (hotspot(room, 'cop').target.entity = 'kazoo'),
       field: 'hotspots[2].target.entity',
       message: /"kazoo" is not a known character or object/,
     },
     {
       problem: 'an entity placed off the floor',
       file: OPENING,
-      edit: (room) => (hotspot(room, 'flyer').target.at = { x: 0, y: 0 }),
+      edit: (room) => (hotspot(room, 'cop').target.at = { x: 0, y: 0 }),
       field: 'hotspots[2].target.at',
       message: /floor/,
     },
     {
       problem: 'an unknown item in a condition',
-      file: OPENING,
-      edit: (room) => (hotspot(room, 'flyer').presentWhen[0].not.pickedUp = 'kazoo'),
+      file: HIGH_STREET,
+      edit: (room) => (hotspot(room, 'lesson-flyer').presentWhen[0].not.pickedUp = 'kazoo'),
       field: 'hotspots[2].presentWhen[0].not.pickedUp',
       message: /"kazoo" is not a known item/,
+    },
+    {
+      problem: 'a line said by an unknown character',
+      file: OPENING,
+      edit: (room) => (hotspot(room, 'board').interactions[0].effects[0].by = 'bouncer'),
+      field: 'hotspots[1].interactions[0].effects[0].by',
+      message: /"bouncer" is not a known character/,
     },
     {
       problem: 'a character without a name',
@@ -226,28 +248,56 @@ describe('content validation', () => {
     {
       problem: 'an item without a line',
       file: ITEMS,
-      edit: (file) => (file.items.flyer.noUse = ' '),
-      field: 'items.flyer.noUse',
+      edit: (file) => (file.items.guitar.noUse = ' '),
+      field: 'items.guitar.noUse',
       message: /is empty/,
+    },
+    {
+      problem: 'an unknown item to use on an item',
+      file: ITEMS,
+      edit: (file) => (file.items['broken-guitar'].uses[0].item = 'kazoo'),
+      field: 'items.broken-guitar.uses[0].item',
+      message: /"kazoo" is not a known item/,
+    },
+    {
+      problem: 'an exit when an item is used on another',
+      file: ITEMS,
+      edit: (file) => (file.items['broken-guitar'].uses[0].effects[0] = { goTo: 'pub' }),
+      field: 'items.broken-guitar.uses[0].effects[0]',
+      message: /goes only in a hotspot's interactions/,
+    },
+    {
+      problem: 'an unknown item in what unlocks a world',
+      file: WORLDS,
+      edit: (file) => (file.worlds[2].unlockWhen[0] = { has: 'kazoo' }),
+      field: 'worlds[2].unlockWhen[0].has',
+      message: /"kazoo" is not a known item/,
+    },
+    {
+      problem: 'unlock conditions on a world that is not locked',
+      file: WORLDS,
+      edit: (file) => delete file.worlds[2].locked,
+      field: 'worlds[2].unlockWhen',
+      message: /only with locked/,
     },
     {
       problem: 'an unknown goal to reach',
       file: CHARACTERS,
-      edit: (file) => (file.characters[0].onGoal[0].effects[1].reachGoal = 'encore'),
-      field: 'characters[0].onGoal[0].effects[1].reachGoal',
+      edit: (file) => (file.characters[0].onGoal[1].effects[3].reachGoal = 'encore'),
+      field: 'characters[0].onGoal[1].effects[3].reachGoal',
       message: /"encore" is not a known goal/,
     },
     {
       problem: 'an unknown stat to change',
       file: CHARACTERS,
-      edit: (file) => (file.characters[0].onGoal[0].effects[0].changeStat = 'fame'),
-      field: 'characters[0].onGoal[0].effects[0].changeStat',
+      edit: (file) => (file.characters[0].onGoal[0].effects[1].changeStat = 'fame'),
+      field: 'characters[0].onGoal[0].effects[1].changeStat',
       message: /"fame" is not a known stat/,
     },
     {
       problem: 'a pickup when a conversation reaches its goal',
       file: CHARACTERS,
-      edit: (file) => (file.characters[0].onGoal[0].effects[0] = { pickUp: 'flyer' }),
+      edit: (file) => (file.characters[0].onGoal[0].effects[0] = { pickUp: 'guitar' }),
       field: 'characters[0].onGoal[0].effects[0]',
       message: /goes only in a hotspot's interactions/,
     },
@@ -275,7 +325,7 @@ describe('content validation', () => {
     {
       problem: 'a goal id in two acts',
       file: ACTS,
-      edit: (file) => (file.acts[1].goals[0].id = 'fix-guitar'),
+      edit: (file) => (file.acts[1].goals[0].id = 'working-guitar'),
       field: 'acts[1].goals[0].id',
       message: /another goal/,
     },

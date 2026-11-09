@@ -22,22 +22,41 @@
     },
     {
       "id": "board",
-      "name": "Open mic board",
+      "name": "Chalkboard",
       "verb": "Look at",
       "target": { "node": "board" },
       "walkTo": { "x": 840, "y": 590 },
       "interactions": [
-        { "verb": "look", "effects": [{ "say": "Tonight: open mic, downstairs at nine. That's my shot." }] }
+        {
+          "verb": "look",
+          "effects": [
+            {
+              "say": "\"Live music below.\" Below what? Oh: downstairs. We didn't have a downstairs in Literal Village."
+            }
+          ]
+        }
       ]
     },
     {
-      "id": "flyer",
-      "name": "Open mic flyer",
-      "verb": "Pick up",
-      "target": { "entity": "flyer", "at": { "x": 737, "y": 545 } },
-      "walkTo": { "x": 737, "y": 560 },
-      "interactions": [{ "verb": "pickup", "effects": [{ "gather": "open-mic" }, { "pickUp": "flyer" }] }],
-      "presentWhen": [{ "not": { "pickedUp": "flyer" } }]
+      "id": "cop",
+      "name": "Beetroot cop",
+      "verb": "Talk to",
+      "target": { "entity": "cop", "at": { "x": 1080, "y": 550 } },
+      "walkTo": { "x": 990, "y": 575 },
+      "interactions": [{ "verb": "talk", "effects": [{ "talk": "cop" }] }]
+    },
+    {
+      "id": "street",
+      "name": "Down the High Street",
+      "verb": "Walk",
+      "target": { "node": "street" },
+      "walkTo": { "x": 440, "y": 575 },
+      "interactions": [
+        {
+          "verb": "go",
+          "effects": [{ "goTo": "high-street", "at": { "x": 150, "y": 575 } }]
+        }
+      ]
     }
   ]
 }

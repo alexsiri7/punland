@@ -21,10 +21,10 @@ describe('One model per entity', () => {
   it('The same model in two rooms', async () => {
     const [{ loadContent }, { models }] = await Promise.all([load('content'), load('assets')]);
     const content = loadContent();
-    expect(placedModels(content, 'opening')).toContain('object/flyer');
-    expect(placedModels(content, 'dream')).toContain('object/flyer');
-    expect(Object.entries(models).filter(([id]) => id === 'object/flyer')).toEqual([
-      ['object/flyer', expect.objectContaining({ kind: 'object' })],
+    expect(placedModels(content, 'pub')).toContain('character/rival');
+    expect(placedModels(content, 'dream')).toContain('character/rival');
+    expect(Object.entries(models).filter(([id]) => id === 'character/rival')).toEqual([
+      ['character/rival', expect.objectContaining({ kind: 'character' })],
     ]);
   });
 });

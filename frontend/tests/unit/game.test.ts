@@ -67,7 +67,8 @@ describe('the game, drawn by a renderer', () => {
         entities: [
           { hotspot: 'door', node: 'door', visible: true },
           { hotspot: 'board', node: 'board', visible: true },
-          { hotspot: 'flyer', model: 'object/flyer', at: { x: 737, y: 545 }, visible: true },
+          { hotspot: 'cop', model: 'character/cop', at: { x: 1080, y: 550 }, visible: true },
+          { hotspot: 'street', node: 'street', visible: true },
         ],
         player: { model: 'character/protagonist', at: { x: 560, y: 590 } },
       },
@@ -82,7 +83,7 @@ describe('the game, drawn by a renderer', () => {
       '11.09375%',
       '39%',
     ]);
-    button('Open mic board').click();
+    button('Chalkboard').click();
     await walk();
     const speech = container.querySelector<HTMLElement>('.speech')!;
     expect(speech.hidden).toBe(false);
@@ -92,10 +93,12 @@ describe('the game, drawn by a renderer', () => {
   it('takes no click in the UI bar, and hides a hotspot once it is gone', async () => {
     click(900, 700);
     expect(game.state.walk).toBeNull();
-    button('Open mic flyer').click();
+    button('Down the High Street').click();
     await walk();
-    expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'flyer', visible: false });
-    expect(button('Open mic flyer')).toBeNull();
+    button("Song Master's flyer").click();
+    await walk();
+    expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'lesson-flyer', visible: false });
+    expect(button("Song Master's flyer")).toBeNull();
   });
 
   it('keeps the line and the conversation of an interaction that brings a hotspot into the room', async () => {
@@ -114,7 +117,7 @@ describe('the game, drawn by a renderer', () => {
     await playGame(container, game, renderer, { turn: () => new Promise(() => {}) });
     expect(button('Pub door')).toBeNull();
 
-    button('Open mic board').click();
+    button('Chalkboard').click();
     await walk();
     expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'door', visible: true });
     expect(renderer.shown()).toEqual(['opening']);
@@ -150,7 +153,7 @@ describe('the game, drawn by a renderer', () => {
       canvas.dispatchEvent(new MouseEvent(type, { clientX: x, clientY: 400 }));
 
     pointer('pointermove', 50);
-    expect(container.dataset.hover).toBe('Open mic board');
+    expect(container.dataset.hover).toBe('Chalkboard');
     pointer('pointermove', 500);
     expect(container.dataset.hover).toBe('');
     pointer('pointermove', 50);

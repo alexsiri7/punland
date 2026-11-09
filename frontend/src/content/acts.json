@@ -2,11 +2,11 @@
   "acts": [
     {
       "id": "1",
-      "name": "Act 1",
+      "name": "Act 1: The first show",
       "goals": [
-        { "id": "fix-guitar", "name": "Fix the guitar" },
-        { "id": "pub-job", "name": "Get a job at the pub" },
-        { "id": "late-slot", "name": "Get the late slot" }
+        { "id": "working-guitar", "name": "A working guitar" },
+        { "id": "own-song", "name": "A song of my own" },
+        { "id": "lives-here", "name": "Someone who lives here" }
       ],
       "next": [{ "act": "2" }]
     },

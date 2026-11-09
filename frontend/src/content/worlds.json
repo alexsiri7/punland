@@ -7,6 +7,12 @@
       "start": "feed",
       "locked": "The band needs a name before it can go online."
     },
-    { "id": "dream", "name": "Dream", "start": "dream" }
+    {
+      "id": "dream",
+      "name": "Dream",
+      "start": "dream",
+      "locked": "Nothing to dream about yet.",
+      "unlockWhen": [{ "flag": "song-stolen" }]
+    }
   ]
 }

@@ -21,6 +21,26 @@
       "model3d": { "file": "models/scenes/dream.glb", "placeholder": true }
     },
     {
+      "id": "scene/high-street",
+      "kind": "scene",
+      "model3d": { "file": "models/scenes/high-street.glb", "placeholder": true }
+    },
+    {
+      "id": "scene/music-shop",
+      "kind": "scene",
+      "model3d": { "file": "models/scenes/music-shop.glb", "placeholder": true }
+    },
+    {
+      "id": "scene/flat",
+      "kind": "scene",
+      "model3d": { "file": "models/scenes/flat.glb", "placeholder": true }
+    },
+    {
+      "id": "scene/mayors-office",
+      "kind": "scene",
+      "model3d": { "file": "models/scenes/mayors-office.glb", "placeholder": true }
+    },
+    {
       "id": "character/protagonist",
       "kind": "character",
       "model3d": { "file": "models/characters/protagonist.glb", "placeholder": false, "height": 1.5 }
@@ -29,6 +49,31 @@
       "id": "character/bartender",
       "kind": "character",
       "model3d": { "file": "models/characters/bartender.glb", "placeholder": true, "height": 1.55 }
+    },
+    {
+      "id": "character/cop",
+      "kind": "character",
+      "model3d": { "file": "models/characters/cop.glb", "placeholder": true, "height": 1.2 }
+    },
+    {
+      "id": "character/crow",
+      "kind": "character",
+      "model3d": { "file": "models/characters/crow.glb", "placeholder": true, "height": 1.15 }
+    },
+    {
+      "id": "character/rival",
+      "kind": "character",
+      "model3d": { "file": "models/characters/rival.glb", "placeholder": true, "height": 1.6 }
+    },
+    {
+      "id": "character/song-master",
+      "kind": "character",
+      "model3d": { "file": "models/characters/song-master.glb", "placeholder": true, "height": 1.2 }
+    },
+    {
+      "id": "character/mayor",
+      "kind": "character",
+      "model3d": { "file": "models/characters/mayor.glb", "placeholder": true, "height": 1.8 }
     },
     {
       "id": "object/flyer",

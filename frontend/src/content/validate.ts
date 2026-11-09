@@ -146,18 +146,26 @@ function readWorlds(file: Field, known: Known): World[] {
     if (seen.has(id)) idField.problem('is used by another world');
     seen.add(id);
     const locked = world.get('locked').optional((field) => field.text());
+    const unlockWhen = world.get('unlockWhen').optional((field) => conditions(field, known));
+    if (unlockWhen !== undefined && locked === undefined) world.get('unlockWhen').problem('goes only with locked');
     return {
       id: id as WorldId,
       name: world.get('name').text(),
       start: world.get('start').id('room', known.room),
       ...(locked !== undefined && { locked }),
+      ...(unlockWhen !== undefined && { unlockWhen }),
     };
   });
 }
 
 function readItems(file: Field, known: Known): { items: Record<string, Item>; start: ItemId[] } {
   return {
-    items: file.get('items').record((item) => ({ name: item.get('name').text(), noUse: item.get('noUse').text() })),
+    items: file.get('items').record((item) => {
+      const uses = item.get('uses').optional((field) =>
+        field.list((use) => ({ item: use.get('item').id('item', known.item), ...readReaction(use, known) })),
+      );
+      return { name: item.get('name').text(), noUse: item.get('noUse').text(), ...(uses !== undefined && { uses }) };
+    }),
     start: file.get('start').list((item) => item.id('item', known.item)),
   };
 }
@@ -383,8 +391,10 @@ const EFFECTS = kindsOf<Effect>()([
 
 function readEffect(effect: Field, known: Known): Effect {
   switch (kindOf(effect, EFFECTS)) {
-    case 'say':
-      return { say: effect.get('say').text() };
+    case 'say': {
+      const by = effect.get('by').optional((field) => field.id('character', known.character));
+      return { say: effect.get('say').text(), ...(by !== undefined && { by }) };
+    }
     case 'goTo': {
       const at = effect.get('at').optional((field) => field.checked((f) => f.point()));
       return { goTo: effect.get('goTo').id('room', known.room), ...(at !== undefined && { at }) };

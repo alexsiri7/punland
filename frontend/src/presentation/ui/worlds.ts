@@ -7,12 +7,14 @@ export interface WorldSwitcher {
 
 /**
  * The street / online / dream switcher in the UI bar (worlds spec, "Switching worlds"): a
- * button per world. A locked world's button is disabled and says why in its description.
+ * button per world. A world `isUnlocked` doesn't pass is locked: its button is disabled and says
+ * why in its description.
  */
 export function createWorldSwitcher(
   doc: Document,
   worlds: readonly World[],
   current: string,
+  isUnlocked: (world: World) => boolean,
   on: { enter(world: World): void },
 ): WorldSwitcher {
   const nav = doc.createElement('nav');
@@ -24,7 +26,7 @@ export function createWorldSwitcher(
     button.type = 'button';
     button.textContent = world.name;
     if (world.id === current) button.setAttribute('aria-current', 'true');
-    if (world.locked !== undefined) {
+    if (!isUnlocked(world)) {
       button.disabled = true;
       const why = doc.createElement('span');
       why.id = `world-locked-${world.id}`;

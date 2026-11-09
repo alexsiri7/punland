@@ -2,7 +2,7 @@
 <!-- Pub interior art: inside The Three Crows. Placeholder, drawn to docs/design/STYLE.md; the cat is board 2's, as in art/opening/scene.svg.
      Layers follow docs/design/STYLE.md "Scene build": one <g id="layer-*"> per layer, back to front.
      Rendered to PNG by frontend/scripts/render-art.mjs; do not hand-edit the PNGs. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Inside The Three Crows at dusk: a brick-walled pub lit by low hanging lamps; the street door on the left shows the blue evening outside; a crow bartender in an apron leans on a long wooden bar, bottles on the shelves behind; an open mic poster on the wall; the ginger cat in his blue hoodie has just walked in">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Inside The Three Crows at dusk: a brick-walled pub lit by low hanging lamps; the street door on the left shows the blue evening outside; a crow bartender in an apron leans on a long wooden bar, bottles on the shelves behind; three crows sit on stools at the bar; a low stage under the window and the Wall of Fame, its photos a pile of rocks, beetles with 60s haircuts, a tuna and a pike, and a cat; the ginger cat in his blue hoodie has just walked in">
 <style>
 .p-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
 .p-sign{font-family:'Bebas Neue',sans-serif;text-anchor:middle}
@@ -98,18 +98,29 @@
 </g>
 
 <g id="layer-props">
+<g id="stage">
+<polygon points="230,474 710,474 710,522 230,522" fill="#6E4628"></polygon>
+<polygon points="230,474 710,474 710,482 230,482" fill="#8A5A34"></polygon>
+<polygon points="650,474 710,474 710,522 650,522" fill="#5A3A22"></polygon>
+<polygon points="230,522 710,522 740,532 250,532" fill="#141218" opacity="0.45"></polygon>
+</g>
 <polygon points="70,470 214,470 226,492 58,492" fill="#5E5A62"></polygon>
 <polygon points="70,470 214,470 216,476 68,476" fill="#4A464E"></polygon>
 
-<g transform="rotate(-2 560 262)">
-<rect x="512" y="196" width="96" height="132" fill="#D9CDB4"></rect>
-<polygon points="590,196 608,196 608,328 590,328" fill="#C9C0AE"></polygon>
-<text x="560" y="232" class="p-sign" fill="#2A1C1A" style="font-size:20px;letter-spacing:4px">TONIGHT</text>
-<text x="560" y="270" class="p-sign" fill="#C8483B" style="font-size:24px;letter-spacing:2px">OPEN MIC</text>
-<text x="560" y="300" class="p-sign" fill="#2A1C1A" style="font-size:13px;letter-spacing:1px">DOWNSTAIRS 9PM</text>
-<path d="M536 312 H584" class="p-line" stroke="#2A1C1A" style="stroke-width:1.5"></path>
+<g id="fame">
+<rect x="496" y="160" width="200" height="180" fill="#4A3A30"></rect>
+<rect x="500" y="146" width="192" height="14" fill="#1A2822"></rect>
+<text x="596" y="158" class="p-sign" fill="#E3C58A" style="font-size:12px;letter-spacing:4px">WALL OF FAME</text>
+<g fill="#D9CDB4"><rect x="508" y="172" width="82" height="70"></rect><rect x="602" y="172" width="82" height="70"></rect><rect x="508" y="256" width="82" height="70"></rect><rect x="602" y="256" width="82" height="70"></rect></g>
+<g fill="#6E6A82"><polygon points="520,236 534,212 548,222 562,204 578,236"></polygon></g>
+<g fill="#2F2D35"><ellipse cx="626" cy="222" rx="9" ry="12"></ellipse><ellipse cx="660" cy="222" rx="9" ry="12"></ellipse></g>
+<g fill="#6E4628"><path d="M616 212 Q626 196 636 212 Z M650 212 Q660 196 670 212 Z"></path></g>
+<g fill="#5FA39A"><polygon points="516,296 540,282 562,296 540,310"></polygon><polygon points="562,296 576,286 576,306"></polygon></g>
+<g fill="#D88A4A"><polygon points="624,320 624,282 632,272 640,284 650,284 658,272 666,282 666,320"></polygon></g>
+<g fill="#C8483B"><circle cx="650" cy="300" r="3"></circle></g>
+<path d="M496 160 H696 V340 H496 Z" class="p-line" stroke="#2A1C1A" style="stroke-width:4"></path>
 </g>
-<polygon points="608,200 622,204 622,334 608,328" fill="#141218" opacity="0.45"></polygon>
+<polygon points="696,164 710,168 710,346 696,340" fill="#141218" opacity="0.45"></polygon>
 
 <rect x="788" y="318" width="8" height="38" fill="#C99A54"></rect><rect x="792" y="318" width="4" height="38" fill="#8A5A34"></rect>
 <rect x="808" y="318" width="8" height="38" fill="#C99A54"></rect><rect x="812" y="318" width="4" height="38" fill="#8A5A34"></rect>
@@ -119,17 +130,48 @@
 <rect x="1148" y="322" width="22" height="7" fill="#F4EFE6"></rect>
 <polygon points="1170,342 1182,356 1170,356" fill="#141218" opacity="0.45"></polygon>
 
-<g fill="#2F2D35">
-<rect x="836" y="456" width="56" height="10" rx="3"></rect><rect x="840" y="466" width="6" height="58"></rect><rect x="882" y="466" width="6" height="58"></rect>
-<rect x="996" y="456" width="56" height="10" rx="3"></rect><rect x="1000" y="466" width="6" height="58"></rect><rect x="1042" y="466" width="6" height="58"></rect>
-<rect x="1156" y="456" width="56" height="10" rx="3"></rect><rect x="1160" y="466" width="6" height="58"></rect><rect x="1202" y="466" width="6" height="58"></rect>
-</g>
-<g fill="#C8483B"><rect x="836" y="450" width="56" height="8" rx="3"></rect><rect x="996" y="450" width="56" height="8" rx="3"></rect><rect x="1156" y="450" width="56" height="8" rx="3"></rect></g>
-<g fill="#8A3A30"><rect x="874" y="450" width="18" height="8" rx="3"></rect><rect x="1034" y="450" width="18" height="8" rx="3"></rect><rect x="1194" y="450" width="18" height="8" rx="3"></rect></g>
-<g fill="#141218" opacity="0.45"><polygon points="840,524 888,524 920,536 868,536"></polygon><polygon points="1000,524 1048,524 1080,536 1028,536"></polygon><polygon points="1160,524 1208,524 1240,536 1188,536"></polygon></g>
 </g>
 
 <g id="layer-actors">
+<g id="sheryl-caw" transform="translate(740 535)">
+<polygon points="-20,0 20,0 60,18 30,20" fill="#141218" opacity="0.45"></polygon>
+<rect x="-3" y="-104" width="6" height="104" fill="#2F2D35"></rect>
+<ellipse cx="0" cy="-2" rx="22" ry="4" fill="#2F2D35"></ellipse>
+<rect x="-26" y="-112" width="52" height="9" rx="3" fill="#C8483B"></rect><rect x="8" y="-112" width="18" height="9" rx="3" fill="#8A3A30"></rect>
+<polygon points="-22,-112 22,-112 16,-160 -16,-160" fill="#2F2D35"></polygon>
+<polygon points="6,-112 22,-112 16,-160 4,-160" fill="#1E1E24"></polygon>
+<polygon points="-22,-158 -30,-118 -20,-114" fill="#2F2D35"></polygon><polygon points="22,-158 30,-118 20,-114" fill="#1E1E24"></polygon>
+<polygon points="-14,-160 14,-160 12,-188 0,-200 -12,-188" fill="#2F2D35"></polygon>
+<polygon points="-4,-196 2,-214 6,-194" fill="#2F2D35"></polygon>
+<polygon points="-10,-178 -32,-172 -10,-168" fill="#E3C58A"></polygon>
+<path d="M-10 -182 H-2 M2 -182 H10" class="p-line" stroke="#E3C58A" style="stroke-width:2"></path>
+</g>
+<g id="second-crow" transform="translate(830 535)">
+<polygon points="-20,0 20,0 60,18 30,20" fill="#141218" opacity="0.45"></polygon>
+<rect x="-3" y="-104" width="6" height="104" fill="#2F2D35"></rect>
+<ellipse cx="0" cy="-2" rx="22" ry="4" fill="#2F2D35"></ellipse>
+<rect x="-26" y="-112" width="52" height="9" rx="3" fill="#C8483B"></rect><rect x="8" y="-112" width="18" height="9" rx="3" fill="#8A3A30"></rect>
+<polygon points="-22,-112 22,-112 16,-160 -16,-160" fill="#2F2D35"></polygon>
+<polygon points="6,-112 22,-112 16,-160 4,-160" fill="#1E1E24"></polygon>
+<polygon points="-22,-158 -30,-118 -20,-114" fill="#2F2D35"></polygon><polygon points="22,-158 30,-118 20,-114" fill="#1E1E24"></polygon>
+<polygon points="-14,-160 14,-160 12,-188 0,-200 -12,-188" fill="#2F2D35"></polygon>
+<polygon points="-4,-196 2,-214 6,-194" fill="#2F2D35"></polygon>
+<polygon points="-10,-178 -32,-172 -10,-168" fill="#E3C58A"></polygon>
+<path d="M-10 -182 H-2 M2 -182 H10" class="p-line" stroke="#E3C58A" style="stroke-width:2"></path>
+</g>
+<g id="third-crow" transform="translate(920 535)">
+<polygon points="-20,0 20,0 60,18 30,20" fill="#141218" opacity="0.45"></polygon>
+<rect x="-3" y="-104" width="6" height="104" fill="#2F2D35"></rect>
+<ellipse cx="0" cy="-2" rx="22" ry="4" fill="#2F2D35"></ellipse>
+<rect x="-26" y="-112" width="52" height="9" rx="3" fill="#C8483B"></rect><rect x="8" y="-112" width="18" height="9" rx="3" fill="#8A3A30"></rect>
+<polygon points="-22,-112 22,-112 16,-160 -16,-160" fill="#2F2D35"></polygon>
+<polygon points="6,-112 22,-112 16,-160 4,-160" fill="#1E1E24"></polygon>
+<polygon points="-22,-158 -30,-118 -20,-114" fill="#2F2D35"></polygon><polygon points="22,-158 30,-118 20,-114" fill="#1E1E24"></polygon>
+<polygon points="-14,-160 14,-160 12,-188 0,-200 -12,-188" fill="#2F2D35"></polygon>
+<polygon points="-4,-196 2,-214 6,-194" fill="#2F2D35"></polygon>
+<polygon points="-10,-178 -32,-172 -10,-168" fill="#E3C58A"></polygon>
+<path d="M-10 -182 H-2 M2 -182 H10" class="p-line" stroke="#E3C58A" style="stroke-width:2"></path>
+</g>
 <g id="bartender" transform="translate(1010 356)">
 <polygon points="-46,0 -40,-82 -22,-104 22,-104 40,-82 48,0" fill="#2F2D35"></polygon>
 <polygon points="14,-104 22,-104 40,-82 48,0 20,0" fill="#1E1E24"></polygon>

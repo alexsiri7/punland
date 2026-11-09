@@ -9,11 +9,11 @@ describe('toSave', () => {
     const state = {
       ...newGame(content),
       flags: { 'pinned-flyer': true },
-      goals: ['fix-guitar'],
+      goals: ['working-guitar'],
       stats: { followers: 10, musicians: 0, practice: 0, instruments: 1 },
       room: 'pub',
       at: { x: 300, y: 580 },
-      selected: 'flyer',
+      selected: 'lesson-flyer',
       saying: { line: 'Hi.', by: 'player' },
     };
     expect(toSave(state)).toEqual({
@@ -24,7 +24,7 @@ describe('toSave', () => {
       journey: { left: {}, gathered: [] },
       flags: { 'pinned-flyer': true },
       act: '1',
-      goals: ['fix-guitar'],
+      goals: ['working-guitar'],
       stats: { followers: 10, musicians: 0, practice: 0, instruments: 1 },
     });
   });
@@ -52,15 +52,15 @@ describe('fromSave', () => {
   });
 
   it('drops acts, goals and stats the content no longer has', () => {
-    const gone = fromSave({ version: 1, room: 'pub', act: 'gone', goals: ['fix-guitar'] }, content);
+    const gone = fromSave({ version: 1, room: 'pub', act: 'gone', goals: ['working-guitar'] }, content);
     expect(gone.act).toBe(content.acts[0]?.id);
     expect(gone.goals).toEqual([]);
     const state = fromSave(
-      { version: 1, room: 'pub', act: '1', goals: ['fix-guitar', 'act3-first', 'gone'], stats: { fame: 3 } },
+      { version: 1, room: 'pub', act: '1', goals: ['working-guitar', 'act3-first', 'gone'], stats: { fame: 3 } },
       content,
     );
     expect(state.act).toBe('1');
-    expect(state.goals).toEqual(['fix-guitar']);
+    expect(state.goals).toEqual(['working-guitar']);
     expect(state.stats).toEqual({ followers: 0, musicians: 0, practice: 0, instruments: 1 });
   });
 

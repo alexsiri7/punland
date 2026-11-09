@@ -12,6 +12,8 @@ import {
   nearestWalkable,
   type Place,
   type Room,
+  type Speaker,
+  type World,
 } from '../domain';
 
 /** Floor px per second. */
@@ -35,6 +37,11 @@ export function apply(
 /** Whether the hotspot is in its room: all its `presentWhen` conditions hold. */
 export function isPresent(state: GameState, hotspot: Hotspot): boolean {
   return hotspot.presentWhen?.every((condition) => holds(state, condition)) ?? true;
+}
+
+/** Whether the world can be entered: it isn't locked, or all its `unlockWhen` conditions hold. */
+export function isUnlocked(state: GameState, world: World): boolean {
+  return world.locked === undefined || (world.unlockWhen !== undefined && allHold(state, world.unlockWhen));
 }
 
 function holds(state: GameState, condition: Condition): boolean {
@@ -62,6 +69,8 @@ function step(content: Content, state: GameState, command: Command, events: Game
     }
     case 'select':
       return select(state, command.item, events);
+    case 'combine':
+      return combine(content, state, command.item, command.on, events);
     case 'enterWorld':
       return enterWorld(content, state, command.world, events);
     case 'tick':
@@ -118,10 +127,23 @@ function interact(
   const interaction = hotspot.interactions.find(matches);
   if (!interaction) {
     const noUse = item === null ? undefined : content.items[item]?.noUse;
-    return noUse === undefined ? state : say(state, noUse, events);
+    return noUse === undefined ? state : say(state, noUse, 'player', events);
   }
   if (item !== null) events.push({ type: 'used', item, hotspot: hotspot.id });
   return runEffects(content, state, interaction.effects, hotspot, events);
+}
+
+/** Using one carried item on another: the first use either has for the other whose conditions hold. */
+function combine(content: Content, state: GameState, item: string, on: string, events: GameEvent[]): GameState {
+  const { carried } = state.inventory;
+  const usesOf = (id: string, other: string) =>
+    (Object.hasOwn(content.items, id) ? content.items[id]?.uses : undefined)?.filter((use) => use.item === other) ?? [];
+  const use =
+    item !== on && carried.includes(item) && carried.includes(on)
+      ? [...usesOf(on, item), ...usesOf(item, on)].find(({ when }) => allHold(state, when))
+      : undefined;
+  if (!use) return select(state, on, events);
+  return runEffects(content, hush(select(state, null, events), events), use.effects, null, events);
 }
 
 function allHold(state: GameState, conditions: Condition[] | undefined): boolean {
@@ -130,7 +152,8 @@ function allHold(state: GameState, conditions: Condition[] | undefined): boolean
 
 /**
  * The effects in order, of an interaction with `hotspot` or, with none, of a reaction; then
- * the room's hotspots that came or went, unless the player left the room, and a save.
+ * the room's hotspots that came or went, unless the player left the room, the worlds that
+ * unlocked, and a save.
  */
 function runEffects(
   content: Content,
@@ -148,6 +171,9 @@ function runEffects(
       if (was !== isPresent(next, h)) events.push({ type: was ? 'hotspotHidden' : 'hotspotShown', hotspot: h.id });
     }
   }
+  for (const world of content.worlds) {
+    if (!isUnlocked(state, world) && isUnlocked(next, world)) events.push({ type: 'worldUnlocked', world: world.id });
+  }
   events.push({ type: 'saved' });
   return next;
 }
@@ -160,7 +186,7 @@ function run(
   hotspot: Hotspot | null,
   events: GameEvent[],
 ): GameState {
-  if ('say' in effect) return say(state, effect.say, events);
+  if ('say' in effect) return say(state, effect.say, effect.by ?? 'player', events);
   if ('goTo' in effect) {
     const place = effect.at ? { room: effect.goTo, at: effect.at } : { room: effect.goTo };
     return arrive(content, state, place, events);
@@ -181,7 +207,7 @@ function run(
 function enterWorld(content: Content, state: GameState, id: string, events: GameEvent[]): GameState {
   const world = content.worlds.find((w) => w.id === id);
   const current = roomOf(content, state.room).world;
-  if (!world || world.locked !== undefined || world.id === current) return state;
+  if (!world || !isUnlocked(state, world) || world.id === current) return state;
   const left = { ...state.journey.left, [current]: { room: state.room, at: { ...state.at } } };
   const place = left[world.id] ?? { room: world.start };
   const next = arrive(content, { ...state, journey: { ...state.journey, left } }, place, events);
@@ -269,9 +295,9 @@ function select(state: GameState, item: string | null, events: GameEvent[]): Gam
   return { ...state, selected: item };
 }
 
-function say(state: GameState, line: string, events: GameEvent[]): GameState {
-  events.push({ type: 'said', line, by: 'player' });
-  return { ...state, saying: { line, by: 'player' } };
+function say(state: GameState, line: string, by: Speaker, events: GameEvent[]): GameState {
+  events.push({ type: 'said', line, by });
+  return { ...state, saying: { line, by } };
 }
 
 function hush(state: GameState, events: GameEvent[]): GameState {
