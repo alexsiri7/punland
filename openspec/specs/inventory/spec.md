@@ -14,7 +14,7 @@ The player SHALL be able to pick up items from rooms into the inventory.
 - THEN it disappears from the room and appears in the inventory
 
 ### Requirement: Using items
-The player SHALL be able to use an inventory item on a hotspot or on another item in the inventory, and the game MUST respond whether or not that use does anything.
+The player SHALL be able to use an inventory item on a hotspot or on another item in the inventory, and the game MUST respond whether or not a use on a hotspot does anything.
 
 #### Scenario: A use that works
 - WHEN the player uses an item on a hotspot that accepts it
@@ -27,6 +27,10 @@ The player SHALL be able to use an inventory item on a hotspot or on another ite
 #### Scenario: A use that does not work
 - WHEN the player uses an item on a hotspot that does not accept it
 - THEN the cat says something to show it does not work
+
+#### Scenario: Two items that do not go together
+- WHEN the player uses an item on an inventory item that does not accept it
+- THEN that other item is selected instead
 
 ### Requirement: Starting inventory
 A new game SHALL start with the broken guitar in the inventory.

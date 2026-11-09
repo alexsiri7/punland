@@ -81,6 +81,17 @@ test('A use that does not work', async ({ page }) => {
   await expect(inventoryItem(page, content.brokenGuitar)).toBeVisible();
 });
 
+test('Two items that do not go together', async ({ page }) => {
+  // Requirement: Using items. An item used on an inventory item that does not accept it
+  // selects that item instead: the flyer does nothing for the broken guitar.
+  await newGame(page);
+  await toHighStreet(page);
+  await clickHotspot(page, content.lessonFlyer);
+  await useItemOnItem(page, content.lessonFlyer, content.brokenGuitar);
+  await expect(inventoryItem(page, content.brokenGuitar)).toHaveAttribute('aria-pressed', 'true');
+  await expect(inventoryItem(page, content.lessonFlyer)).toHaveAttribute('aria-pressed', 'false');
+});
+
 test('New game', async ({ page }) => {
   // Requirement: Starting inventory. A new game starts with the broken guitar in the inventory.
   await newGame(page);
