@@ -101,7 +101,8 @@ frontend/
                         scene pixels of their reference art, docs/design/rooms/<room>.svg (tests/unit/placeholders.test.ts
                         checks the committed files match it); scripts/glb-container.mjs is the one glb writer it and
                         the test fixtures share
-  public/models/<kind>s/<id>.glb  3D models (placeholders for now), drawn by three3d: the asset contract, ARCHITECTURE.md §8
+  public/models/<kind>s/<id>.glb  3D models (placeholders, except those built in Blender, which the registry marks
+                        "placeholder": false), drawn by three3d: the asset contract, ARCHITECTURE.md §8
   public/textures/grain.svg  the 3D renderer's grain overlay
   public/title/poster.jpg  the title screen's backdrop (style.css)
   public/_headers       production CSP and security headers (Cloudflare Pages)
@@ -114,6 +115,8 @@ backend/
   src/punland_api/app.py     FastAPI app factory, CORS, /health
   src/punland_api/config.py  settings from env vars
   tests/                     pytest
+art/blender/            the Blender sources: <id>.py builds a model from scratch with bpy and exports its glb to
+                        frontend/public/models/ (protagonist.py so far), lib/ the helpers they share (ARCHITECTURE.md §8)
 openspec/specs/         the specs (source of truth for behaviour)
 docs/design/            STYLE.md (the look) + canvas/ (the owner's design boards) + rooms/ (each room's 2D reference art)
 ```
