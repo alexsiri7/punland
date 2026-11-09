@@ -3,7 +3,7 @@
 The player is the X-Player-Id header, a UUID the browser makes up and keeps. The save is an
 opaque JSON object: the backend never reads the game state, so new state (stats, acts)
 needs no change here or in the schema. Conversations with characters are the backend's own
-(dialogue.py keeps them in the conversations table) and go when the save is cleared.
+(dialogue_store.py keeps them in the conversations table) and go when the save is cleared.
 """
 
 import datetime as dt
@@ -67,15 +67,20 @@ def load(engine: sa.Engine, player: uuid.UUID) -> dict[str, Any] | None:
         return connection.execute(query).scalar_one_or_none()
 
 
-def store(engine: sa.Engine, player: uuid.UUID, game: dict[str, Any]) -> None:
+def upsert(engine: sa.Engine, table: sa.Table, row: dict[str, Any]) -> None:
+    """Insert the row, or overwrite the one with its primary key; stamps updated_at."""
     insert = postgresql.insert if engine.dialect.name == "postgresql" else sqlite.insert
-    stmt = insert(saves).values(player_id=player, game=game, updated_at=dt.datetime.now(dt.UTC))
+    stmt = insert(table).values(**row, updated_at=dt.datetime.now(dt.UTC))
     stmt = stmt.on_conflict_do_update(
-        index_elements=[saves.c.player_id],
-        set_={"game": stmt.excluded.game, "updated_at": stmt.excluded.updated_at},
+        index_elements=list(table.primary_key.columns),
+        set_={c.name: stmt.excluded[c.name] for c in table.columns if not c.primary_key},
     )
     with engine.begin() as connection:
         connection.execute(stmt)
+
+
+def store(engine: sa.Engine, player: uuid.UUID, game: dict[str, Any]) -> None:
+    upsert(engine, saves, {"player_id": player, "game": game})
 
 
 def clear(engine: sa.Engine, player: uuid.UUID) -> None:
