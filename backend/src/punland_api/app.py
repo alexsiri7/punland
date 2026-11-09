@@ -8,7 +8,7 @@ import sqlalchemy as sa
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import __version__, dialogue, saves
+from . import __version__, dialogue, dialogue_store, saves
 from .characters import load_characters
 from .config import Settings
 from .model import Model, model_from_settings
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def create_app(
     settings: Settings | None = None,
     model: Model | None = None,
-    allowance: dialogue.TurnAllowance | None = None,
+    allowance: dialogue_store.TurnAllowance | None = None,
 ) -> FastAPI:
     settings = settings or Settings.from_env()
 
@@ -67,8 +67,8 @@ def create_app(
         dialogue.router(
             model or model_from_settings(settings),
             load_characters(),
-            dialogue.DialogueStore(),
-            allowance or dialogue.TurnAllowance(),
+            dialogue_store.DialogueStore(lambda: getattr(app.state, "saves_engine", None)),
+            allowance or dialogue_store.TurnAllowance(),
         )
     )
     return app
