@@ -1,5 +1,5 @@
-"""Building a model from scratch: a flat-shaded mesh of convex hulls skinned to an armature, its
-anchors, and its clips. Points and angles are in glTF axes (see __init__.py).
+"""Building a model from scratch: a flat-shaded mesh of convex hulls, skinned to an armature for a
+character, its anchors, and its clips. Points and angles are in glTF axes (see __init__.py).
 
 A convex hull of a handful of points is one angular part with flat planes, which is the look
 STYLE.md asks for and what reads under the toon ramp.
@@ -82,7 +82,8 @@ def blend(
 
 
 class Body:
-    """One mesh, built part by part, each part a hull in a named material and skinned to bones."""
+    """One mesh, built part by part, each part a hull in a named material, skinned to bones if the
+    mesh has an armature."""
 
     def __init__(self, materials: dict[str, bpy.types.Material]):
         self.materials = materials
@@ -91,7 +92,9 @@ class Body:
         self.bm = bmesh.new()
         self.deform = self.bm.verts.layers.deform.verify()
 
-    def hull(self, points: Iterable[Point], part: str, skin: Skin) -> list[bmesh.types.BMFace]:
+    def hull(
+        self, points: Iterable[Point], part: str, skin: Skin | None = None
+    ) -> list[bmesh.types.BMFace]:
         """Adds the convex hull of `points` as a part; gives its faces, for `on()`."""
         verts = [self.bm.verts.new(blender(p)) for p in points]
         out = bmesh.ops.convex_hull(self.bm, input=verts, use_existing_faces=False)
@@ -102,11 +105,9 @@ class Body:
         }
         bmesh.ops.delete(self.bm, geom=list(unused), context="VERTS")
         faces = [f for f in out["geom"] if isinstance(f, bmesh.types.BMFace)]
-        if part not in self.slots:
-            self.slots.append(part)
-        for face in faces:
-            face.material_index = self.slots.index(part)
-            face.smooth = False
+        self._paint(faces, part)
+        if skin is None:
+            return faces
         for vert in {v for f in faces for v in f.verts}:
             weights = {skin: 1.0} if isinstance(skin, str) else skin(gltf(vert.co))
             total = sum(weights.values())
@@ -115,6 +116,22 @@ class Body:
                     self.bones.append(bone)
                 vert[self.deform][self.bones.index(bone)] = weight / total
         return faces
+
+    def plate(self, points: Sequence[Point], part: str, facing: Point) -> bmesh.types.BMFace:
+        """A flat polygon through `points`, which may be concave, turned towards `facing`."""
+        face = self.bm.faces.new([self.bm.verts.new(blender(p)) for p in points])
+        face.normal_update()
+        if face.normal.dot(blender(facing)) < 0:
+            face.normal_flip()
+        self._paint([face], part)
+        return face
+
+    def _paint(self, faces: list[bmesh.types.BMFace], part: str) -> None:
+        if part not in self.slots:
+            self.slots.append(part)
+        for face in faces:
+            face.material_index = self.slots.index(part)
+            face.smooth = False
 
     @staticmethod
     def on(
@@ -146,8 +163,9 @@ class Body:
             points.append(self.on(faces, x, y, -0.01, back))
         return self.hull(points, part, skin)
 
-    def finish(self, name: str, armature: bpy.types.Object) -> bpy.types.Object:
-        """The mesh as an object skinned to `armature`, at the origin with no transform."""
+    def finish(self, name: str, armature: bpy.types.Object | None = None) -> bpy.types.Object:
+        """The mesh as an object, skinned to `armature` if it has one, at the origin with no
+        transform."""
         mesh = bpy.data.meshes.new(name)
         self.bm.to_mesh(mesh)
         self.bm.free()
@@ -155,6 +173,8 @@ class Body:
             mesh.materials.append(self.materials[part])
         obj = bpy.data.objects.new(name, mesh)
         bpy.context.scene.collection.objects.link(obj)
+        if armature is None:
+            return obj
         for bone in self.bones:
             obj.vertex_groups.new(name=bone)
         obj.parent = armature

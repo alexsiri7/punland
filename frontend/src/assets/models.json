@@ -3,7 +3,7 @@
     {
       "id": "scene/opening",
       "kind": "scene",
-      "model3d": { "file": "models/scenes/opening.glb", "placeholder": true }
+      "model3d": { "file": "models/scenes/opening.glb", "placeholder": false }
     },
     {
       "id": "scene/pub",
