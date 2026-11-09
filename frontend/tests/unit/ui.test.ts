@@ -3,6 +3,7 @@ import { GameSession } from '../../src/app/session';
 import { type Content, type DialogueTurn, type GameState, newGame } from '../../src/domain';
 import type { ScenePoint } from '../../src/presentation/renderer';
 import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
+import { createProgress } from '../../src/presentation/ui/progress';
 import { speechMs } from '../../src/presentation/ui/speech';
 import { bounds, content, edited } from './fixtures/content';
 import { readBytes } from './support/files';
@@ -90,7 +91,9 @@ describe('the DOM UI', () => {
   });
 
   it("shows the career stats and the act's goals, and follows them as they change", () => {
-    const { game } = mount({ state: { ...newGame(content), room: 'pub' } });
+    const game = new GameSession(content, { ...newGame(content), room: 'pub' }, { save: async () => {} });
+    const progress = createProgress(document, game);
+    container.append(progress.goals, progress.stats);
     const stats = () =>
       [...container.querySelectorAll('[aria-label="Career stats"] li')].map((entry) => entry.textContent);
     const goals = () =>

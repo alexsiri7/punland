@@ -9,13 +9,12 @@ export interface UiBar {
   hover(h: Hotspot | null): void;
   /** An inventory item is under the pointer or focus; null when none is. */
   hoverItem(id: string | null): void;
-  /** The selection changed: the action line says so for what is hovered. */
-  reselected(): void;
 }
 
 /**
  * The UI bar under the scene (STYLE.md, UI bar): the location label, the action line (the
- * verb muted, the name in sign gold) and the hint. The inventory and world switcher sit on it.
+ * verb muted, the name in sign gold) and the hint, again for what is hovered when the session's
+ * selection changes. The inventory and world switcher sit on it.
  */
 export function createUiBar(doc: Document, session: Session, mirror: { hover(name: string): void }): UiBar {
   const bar = doc.createElement('div');
@@ -51,6 +50,9 @@ export function createUiBar(doc: Document, session: Session, mirror: { hover(nam
       setActionLine(h ? h.verb : room.place.verb, h ? h.name : room.place.name);
     }
   };
+  session.subscribe((event) => {
+    if (event.type === 'selected') hover(hovered);
+  });
   return {
     element: bar,
     show(next) {
@@ -64,9 +66,6 @@ export function createUiBar(doc: Document, session: Session, mirror: { hover(nam
     hoverItem(id) {
       if (id === null) hover(null);
       else setActionLine('Use', itemName(id));
-    },
-    reselected() {
-      hover(hovered);
     },
   };
 }

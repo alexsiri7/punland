@@ -1,4 +1,5 @@
 import type { DialogueTurn } from '../../domain';
+import type { Session } from '../session';
 
 /** The backend's side of a conversation (services/dialogue.ts). */
 export interface DialogueBackend {
@@ -8,10 +9,6 @@ export interface DialogueBackend {
 
 export interface DialoguePanel {
   readonly element: HTMLElement;
-  /** Starts a conversation with `character`, shown as `name`. */
-  open(character: string, name: string): void;
-  /** Ends the conversation; an answer still on its way is dropped. Doesn't call `left`. */
-  close(): void;
 }
 
 /** Matches the backend's limit on a reply (dialogue.py, REPLY_MAX). */
@@ -19,15 +16,18 @@ const REPLY_MAX = 300;
 
 /**
  * The conversation panel (dialogue spec): the character's line, three numbered suggested
- * replies, a field to type one's own, and Leave. The backend answers every turn, with a canned
- * line of the character's when the AI is unavailable or the turn limit is reached; a reply that
- * reaches the conversation's goal goes to `goalReached`. Keys 1 to 3 pick a reply, Escape leaves;
- * leaving, with Escape or Leave, goes to `left`.
+ * replies, a field to type one's own, and Leave. It opens on the session's `conversationStarted`
+ * and closes when the player walks away or the room changes, dropping an answer still on its way.
+ * The backend answers every turn, with a canned line of the character's when the AI is
+ * unavailable or the turn limit is reached; a reply that reaches the conversation's goal
+ * dispatches `dialogueResult`. Keys 1 to 3 pick a reply, Escape leaves; leaving, with Escape or
+ * Leave, goes to `on.left`.
  */
 export function createDialoguePanel(
   doc: Document,
+  session: Session,
   backend: DialogueBackend,
-  on: { goalReached(character: string): void; left(): void },
+  on: { left(): void },
 ): DialoguePanel {
   const panel = doc.createElement('section');
   panel.className = 'dialogue';
@@ -71,7 +71,7 @@ export function createDialoguePanel(
 
   const answered = (turn: DialogueTurn | null) => {
     line.textContent = turn?.line ?? `${name.textContent} doesn't answer.`;
-    if (turn?.goal_reached) on.goalReached(character);
+    if (turn?.goal_reached) session.dispatch({ type: 'dialogueResult', character, goalReached: true });
     const over = !turn || turn.ended;
     own.hidden = over;
     options.replaceChildren(
@@ -125,17 +125,20 @@ export function createDialoguePanel(
     }
   });
 
-  return {
-    element: panel,
-    open(id, title) {
-      close();
-      character = id;
-      name.textContent = title;
-      panel.setAttribute('aria-label', title);
-      panel.hidden = false;
-      own.hidden = false;
-      void reply(null);
-    },
-    close,
+  const open = (id: string) => {
+    close();
+    character = id;
+    const title = session.content.characters[id]?.name ?? id;
+    name.textContent = title;
+    panel.setAttribute('aria-label', title);
+    panel.hidden = false;
+    own.hidden = false;
+    void reply(null);
   };
+  session.subscribe((event) => {
+    if (event.type === 'conversationStarted') open(event.character);
+    else if (event.type === 'moved' || event.type === 'roomChanged') close();
+  });
+
+  return { element: panel };
 }
