@@ -1,14 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { playGame } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
-import { loadContent } from '../../src/content';
-import { type CharacterId, newGame } from '../../src/domain';
+import { newGame } from '../../src/domain';
 import { FakeRenderer } from './fakes/renderer';
+import { content, editedRoom } from './fixtures/content';
 
 // The app plays the session through the Renderer interface (docs/ARCHITECTURE.md, section 5),
 // whichever renderer draws it: here a fake one, checked through the #game mirror.
-
-const content = loadContent();
 
 describe('the game, drawn by a renderer', () => {
   let container: HTMLElement;
@@ -40,21 +38,21 @@ describe('the game, drawn by a renderer', () => {
   const click = (x: number, y: number) =>
     renderer.canvas().dispatchEvent(new MouseEvent('pointerdown', { clientX: x, clientY: y }));
 
-  it('plays opening, pub and opening again, and the mirror follows', async () => {
-    expect([container.dataset.scene, container.dataset.player]).toEqual(['opening', '560,590']);
+  it('plays street, pub and street again, and the mirror follows', async () => {
+    expect([container.dataset.scene, container.dataset.player]).toEqual(['street', '100,550']);
 
     click(900, 585);
     await walk();
-    expect([container.dataset.scene, container.dataset.player]).toEqual(['opening', '900,585']);
+    expect([container.dataset.scene, container.dataset.player]).toEqual(['street', '900,585']);
 
     button('Pub door').click();
     await walk();
-    expect([container.dataset.scene, container.dataset.player]).toEqual(['pub', '250,585']);
+    expect([container.dataset.scene, container.dataset.player]).toEqual(['pub', '300,550']);
 
     button('Street door').click();
     await walk();
-    expect([container.dataset.scene, container.dataset.player]).toEqual(['opening', '705,590']);
-    expect(renderer.shown()).toEqual(['opening', 'pub', 'opening']);
+    expect([container.dataset.scene, container.dataset.player]).toEqual(['street', '510,560']);
+    expect(renderer.shown()).toEqual(['street', 'pub', 'street']);
   });
 
   it('shows the renderer the room from the content and the state, with the protagonist as the player', () => {
@@ -62,15 +60,15 @@ describe('the game, drawn by a renderer', () => {
     expect(renderer.calls[1]).toEqual({
       method: 'show',
       view: {
-        room: 'opening',
-        model: 'scene/opening',
+        room: 'street',
+        model: 'scene/street',
         entities: [
           { hotspot: 'door', node: 'door', visible: true },
-          { hotspot: 'board', node: 'board', visible: true },
-          { hotspot: 'cop', model: 'character/cop', at: { x: 1080, y: 550 }, visible: true },
-          { hotspot: 'street', node: 'street', visible: true },
+          { hotspot: 'flyer', model: 'object/flyer', at: { x: 200, y: 520 }, visible: true },
+          { hotspot: 'sign', node: 'sign', visible: true },
+          { hotspot: 'echo', node: 'echo', visible: false },
         ],
-        player: { model: 'character/protagonist', at: { x: 560, y: 590 } },
+        player: { model: 'character/protagonist', at: { x: 100, y: 550 } },
       },
     });
   });
@@ -78,12 +76,12 @@ describe('the game, drawn by a renderer', () => {
   it('places the hotspot buttons at their bounds and speech at the head', async () => {
     const door = button('Pub door');
     expect([door.style.left, door.style.top, door.style.width, door.style.height]).toEqual([
-      '49.53125%',
-      '26%',
-      '11.09375%',
-      '39%',
+      '35%',
+      '25%',
+      '10%',
+      '40%',
     ]);
-    button('Chalkboard').click();
+    button('Sign').click();
     await walk();
     const speech = container.querySelector<HTMLElement>('.speech')!;
     expect(speech.hidden).toBe(false);
@@ -93,22 +91,19 @@ describe('the game, drawn by a renderer', () => {
   it('takes no click in the UI bar, and hides a hotspot once it is gone', async () => {
     click(900, 700);
     expect(game.state.walk).toBeNull();
-    button('Down the High Street').click();
+    button('Flyer').click();
     await walk();
-    button("Song Master's flyer").click();
-    await walk();
-    expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'lesson-flyer', visible: false });
-    expect(button("Song Master's flyer")).toBeNull();
+    expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'flyer', visible: false });
+    expect(button('Flyer')).toBeNull();
   });
 
   it('keeps the line and the conversation of an interaction that brings a hotspot into the room', async () => {
-    const given = structuredClone(content);
-    const opening = given.rooms.opening!;
-    const door = opening.hotspots.find((h) => h.id === 'door')!;
-    door.presentWhen = [{ flag: 'lit' }];
-    opening.hotspots.find((h) => h.id === 'board')!.interactions = [
-      { verb: 'look', effects: [{ say: 'The door!' }, { set: 'lit', to: true }, { talk: 'bartender' as CharacterId }] },
-    ];
+    const given = editedRoom('street', (room) => {
+      room.hotspots.find((h: { id: string }) => h.id === 'door').presentWhen = [{ flag: 'lit' }];
+      room.hotspots.find((h: { id: string }) => h.id === 'sign').interactions = [
+        { verb: 'look', effects: [{ say: 'The door!' }, { set: 'lit', to: true }, { talk: 'bartender' }] },
+      ];
+    });
     container.remove();
     container = document.createElement('div');
     document.body.append(container);
@@ -117,10 +112,10 @@ describe('the game, drawn by a renderer', () => {
     await playGame(container, game, renderer, { turn: () => new Promise(() => {}) });
     expect(button('Pub door')).toBeNull();
 
-    button('Chalkboard').click();
+    button('Sign').click();
     await walk();
     expect(renderer.calls).toContainEqual({ method: 'setVisible', hotspot: 'door', visible: true });
-    expect(renderer.shown()).toEqual(['opening']);
+    expect(renderer.shown()).toEqual(['street']);
     expect(button('Pub door')).not.toBeNull();
     expect(container.dataset.say).toBe('The door!');
     expect(container.querySelector<HTMLElement>('.speech')!.hidden).toBe(false);
@@ -134,7 +129,7 @@ describe('the game, drawn by a renderer', () => {
     await walk();
     game.dispatch({ type: 'activate', hotspot: 'door' });
     await walk();
-    expect([game.state.room, drawn.length]).toEqual(['opening', 2]);
+    expect([game.state.room, drawn.length]).toEqual(['street', 2]);
 
     drawn[0]!();
     await vi.advanceTimersByTimeAsync(0);
@@ -143,17 +138,17 @@ describe('the game, drawn by a renderer', () => {
     drawn[1]!();
     await vi.advanceTimersByTimeAsync(0);
     expect(button('Pub door')).not.toBeNull();
-    expect([container.dataset.scene, container.dataset.player]).toEqual(['opening', '705,590']);
+    expect([container.dataset.scene, container.dataset.player]).toEqual(['street', '510,560']);
   });
 
   it('hovers and activates the hotspot a renderer that picks hotspots finds on its canvas', async () => {
-    renderer.pick = (screen) => (screen.x < 100 ? { kind: 'hotspot', hotspot: 'board' } : { kind: 'none' });
+    renderer.pick = (screen) => (screen.x < 100 ? { kind: 'hotspot', hotspot: 'sign' } : { kind: 'none' });
     const canvas = renderer.canvas();
     const pointer = (type: string, x: number) =>
       canvas.dispatchEvent(new MouseEvent(type, { clientX: x, clientY: 400 }));
 
     pointer('pointermove', 50);
-    expect(container.dataset.hover).toBe('Chalkboard');
+    expect(container.dataset.hover).toBe('Sign');
     pointer('pointermove', 500);
     expect(container.dataset.hover).toBe('');
     pointer('pointermove', 50);

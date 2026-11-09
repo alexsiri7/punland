@@ -334,6 +334,7 @@ A scene's floor points (its walkable area, start, walk-to points, where entities
 | Rules | `tests/unit/rules.test.ts`, `tests/unit/rules.acceptance.test.ts` | Pure. Every command and effect, plus the "Playing without a renderer" script. |
 | Content and registry | `tests/unit/content.test.ts`, `tests/unit/assets.test.ts`, `tests/unit/models.acceptance.test.ts`, `tests/unit/contract.test.ts`, `tests/unit/placeholders.test.ts` | The validators, against the real files and broken copies, with the glb contract over every `model3d` file and broken fixtures for each of its rules (`tests/fixtures/models/glb.ts`). The placeholders match their script. |
 | App and session | `tests/unit/session.test.ts`, `tests/unit/game.test.ts` | The session: the `data-*` mirror and autosave. The app: a game played with the fake renderer (`tests/unit/fakes/renderer.ts`). |
+| Fixture content | `tests/unit/fixtures/content.ts` | Small content of its own, with the fake renderer's hotspot bounds, for the rules, session, app, UI, animation and renderer swap tests, so a story edit fails only the tests about the real content. |
 | Renderer swap | `tests/unit/renderer.acceptance.test.ts` | The architecture spec, "Swapping the renderer": the same route with two renderers behind the interface (B7). |
 | Behaviour | `tests/e2e/*.spec.ts` | Unchanged public interface, played with the 3D renderer. |
 
