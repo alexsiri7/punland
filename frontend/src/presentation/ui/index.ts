@@ -1,8 +1,8 @@
-import type { Speaker } from '../../domain';
-import type { Renderer, ScenePoint } from '../renderer';
+import type { Hotspot, Room } from '../../domain';
+import type { Renderer } from '../renderer';
 import type { Session } from '../session';
 import { createDialoguePanel, type DialogueBackend } from './dialogue';
-import { createHotspotLayer, type HotspotLayer } from './hotspots';
+import { createHotspotLayer } from './hotspots';
 import { createInventoryBar } from './inventory';
 import { createOverlay } from './overlay';
 import { createProgress } from './progress';
@@ -23,12 +23,12 @@ export interface Ui {
 
 /**
  * All of the game's text and controls, as DOM over the canvas (docs/ARCHITECTURE.md, section 5):
- * the UI bar, the speech line, the hotspot buttons, the inventory, the world switcher, the career
- * stats, the act's goals and the dialogue panel, which talks to `dialogue`. They show the session's events and send it
- * commands; a new part is created here and appended to the overlay's root. The overlay lines up
- * with the renderer's canvas, and the hotspot buttons and speech go where the renderer draws
- * them, speech following its speaker's head every frame. The name of the hotspot under the pointer
- * goes to `on.hover`, and the player leaving a conversation (Leave or Escape) to `on.left`.
+ * the UI bar, the career stats and the act's goals, the inventory, the speech line and the
+ * dialogue panel, which talks to `dialogue`, each following the session itself, and the room's
+ * controls (its hotspot buttons and the world switcher) while the room is drawn. A new part is
+ * created here and appended to the overlay's root. The overlay lines up with the renderer's
+ * canvas. The name of the hotspot under the pointer goes to `on.hover`, and the player leaving a
+ * conversation (Leave or Escape) to `on.left`.
  */
 export function mountUi(
   container: HTMLElement,
@@ -40,38 +40,10 @@ export function mountUi(
   const doc = container.ownerDocument;
   const overlay = createOverlay(container);
   const bar = createUiBar(doc, session, on);
-  const inventory = createInventoryBar(doc, session.content.items, {
-    hover: (id) => bar.hoverItem(id),
-    select: (id) => {
-      const { selected } = session.state;
-      if (selected !== null && selected !== id) session.dispatch({ type: 'combine', item: selected, on: id });
-      else session.dispatch({ type: 'select', item: selected === id ? null : id });
-      bar.hoverItem(id);
-    },
-  });
-  /** Over the speaker's head: the player's, or a character's in the room; the player's for one not there. */
-  const locate = (by: Speaker): ScenePoint => {
-    const room = session.content.rooms[session.state.room];
-    const hotspot =
-      by === 'player'
-        ? undefined
-        : room?.hotspots.find((h) => 'entity' in h.target && h.target.entity === by && session.isPresent(h));
-    if (hotspot && 'entity' in hotspot.target) return renderer.anchor(hotspot.id, 'head') ?? hotspot.target.at;
-    return renderer.anchor('player', 'head') ?? session.state.at;
-  };
-  const speech = createSpeech(doc, locate);
-  const conversation = createDialoguePanel(doc, dialogue, {
-    goalReached: (character) => session.dispatch({ type: 'dialogueResult', character, goalReached: true }),
-    left: () => on.left(),
-  });
-  const progress = createProgress(doc, session.content);
-  let hotspots: HotspotLayer | null = null;
-  let switcher: WorldSwitcher | null = null;
-  let drawn = false;
-  /** Whether speech follows the player's head; from the first room shown, once the renderer is mounted. */
-  let following = false;
-  /** The hotspot the pointer is over on the canvas, while the renderer picks hotspots. */
-  let pointedAt: string | null = null;
+  const inventory = createInventoryBar(doc, session, { hover: (id) => bar.hoverItem(id) });
+  const speech = createSpeech(doc, session, renderer);
+  const conversation = createDialoguePanel(doc, session, dialogue, on);
+  const progress = createProgress(doc, session);
   overlay.root.append(
     progress.goals,
     bar.element,
@@ -80,120 +52,92 @@ export function mountUi(
     speech.element,
     conversation.element,
   );
-  progress.render(session.state);
-
-  const characterName = (character: string) => session.content.characters[character]?.name ?? character;
-  const renderInventory = () => inventory.render(session.state.inventory.carried, session.state.selected);
-  /** The world switcher for the current room, after the inventory: again when a world unlocks. */
-  const showWorlds = () => {
-    const current = session.content.rooms[session.state.room];
-    if (!current) return;
-    switcher?.destroy();
-    switcher = createWorldSwitcher(doc, session.content.worlds, current.world, (w) => session.isUnlocked(w), {
-      enter: (w) => session.dispatch({ type: 'enterWorld', world: w.id }),
-    });
-    inventory.element.after(switcher.element);
-  };
-
+  /** The shown room's controls; none from a room change until the new room is shown. */
+  let controls: RoomControls | null = null;
+  /** The hotspot the pointer is over on the canvas, while the renderer picks hotspots. */
+  let pointedAt: string | null = null;
   session.subscribe((event) => {
-    switch (event.type) {
-      case 'said':
-        if (drawn) speech.say(event.line, event.by);
-        break;
-      case 'hushed':
-        speech.hush();
-        break;
-      case 'pickedUp':
-      case 'itemAdded':
-      case 'itemRemoved':
-        renderInventory();
-        break;
-      case 'selected':
-        renderInventory();
-        bar.reselected();
-        break;
-      case 'hotspotShown': {
-        const shown = session.content.rooms[session.state.room]?.hotspots.find((h) => h.id === event.hotspot);
-        if (shown) hotspots?.add(shown);
-        break;
-      }
-      case 'hotspotHidden':
-        hotspots?.remove(event.hotspot);
-        break;
-      case 'conversationStarted':
-        conversation.open(event.character, characterName(event.character));
-        break;
-      case 'moved':
-        // Walking away ends the conversation.
-        conversation.close();
-        break;
-      case 'roomChanged':
-        // The room is redrawn; until it is shown, its old controls must not take input.
-        conversation.close();
-        drawn = false;
-        pointedAt = null;
-        hotspots?.destroy();
-        switcher?.destroy();
-        hotspots = null;
-        switcher = null;
-        break;
-      case 'worldUnlocked':
-        if (drawn) showWorlds();
-        break;
-      case 'statChanged':
-      case 'goalReached':
-      case 'actStarted':
-        progress.render(session.state);
-        break;
-      case 'arrived':
-      case 'used':
-      case 'worldChanged':
-      case 'gathered':
-      case 'saved':
-        break;
-      default:
-        event satisfies never;
-    }
+    if (event.type !== 'roomChanged') return;
+    controls?.destroy();
+    controls = null;
+    pointedAt = null;
   });
 
   return {
     shown() {
       const current = session.content.rooms[session.state.room];
       if (!current) throw new Error(`room "${session.state.room}" is not in the content`);
-      drawn = true;
       overlay.follow(renderer);
-      if (!following) {
-        following = true;
-        renderer.frame(() => {
-          if (drawn) speech.follow();
-        });
-      }
-      speech.hush();
+      speech.shown();
       bar.show(current);
-      hotspots = createHotspotLayer(
-        doc,
-        current.hotspots.filter((h) => session.isPresent(h)),
-        (h) => renderer.hotspotBounds(h.id),
-        renderer.picksHotspots,
-        {
-          hover: (h) => bar.hover(h),
-          activate: (h) => session.dispatch({ type: 'activate', hotspot: h.id }),
-        },
-      );
-      // In the order a keyboard reaches them: hotspots, then the inventory, then the worlds.
-      inventory.element.before(hotspots.element);
-      showWorlds();
-      renderInventory();
+      controls = createRoomControls(doc, session, renderer, current, inventory.element, bar);
     },
     walked() {
       pointedAt = null;
       bar.hover(null);
     },
     pointed(hotspot) {
-      if (!drawn || hotspot === pointedAt) return;
+      if (!controls || hotspot === pointedAt) return;
       pointedAt = hotspot;
       const current = session.content.rooms[session.state.room];
       bar.hover(current?.hotspots.find((h) => h.id === hotspot) ?? null);
+    },
+  };
+}
+
+interface RoomControls {
+  /** Takes the controls away and stops following the session. */
+  destroy(): void;
+}
+
+/**
+ * The controls of a room the renderer has drawn: a button for each hotspot in it, at its bounds,
+ * and the world switcher. In the order a keyboard reaches them: the hotspots, then `inventory`,
+ * then the worlds. A hotspot that comes into the room or leaves it gets or loses its button, and
+ * the switcher is made again when a world unlocks. The hotspot under the pointer or focus goes
+ * to `on.hover`.
+ */
+function createRoomControls(
+  doc: Document,
+  session: Session,
+  renderer: Pick<Renderer, 'hotspotBounds' | 'picksHotspots'>,
+  room: Room,
+  inventory: HTMLElement,
+  on: { hover(h: Hotspot | null): void },
+): RoomControls {
+  const hotspots = createHotspotLayer(
+    doc,
+    room.hotspots.filter((h) => session.isPresent(h)),
+    (h) => renderer.hotspotBounds(h.id),
+    renderer.picksHotspots,
+    { hover: (h) => on.hover(h), activate: (h) => session.dispatch({ type: 'activate', hotspot: h.id }) },
+  );
+  inventory.before(hotspots.element);
+  let switcher: WorldSwitcher | null = null;
+  const showWorlds = () => {
+    switcher?.destroy();
+    switcher = createWorldSwitcher(doc, session.content.worlds, room.world, (w) => session.isUnlocked(w), {
+      enter: (w) => session.dispatch({ type: 'enterWorld', world: w.id }),
+    });
+    inventory.after(switcher.element);
+  };
+  showWorlds();
+
+  const unsubscribe = session.subscribe((event) => {
+    if (event.type === 'hotspotShown') {
+      const shown = room.hotspots.find((h) => h.id === event.hotspot);
+      if (shown) hotspots.add(shown);
+    } else if (event.type === 'hotspotHidden') {
+      hotspots.remove(event.hotspot);
+    } else if (event.type === 'worldUnlocked') {
+      showWorlds();
+    }
+  });
+  return {
+    destroy() {
+      unsubscribe();
+      hotspots.destroy();
+      switcher?.destroy();
     },
   };
 }
