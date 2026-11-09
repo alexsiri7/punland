@@ -31,9 +31,10 @@ def empty_scene() -> None:
     bpy.context.scene.render.fps = 24
 
 
-def export_glb(path: str) -> None:
+def export_glb(path: str, cameras: bool = False) -> None:
     """Writes every object in the scene as a glb: untextured, skinned with at most four joints a
-    vertex, every action a clip named after it, and no cameras, lights or extensions."""
+    vertex, every action a clip named after it, and no lights or extensions. Cameras only for a
+    scene, which has its `cam_main`."""
     bpy.ops.export_scene.gltf(
         filepath=path,
         export_format="GLB",
@@ -46,7 +47,7 @@ def export_glb(path: str) -> None:
         export_image_format="NONE",
         export_vertex_color="NONE",
         export_attributes=False,
-        export_cameras=False,
+        export_cameras=cameras,
         export_lights=False,
         export_extras=False,
         export_skins=True,
