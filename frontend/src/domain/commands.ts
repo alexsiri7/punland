@@ -8,6 +8,8 @@ export type Command =
   /** Walks to the hotspot, then runs its interaction, or uses the selected item on it. */
   | { type: 'activate'; hotspot: string }
   | { type: 'select'; item: string | null }
+  /** The selected `item` used on another carried item, `on`; with no use for the two, `on` is selected instead. */
+  | { type: 'combine'; item: string; on: string }
   | { type: 'enterWorld'; world: string }
   /** Advances walking; runs what the walk was for on arrival. */
   | { type: 'tick'; dtMs: number }
@@ -29,6 +31,8 @@ export type GameEvent =
   | { type: 'selected'; item: string | null }
   | { type: 'roomChanged'; room: string; at: FloorPoint }
   | { type: 'worldChanged'; world: string }
+  /** The world's unlock conditions came to hold: it can be entered now. */
+  | { type: 'worldUnlocked'; world: string }
   | { type: 'hotspotShown' | 'hotspotHidden'; hotspot: string }
   | { type: 'gathered'; material: string }
   /** The player talks to a character: the dialogue panel takes over. */

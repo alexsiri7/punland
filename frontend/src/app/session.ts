@@ -1,5 +1,13 @@
-import { type Command, type Content, type GameEvent, type GameState, type Hotspot, toSave } from '../domain';
-import { apply, isPresent } from '../rules';
+import {
+  type Command,
+  type Content,
+  type GameEvent,
+  type GameState,
+  type Hotspot,
+  toSave,
+  type World,
+} from '../domain';
+import { apply, isPresent, isUnlocked } from '../rules';
 import type { SaveStore } from '../services/save';
 
 export type Listener = (event: GameEvent) => void;
@@ -42,6 +50,10 @@ export class GameSession {
 
   isPresent(hotspot: Hotspot): boolean {
     return isPresent(this.current, hotspot);
+  }
+
+  isUnlocked(world: World): boolean {
+    return isUnlocked(this.current, world);
   }
 
   /** Saves the state now, stamped with the time: the rules read no clock. */

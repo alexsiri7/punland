@@ -1,4 +1,5 @@
-import type { Renderer } from '../renderer';
+import type { Speaker } from '../../domain';
+import type { Renderer, ScenePoint } from '../renderer';
 import type { Session } from '../session';
 import { createDialoguePanel, type DialogueBackend } from './dialogue';
 import { createHotspotLayer, type HotspotLayer } from './hotspots';
@@ -26,7 +27,7 @@ export interface Ui {
  * stats, the act's goals and the dialogue panel, which talks to `dialogue`. They show the session's events and send it
  * commands; a new part is created here and appended to the overlay's root. The overlay lines up
  * with the renderer's canvas, and the hotspot buttons and speech go where the renderer draws
- * them, speech following the player's head every frame. The name of the hotspot under the pointer
+ * them, speech following its speaker's head every frame. The name of the hotspot under the pointer
  * goes to `on.hover`, and the player leaving a conversation (Leave or Escape) to `on.left`.
  */
 export function mountUi(
@@ -42,11 +43,23 @@ export function mountUi(
   const inventory = createInventoryBar(doc, session.content.items, {
     hover: (id) => bar.hoverItem(id),
     select: (id) => {
-      session.dispatch({ type: 'select', item: session.state.selected === id ? null : id });
+      const { selected } = session.state;
+      if (selected !== null && selected !== id) session.dispatch({ type: 'combine', item: selected, on: id });
+      else session.dispatch({ type: 'select', item: selected === id ? null : id });
       bar.hoverItem(id);
     },
   });
-  const speech = createSpeech(doc);
+  /** Over the speaker's head: the player's, or a character's in the room; the player's for one not there. */
+  const locate = (by: Speaker): ScenePoint => {
+    const room = session.content.rooms[session.state.room];
+    const hotspot =
+      by === 'player'
+        ? undefined
+        : room?.hotspots.find((h) => 'entity' in h.target && h.target.entity === by && session.isPresent(h));
+    if (hotspot && 'entity' in hotspot.target) return renderer.anchor(hotspot.id, 'head') ?? hotspot.target.at;
+    return renderer.anchor('player', 'head') ?? session.state.at;
+  };
+  const speech = createSpeech(doc, locate);
   const conversation = createDialoguePanel(doc, dialogue, {
     goalReached: (character) => session.dispatch({ type: 'dialogueResult', character, goalReached: true }),
     left: () => on.left(),
@@ -71,10 +84,21 @@ export function mountUi(
 
   const characterName = (character: string) => session.content.characters[character]?.name ?? character;
   const renderInventory = () => inventory.render(session.state.inventory.carried, session.state.selected);
+  /** The world switcher for the current room, after the inventory: again when a world unlocks. */
+  const showWorlds = () => {
+    const current = session.content.rooms[session.state.room];
+    if (!current) return;
+    switcher?.destroy();
+    switcher = createWorldSwitcher(doc, session.content.worlds, current.world, (w) => session.isUnlocked(w), {
+      enter: (w) => session.dispatch({ type: 'enterWorld', world: w.id }),
+    });
+    inventory.element.after(switcher.element);
+  };
+
   session.subscribe((event) => {
     switch (event.type) {
       case 'said':
-        if (drawn) speech.say(event.line, renderer.anchor('player', 'head') ?? session.state.at);
+        if (drawn) speech.say(event.line, event.by);
         break;
       case 'hushed':
         speech.hush();
@@ -113,6 +137,9 @@ export function mountUi(
         hotspots = null;
         switcher = null;
         break;
+      case 'worldUnlocked':
+        if (drawn) showWorlds();
+        break;
       case 'statChanged':
       case 'goalReached':
       case 'actStarted':
@@ -138,8 +165,7 @@ export function mountUi(
       if (!following) {
         following = true;
         renderer.frame(() => {
-          const head = drawn && renderer.anchor('player', 'head');
-          if (head) speech.follow(head);
+          if (drawn) speech.follow();
         });
       }
       speech.hush();
@@ -154,12 +180,9 @@ export function mountUi(
           activate: (h) => session.dispatch({ type: 'activate', hotspot: h.id }),
         },
       );
-      switcher = createWorldSwitcher(doc, session.content.worlds, current.world, {
-        enter: (w) => session.dispatch({ type: 'enterWorld', world: w.id }),
-      });
       // In the order a keyboard reaches them: hotspots, then the inventory, then the worlds.
       inventory.element.before(hotspots.element);
-      inventory.element.after(switcher.element);
+      showWorlds();
       renderInventory();
     },
     walked() {

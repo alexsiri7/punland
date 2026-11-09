@@ -189,12 +189,15 @@ const files: Record<string, any> = {
 };
 const content = loadContent(files);
 
-/** The fixture content with `edit` applied to a copy of the room file at `room`. */
-function editedRoom(room: string, edit: (room: any) => void): Content {
+/** The fixture content with each edit applied to a copy of its file, by its path under content/ without .json. */
+function edited(edits: Record<string, (file: any) => void>): Content {
   const copy = structuredClone(files);
-  edit(copy[`content/rooms/${room}.json`]);
+  for (const [path, edit] of Object.entries(edits)) edit(copy[`content/${path}.json`]);
   return loadContent(copy);
 }
+
+/** The fixture content with `edit` applied to a copy of the room file at `room`. */
+const editedRoom = (room: string, edit: (room: any) => void): Content => edited({ [`rooms/${room}`]: edit });
 
 const activate = (hotspot: string): Command => ({ type: 'activate', hotspot });
 const select = (item: string | null): Command => ({ type: 'select', item });
@@ -372,6 +375,69 @@ describe('use X on Y', () => {
   });
 });
 
+describe('use X on another item', () => {
+  const combine = (item: string, on: string): Command => ({ type: 'combine', item, on });
+  const fix = [{ say: 'Fixed.' }, { take: 'guitar' }, { take: 'flyer' }, { set: 'fixed', to: true }];
+  const given = edited({
+    items: (file) => {
+      file.items.guitar.uses = [
+        { item: 'flyer', when: [{ not: { flag: 'torn' } }], effects: fix },
+        { item: 'flyer', effects: [{ say: 'Too torn.' }] },
+      ];
+    },
+  });
+  const carrying = (flags = {}): GameState => ({
+    ...newGame(given),
+    inventory: { carried: ['guitar', 'flyer'], pickedUp: [] },
+    selected: 'flyer',
+    flags,
+  });
+
+  it("runs the first of the items' uses for each other whose conditions hold, used either way round", () => {
+    for (const [item, on] of [
+      ['flyer', 'guitar'],
+      ['guitar', 'flyer'],
+    ]) {
+      const { state, events } = apply(given, { ...carrying(), selected: item! }, combine(item!, on!));
+      expect(state).toMatchObject({ selected: null, flags: { fixed: true }, inventory: { carried: [] } });
+      expect(events).toEqual([
+        { type: 'selected', item: null },
+        { type: 'said', line: 'Fixed.', by: 'player' },
+        { type: 'itemRemoved', item: 'guitar' },
+        { type: 'itemRemoved', item: 'flyer' },
+        { type: 'saved' },
+      ]);
+    }
+    expect(apply(given, carrying({ torn: true }), combine('flyer', 'guitar')).state.saying?.line).toBe('Too torn.');
+  });
+
+  it('hushes the line said before', () => {
+    const saying = { ...carrying(), saying: { line: 'Hm.', by: 'player' } };
+    expect(apply(given, saying, combine('flyer', 'guitar')).events.slice(0, 2)).toEqual([
+      { type: 'selected', item: null },
+      { type: 'hushed' },
+    ]);
+  });
+
+  it('selects the other item when no use holds, or the items have none for each other, as a select would', () => {
+    const gated = edited({
+      items: (file) => {
+        file.items.guitar.uses = [{ item: 'flyer', when: [{ flag: 'torn' }], effects: fix }];
+      },
+    });
+    const cases: [Content, GameState][] = [
+      [gated, carrying()],
+      [content, carrying()],
+      [given, { ...carrying(), inventory: { carried: ['guitar'], pickedUp: [] } }],
+    ];
+    for (const [using, state] of cases) {
+      expect(apply(using, state, combine('flyer', 'guitar'))).toEqual(apply(using, state, select('guitar')));
+    }
+    const same = carrying();
+    expect(apply(given, same, combine('flyer', 'flyer'))).toEqual({ state: same, events: [] });
+  });
+});
+
 describe('exit', () => {
   it("arrives at the exit's arrival point", () => {
     const { state, events } = play(start(), [activate('door'), activate('door')]);
@@ -394,6 +460,23 @@ describe('exit', () => {
     expect(state.room).toBe('pub');
     expect(state.selected).toBeNull();
     expect(events).toContainEqual({ type: 'selected', item: null });
+  });
+});
+
+describe('say', () => {
+  it('has the player say a line, or the character it is said by', () => {
+    const given = editedRoom('street', (room) => {
+      room.hotspots.find((h: { id: string }) => h.id === 'sign').interactions[0].effects.push({
+        say: 'Move along.',
+        by: 'busker',
+      });
+    });
+    const { state, events } = play(newGame(given), [activate('sign')], given);
+    expect(events.filter((e) => e.type === 'said')).toEqual([
+      { type: 'said', line: 'A sign.', by: 'player' },
+      { type: 'said', line: 'Move along.', by: 'busker' },
+    ]);
+    expect(state.saying).toEqual({ line: 'Move along.', by: 'busker' });
   });
 });
 
@@ -629,6 +712,34 @@ describe('enterWorld', () => {
       expect(apply(content, state, enterWorld(world))).toEqual({ state, events: [] });
     }
   });
+
+  describe('a locked world with unlock conditions', () => {
+    const both = edited({
+      worlds: (file) => {
+        Object.assign(file.worlds[2], { locked: 'Not dreaming yet.', unlockWhen: [{ flag: 'dreaming' }] });
+      },
+      'rooms/street': (room) => {
+        const sign = room.hotspots.find((h: { id: string }) => h.id === 'sign');
+        sign.interactions[0].effects.push({ set: 'dreaming', to: true });
+      },
+    });
+
+    it("can't be entered until they hold, and unlocks once, as they come to hold", () => {
+      expect(apply(both, start(), enterWorld('dream'))).toEqual({ state: start(), events: [] });
+      const { state, events } = play(newGame(both), [activate('sign')], both);
+      expect(events.filter((e) => e.type === 'worldUnlocked')).toEqual([{ type: 'worldUnlocked', world: 'dream' }]);
+      expect(events.slice(-2)).toEqual([{ type: 'worldUnlocked', world: 'dream' }, { type: 'saved' }]);
+      const again = play(state, [activate('sign')], both);
+      expect(again.events).not.toContainEqual({ type: 'worldUnlocked', world: 'dream' });
+      expect(play(state, [enterWorld('dream')], both).state.room).toBe('dream');
+    });
+
+    it('a locked world without them never unlocks', () => {
+      const { state, events } = play(newGame(both), [activate('sign')], both);
+      expect(events).not.toContainEqual({ type: 'worldUnlocked', world: 'online' });
+      expect(apply(both, state, enterWorld('online'))).toEqual({ state, events: [] });
+    });
+  });
 });
 
 describe('dream material', () => {
@@ -659,6 +770,7 @@ describe('apply', () => {
     { type: 'dialogueResult', character: 'bartender', goalReached: true },
     select('guitar'),
     select(null),
+    { type: 'combine', item: 'flyer', on: 'guitar' },
     enterWorld('dream'),
     enterWorld('street'),
     tick(),
