@@ -143,6 +143,15 @@ describe('the DOM UI', () => {
     expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Use Guitar on', 'Sign']);
   });
 
+  it('stops saying the item would be used once using it puts it away', () => {
+    const { game, text, button } = mount();
+    button('Inventory', 'Guitar').click();
+    button('Hotspots', 'Sign').dispatchEvent(new Event('pointerenter'));
+    game.dispatch({ type: 'activate', hotspot: 'sign' });
+    expect(game.state.selected).toBeNull();
+    expect([text('.ui-bar-verb'), text('.ui-bar-name')]).toEqual(['Look at', 'Sign']);
+  });
+
   it('shows what the player says until they are hushed or the line has been up long enough', () => {
     const { game } = mount();
     const speech = container.querySelector<HTMLElement>('.speech')!;
