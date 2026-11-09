@@ -18,13 +18,11 @@ class Style:
     """A character's own walk; the defaults are the protagonist's.
 
     `stride` scales how far the legs and arms swing, `knee` how far the knees bend (below 1 is a
-    stiff walk), `bounce` how far the hips bob, and `waddle` rolls the hips from side to side, in
-    degrees.
+    stiff walk), and `waddle` rolls the hips from side to side, in degrees.
     """
 
     stride: float = 1.0
     knee: float = 1.0
-    bounce: float = 1.0
     waddle: float = 0.0
 
 
@@ -84,10 +82,10 @@ def clips(rig: Rig, biped: Biped, style: Style | None = None) -> None:
     rig.clip("idle", {0: breathe_in, 24: breathe_out, 48: breathe_in})
 
     # A stride: left foot down in front, right pushing off behind; then the right leg passes.
-    stride, knee, bob = style.stride, style.knee, k * style.bounce
+    stride, knee = style.stride, style.knee
     contact = {
         **legs(-26 * stride, 6 * knee, -12 * stride, 22 * stride, 22 * knee, 18 * stride),
-        "hips": {"move": (0, -0.035 * bob, 0), "turn": (0, 6, style.waddle)},
+        "hips": {"move": (0, -0.035 * k, 0), "turn": (0, 6, style.waddle)},
         "spine": {"turn": (4, -4, 0)},
         "chest": {"turn": (0, -6, 0)},
         "head": {"turn": (-3, 4, 0)},
@@ -100,7 +98,7 @@ def clips(rig: Rig, biped: Biped, style: Style | None = None) -> None:
     }
     passing = {
         **legs(4 * stride, 4 * knee, -4 * stride, -14 * stride, 60 * knee, 8 * stride),
-        "hips": {"move": (0, 0.01 * bob, 0)},
+        "hips": {"move": (0, 0.01 * k, 0)},
         "spine": {"turn": (5, 0, 0)},
         "head": {"turn": (-3, 0, 0)},
         **REST_ARMS,
