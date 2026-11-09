@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { SAVE_KEY } from '../../src/services/save';
 import { expect, test } from './fixtures';
 import {
   clickHotspot,
@@ -75,7 +76,7 @@ test('Continue keeps the inventory', async ({ page, context }) => {
 
   const again = await context.newPage();
   await stubSaves(again, saves);
-  await again.addInitScript(() => localStorage.removeItem('punland.save.v1'));
+  await again.addInitScript((key) => localStorage.removeItem(key), SAVE_KEY);
   await continueGame(again);
   await expect(game(again)).toHaveAttribute('data-scene', content.highStreet);
   await expect(inventoryItem(again, content.lessonFlyer)).toBeVisible();
@@ -95,7 +96,7 @@ test('Continue drops what the content no longer has', async ({ page }) => {
     flags: { 'song-stolen': true },
   };
   await stubSaves(page, new Map());
-  await page.addInitScript((value) => localStorage.setItem('punland.save.v1', value), JSON.stringify(save));
+  await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [SAVE_KEY, JSON.stringify(save)] as const);
   await continueGame(page);
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
   await expect(inventoryItem(page, content.brokenGuitar)).toBeVisible();
