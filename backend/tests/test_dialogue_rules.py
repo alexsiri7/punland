@@ -85,7 +85,7 @@ def test_typed_reply_judged_by_model() -> None:
 )
 def test_malformed_answer_gives_canned_line(raw: str) -> None:
     client = TestClient(create_app(Settings(), model=ScriptedModel(raw)))
-    result = turn(client, "bartender")
+    result = turn(client, "cop")
     assert result["line"].strip() and result["line"] != "Hm."
     assert result["ended"] is True
     assert result["options"] == []
@@ -99,7 +99,7 @@ def test_unknown_character_is_404() -> None:
 
 def test_without_a_key_the_character_gives_canned_line() -> None:
     client = TestClient(create_app(Settings()))
-    result = turn(client, "bartender")
+    result = turn(client, "cop")
     assert result["ended"] is True
     assert result["options"] == []
 
@@ -133,9 +133,13 @@ def test_requesty_model_request() -> None:
 
 def test_character_content_loads() -> None:
     characters = load_characters()
-    assert {"bartender", "bouncer"} <= characters.keys()
-    assert characters["bartender"].goal is None
+    assert {"bartender", "bouncer", "cop", "sheryl-caw", "second-crow", "third-crow"} <= (
+        characters.keys()
+    )
+    assert characters["cop"].goal is None
     assert characters["bouncer"].goal == GOAL
+    bartender = characters["bartender"].goal
+    assert bartender is not None and "kitchen" in bartender and "third crow" in bartender
 
 
 def test_answer_matches_the_frontend_wire_shape() -> None:
@@ -178,7 +182,7 @@ def test_limit_spans_characters() -> None:
     model = ScriptedModel(answer())
     allowance = dialogue.TurnAllowance(per_day=2)
     client = TestClient(create_app(Settings(), model=model, allowance=allowance))
-    turn(client, "bartender")
+    turn(client, "cop")
     turn(client, "bouncer")
 
     limited = turn(client, "bouncer", "One.")
@@ -222,7 +226,7 @@ def test_overlapping_turns_are_both_remembered() -> None:
 def test_player_id_must_be_a_uuid() -> None:
     # The same anonymous id the game saves under (progress spec, Autosave).
     client = TestClient(create_app(Settings(), model=ScriptedModel(answer())))
-    body = {"character": "bartender"}
+    body = {"character": "cop"}
     assert client.post("/dialogue/turn", json=body).status_code == 422
     assert (
         client.post("/dialogue/turn", headers={"X-Player-Id": "nope"}, json=body).status_code == 422
@@ -274,8 +278,8 @@ def test_unusable_database_keeps_the_dialogue_going(tmp_path: Path) -> None:
     broken = Settings(database_url=f"sqlite:///{tmp_path}/missing-dir/punland.db")
     model = ScriptedModel(answer())
     with TestClient(create_app(broken, model=model)) as client:
-        turn(client, "bartender")
-        turn(client, "bartender", "I play the kazoo.")
+        turn(client, "cop")
+        turn(client, "cop", "I play the kazoo.")
         model.calls.clear()
-        turn(client, "bartender")
+        turn(client, "cop")
     assert any("kazoo" in m["content"] for m in model.calls[0])
