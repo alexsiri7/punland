@@ -137,23 +137,25 @@ def turnaround(rig: Rig, folder: str, height: float) -> None:
     rig.object.rotation_euler = (0, 0, 0)
 
 
-def walk(rig: Rig, folder: str, height: float, frames: int = 4) -> None:
-    """`frames` evenly spaced frames of the walk, seen three-quarter on."""
+def frames(rig: Rig, folder: str, height: float, clip: str, count: int = 4) -> None:
+    """`count` evenly spaced frames of `clip`, seen three-quarter on: from the side for a walk,
+    nearer the front for the others."""
     centre = blender((0, height / 2, 0))
     cam = camera(
-        "walk", centre + blender((0, 0.25, 6)), centre + blender((0, 0.05, 0)), ortho=height * 1.18
+        clip, centre + blender((0, 0.25, 6)), centre + blender((0, 0.05, 0)), ortho=height * 1.18
     )
-    action = bpy.data.actions["walk"]
+    action = bpy.data.actions[clip]
     start, end = action.frame_range
-    rig.object.rotation_euler = (0, 0, math.radians(-60))
-    for i in range(frames):
-        rig.play(action, start + (end - start) * i / frames)
-        render(os.path.join(folder, f"walk-{i + 1}.png"), cam)
+    rig.object.rotation_euler = (0, 0, math.radians(-60 if clip == "walk" else -30))
+    for i in range(count):
+        rig.play(action, start + (end - start) * i / count)
+        render(os.path.join(folder, f"{clip}-{i + 1}.png"), cam)
     rig.object.rotation_euler = (0, 0, 0)
 
 
-def in_scene(rig: Rig, folder: str, repo: str, room: str) -> None:
-    """The rig at the room's start point, seen from the room's `cam_main` as the game sees it."""
+def in_scene(rig: Rig, folder: str, repo: str, room: str, entity: str | None = None) -> None:
+    """The rig where the room places `entity`, or at the room's start point, seen from the room's
+    `cam_main` as the game sees it."""
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(
         filepath=os.path.join(repo, "frontend/public/models/scenes", f"{room}.glb")
@@ -164,9 +166,17 @@ def in_scene(rig: Rig, folder: str, repo: str, room: str) -> None:
             toon(mat)
     cam = next(obj for obj in imported if obj.type == "CAMERA")
     with open(os.path.join(repo, "frontend/src/content/rooms", f"{room}.json")) as file:
-        start = json.load(file)["start"]
+        content = json.load(file)
+    at = next(
+        (
+            spot["target"]["at"]
+            for spot in content["hotspots"]
+            if entity and spot["target"].get("entity") == entity
+        ),
+        content["start"],
+    )
     rig.play(bpy.data.actions["idle"], 0)
-    rig.object.location = floor_point(cam, start["x"], start["y"])
+    rig.object.location = floor_point(cam, at["x"], at["y"])
     render(os.path.join(folder, f"scene-{room}.png"), cam, 2 * SIZE, SIZE)
     rig.object.location = (0, 0, 0)
     for obj in imported:
@@ -184,7 +194,15 @@ def floor_point(cam: bpy.types.Object, x: float, y: float) -> Vector:
     return origin + ray * (-origin.z / ray.z)
 
 
-def previews(rig: Rig, folder: str, height: float, room: str = "opening") -> None:
+def previews(
+    rig: Rig,
+    folder: str,
+    height: float,
+    room: str = "opening",
+    clips: tuple[str, ...] = ("walk",),
+    entity: str | None = None,
+) -> None:
+    """A turnaround, frames of each of `clips`, and the rig in `room` (see `in_scene`)."""
     os.makedirs(folder, exist_ok=True)
     repo = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -192,6 +210,7 @@ def previews(rig: Rig, folder: str, height: float, room: str = "opening") -> Non
     stage()
     floor = ground()
     turnaround(rig, folder, height)
-    walk(rig, folder, height)
+    for clip in clips:
+        frames(rig, folder, height, clip)
     floor.hide_render = True
-    in_scene(rig, folder, repo, room)
+    in_scene(rig, folder, repo, room, entity)
