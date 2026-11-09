@@ -48,7 +48,7 @@
     {
       "id": "character/bartender",
       "kind": "character",
-      "model3d": { "file": "models/characters/bartender.glb", "placeholder": true, "height": 1.55 }
+      "model3d": { "file": "models/characters/bartender.glb", "placeholder": false, "height": 1.55 }
     },
     {
       "id": "character/cop",
