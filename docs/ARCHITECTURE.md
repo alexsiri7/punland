@@ -301,6 +301,15 @@ Every model file must follow this. A placeholder model follows it too, so a desi
 
 The output is committed, and each one is marked `"placeholder": true` in the registry. `tests/unit/placeholders.test.ts` checks that the script reproduces the committed files still marked `placeholder` byte for byte, so after changing the script, run it and commit its output with it. B1 writes the protagonist, the bartender (a crow), the flyer and the broken guitar; B3 writes the room shells of `opening`, `pub`, `feed` and `dream`. The script no longer writes a file whose entry is not a placeholder.
 
+**Blender sources.** A model built in Blender has its source in `art/blender/<id>.py`, a `bpy` script that builds it from scratch (mesh, armature, materials, clips) and exports it, with the helpers the scripts share in `art/blender/lib/` (materials in a base tone, hulls skinned to bones, the export settings this contract needs, the preview renders). The protagonist is the first (#69):
+
+```bash
+blender -b --factory-startup --python art/blender/protagonist.py -- \
+  --out frontend/public/models/characters/protagonist.glb --previews docs/screenshots/blender-pilot
+```
+
+`--previews` renders a turnaround, frames of `walk` and a shot from the opening room's `cam_main` (Eevee, with a two-step ramp like the game's) to look at before committing. The glb is committed with its script and the registry marks it `"placeholder": false`, so CI needs no Blender; after changing a script, run it and commit its output with it.
+
 **Delivering a model.** Everything below runs in `frontend/` (`npm ci` once first; `npx playwright install chromium` once for the e2e tests).
 
 1. Export the model as a glb that follows the table above, to its path: `public/models/<kind>s/<id>.glb`. For a placeholder, that is the file to replace. A new model also needs an entry in the registry, and content that names it (a room's `model`, a character's or object's `model`): that part is a content change.

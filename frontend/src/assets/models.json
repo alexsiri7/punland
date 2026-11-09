@@ -23,7 +23,7 @@
     {
       "id": "character/protagonist",
       "kind": "character",
-      "model3d": { "file": "models/characters/protagonist.glb", "placeholder": true, "height": 1.5 }
+      "model3d": { "file": "models/characters/protagonist.glb", "placeholder": false, "height": 1.5 }
     },
     {
       "id": "character/bartender",
