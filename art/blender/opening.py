@@ -93,7 +93,7 @@ def main() -> None:
     street.side_street()
     street.city()
     street.board()
-    street.signpost()
+    room.signpost("signpost", "street", 414, "HIGH ST", "sign-gold", -1)
     street.holding_pen()
     street.lamp_post()
     street.lean()
@@ -600,7 +600,7 @@ class Street:
         city.finish("city")
         sky.finish("sky")
 
-    # --- The pavement's props: the hotspots `hit_board` and `hit_street`, and the rest. -------
+    # --- The pavement's props: the hotspot `hit_board`, and the rest. --------------------------
 
     def board(self) -> None:
         """The A-board on the pavement: TONIGHT / OPEN MIC / DOWNSTAIRS 9PM. Its front leans
@@ -652,39 +652,6 @@ class Street:
         arrow = [(x, y, z), (x - 0.025, y + 0.03, z), (x + 0.025, y + 0.03, z)]
         board.hull([*arrow, (x, y + 0.015, z - 0.006)], "chalk")
         room.hotspot("board", board.finish("board"), *signs)
-
-    def signpost(self) -> None:
-        """The High Street's wayfinding sign by the corner, pointing down the street: the
-        hotspot `hit_street`."""
-        lens, room = self.lens, self.room
-        post = room.body()
-        post.hull(lens.standing(414, 384, 56, 160, 0.14), "fascia")
-        front = lens.depth_at(544)
-        post.hull(lens.box(418, 392, 48, 36, front + 0.006, 0.01), "sign-gold")
-        metres = self.lens.metres(front)
-        name = room.sign(
-            "street-sign",
-            "HIGH ST",
-            "fascia",
-            12 * metres,
-            tuple(lens.at(442, 405, front + 0.008)),
-            spacing=1.2,
-        )
-        a = lens.at(428, 419, front + 0.008)
-        b = lens.at(456, 419, front + 0.008)
-        post.hull(
-            [
-                (a.x, a.y, a.z),
-                (a.x + 0.03, a.y + 0.02, a.z),
-                (a.x + 0.03, a.y - 0.02, a.z),
-                (a.x + 0.01, a.y, a.z - 0.004),
-            ],
-            "fascia",
-        )
-        post.hull(
-            limb((a.x + 0.02, a.y, a.z - 0.002), (b.x, b.y, b.z - 0.002), 0.005, 0.005, 4), "fascia"
-        )
-        room.hotspot("street", post.finish("signpost"), name)
 
     def holding_pen(self) -> None:
         """The railings round the steps down to The Holding Pen, and its sign: THE HOLDING PEN,

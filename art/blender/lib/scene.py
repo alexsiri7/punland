@@ -18,7 +18,7 @@ from collections.abc import Sequence
 import bpy
 from mathutils import Matrix, Vector
 
-from .build import Body, Point, blender
+from .build import Body, Point, blender, limb
 from .palette import material
 from .preview import render, stage, toon
 
@@ -108,6 +108,16 @@ def box(low: Point, high: Point) -> list[Point]:
 def rect(x: float, y: float, w: float, h: float) -> list[tuple[float, float]]:
     """A pixel rect's corners."""
     return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+
+
+def border(x: float, y: float, w: float, h: float, bar: float) -> list[list[tuple[float, float]]]:
+    """A pixel rect's border, `bar` pixels wide: its top, bottom, left and right strips."""
+    return [
+        rect(x, y, w, bar),
+        rect(x, y + h - bar, w, bar),
+        rect(x, y, bar, h),
+        rect(x + w - bar, y, bar, h),
+    ]
 
 
 def ellipse(
@@ -260,6 +270,48 @@ class Room:
         # The lettering's own axes are glTF's: across +X, up +Y, facing +Z.
         obj.matrix_world = Matrix.Translation(blender(at)) @ (GLTF_TO_BLENDER @ rotation).to_4x4()
         return obj
+
+    def signpost(
+        self, name: str, node: str, x: float, text: str, band: str, pointing: int
+    ) -> bpy.types.Object:
+        """`hit_<node>`: a street's wayfinding sign, `name`, standing on the pavement at the
+        reference art's 56 x 160 px post from (x, 384): `text` on its `band`, over an arrow
+        pointing left (-1) or right (1)."""
+        lens = self.lens
+        post = self.body()
+        post.hull(lens.standing(x, 384, 56, 160, 0.14), "fascia")
+        front = lens.depth_at(544)
+        post.hull(lens.box(x + 4, 392, 48, 36, front + 0.006, 0.01), band)
+        lettering = self.sign(
+            f"{node}-sign",
+            text,
+            "fascia",
+            12 * lens.metres(front),
+            tuple(lens.at(x + 28, 405, front + 0.008)),
+            spacing=1.2,
+        )
+        ends = (lens.at(x + 14, 419, front + 0.008), lens.at(x + 42, 419, front + 0.008))
+        tip, tail = ends if pointing < 0 else ends[::-1]
+        post.hull(
+            [
+                (tip.x, tip.y, tip.z),
+                (tip.x - pointing * 0.03, tip.y + 0.02, tip.z),
+                (tip.x - pointing * 0.03, tip.y - 0.02, tip.z),
+                (tip.x - pointing * 0.01, tip.y, tip.z - 0.004),
+            ],
+            "fascia",
+        )
+        post.hull(
+            limb(
+                (tip.x - pointing * 0.02, tip.y, tip.z - 0.002),
+                (tail.x, tail.y, tail.z - 0.002),
+                0.005,
+                0.005,
+                4,
+            ),
+            "fascia",
+        )
+        return self.hotspot(node, post.finish(name), lettering)
 
     def previews(self, folder: str) -> None:
         """The room from `cam_main` (`scene.png`), with the protagonist at the content's start

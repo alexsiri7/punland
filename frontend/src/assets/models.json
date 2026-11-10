@@ -23,7 +23,7 @@
     {
       "id": "scene/high-street",
       "kind": "scene",
-      "model3d": { "file": "models/scenes/high-street.glb", "placeholder": true }
+      "model3d": { "file": "models/scenes/high-street.glb", "placeholder": false }
     },
     {
       "id": "scene/music-shop",
