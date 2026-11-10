@@ -175,26 +175,7 @@ class Pub:
         room.floor([(-14, wall), (14, wall), (14, FRONT), (-14, FRONT)], "boards")
         body = self.body
         body.plate([(-14, 0, FRONT), (14, 0, FRONT), (14, 0, 4), (-14, 0, 4)], "boards", UP)
-        z, row = wall + 0.62, 0
-        while z < 3:
-            body.plate(
-                [(-14, 0.002, z), (14, 0.002, z), (14, 0.002, z + 0.02), (-14, 0.002, z + 0.02)],
-                "board-seams",
-                UP,
-            )
-            for x in range(-12 + 2 * (row % 2), 13, 4):
-                joint = x + (0.8 * row) % 1.7
-                body.plate(
-                    [
-                        (joint, 0.002, z - 0.62),
-                        (joint + 0.02, 0.002, z - 0.62),
-                        (joint + 0.02, 0.002, z),
-                        (joint, 0.002, z),
-                    ],
-                    "board-seams",
-                    UP,
-                )
-            z, row = z + 0.64, row + 1
+        room.seams(body, wall, "board-seams")
         corners = [lens.floor(x, y) for x, y in ((70, 470), (214, 470), (226, 492), (58, 492))]
         body.plate([(p.x, 0.004, p.z) for p in corners], "mat", UP)
 

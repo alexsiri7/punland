@@ -65,6 +65,17 @@ def limb(
     ]
 
 
+def dome(centre: Point, rx: float, ry: float, rise: float, sides: int = 10) -> list[Point]:
+    """A flat ellipse round `centre` in the XY plane, `rx` across and `ry` up, raised `rise`
+    towards +Z in its middle, so it reads in facets."""
+    x, y, z = centre
+    return [
+        (x + k * rx * math.cos(t), y + k * ry * math.sin(t), z + lift)
+        for k, lift in ((1.0, 0.0), (0.6, rise))
+        for t in (2 * math.pi * i / sides for i in range(sides))
+    ]
+
+
 def blend(
     *stops: tuple[float, str], axis: int = 1, soft: float = 0.05
 ) -> Callable[[Vector], dict[str, float]]:
