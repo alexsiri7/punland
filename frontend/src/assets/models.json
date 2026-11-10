@@ -28,7 +28,7 @@
     {
       "id": "scene/music-shop",
       "kind": "scene",
-      "model3d": { "file": "models/scenes/music-shop.glb", "placeholder": true }
+      "model3d": { "file": "models/scenes/music-shop.glb", "placeholder": false }
     },
     {
       "id": "scene/flat",
