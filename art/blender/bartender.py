@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib.build import Body, blend, limb, ring
+from lib.build import Body, blend, limb, ring, symmetric
 from lib.clips import Style, clips
 from lib.export import arguments, empty_scene, export_glb
 from lib.palette import material
@@ -87,16 +87,13 @@ def build_body(body: Body) -> None:
 
 
 def head(body: Body) -> None:
-    def mirror_x(points):
-        return [(sx * px, py, pz) for px, py, pz in points for sx in ((1, -1) if px else (1,))]
-
     body.hull(
         ring((0, 1.1, 0.025), 0.09, 0.08) + ring((0, 1.24, 0.035), 0.075, 0.07),
         "feathers",
         blend((0, "chest"), (1.14, "neck"), soft=0.03),
     )
     skull = body.hull(
-        mirror_x(
+        symmetric(
             [
                 (0, 1.2, 0.08),
                 (0.07, 1.21, 0.05),
@@ -121,7 +118,7 @@ def head(body: Body) -> None:
     )
     # Long and pointed, a little hooked, the bill's base wide on the face.
     body.hull(
-        mirror_x(
+        symmetric(
             [
                 (0.045, 1.33, 0.07),
                 (0.04, 1.27, 0.075),

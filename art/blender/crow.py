@@ -16,7 +16,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib.build import Body, blend, disc, limb, ring
+from lib.build import Body, blend, disc, limb, ring, symmetric
 from lib.clips import Style, clips
 from lib.export import arguments, empty_scene, export_glb
 from lib.palette import material
@@ -104,12 +104,9 @@ def head(body: Body) -> None:
     """A pointed head pushed out in front of the hunch, its crown peaked like the reference
     art's, the beak long and straight with a hooked tip, the eyes half shut under flat lids."""
 
-    def mirror_x(points):
-        return [(sx * px, py, pz) for px, py, pz in points for sx in ((1, -1) if px else (1,))]
-
     skull = body.hull(
         ring((0, 0.87, 0.06), 0.065, 0.07)
-        + mirror_x(
+        + symmetric(
             [
                 (0.07, 0.93, 0.13),
                 (0, 0.92, 0.16),
@@ -128,7 +125,7 @@ def head(body: Body) -> None:
         HEAD_SKIN,
     )
     body.hull(
-        mirror_x(
+        symmetric(
             [
                 (0.04, 0.99, 0.13),
                 (0.04, 0.94, 0.13),

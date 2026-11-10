@@ -40,6 +40,11 @@ def ring(centre: Point, half_width: float, half_depth: float, chamfer: float = 0
     ]
 
 
+def symmetric(points: Iterable[Point]) -> list[Point]:
+    """`points`, given on the left and on the centre line, with the left ones mirrored right."""
+    return [(sx * px, py, pz) for px, py, pz in points for sx in ((1, -1) if px else (1,))]
+
+
 def disc(a: Point, b: Point, radius: float, sides: int, twist: float = 0.0) -> list[Point]:
     """`sides` points round `a`, in the plane square to the line from `a` to `b`."""
     axis = (Vector(b) - Vector(a)).normalized()
