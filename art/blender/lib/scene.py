@@ -203,6 +203,19 @@ class Room:
             raise ValueError(f"the floor reaches past the front of the walk line: {outline}")
         return body.finish("floor")
 
+    def panel(
+        self,
+        body: Body,
+        wall: float,
+        points: Sequence[tuple[float, float]],
+        out: float,
+        depth: float,
+        part: str,
+    ) -> None:
+        """The pixel outline `points`, standing `out` off the back wall at depth `wall` and
+        `depth` deep."""
+        body.hull(self.lens.outline(points, wall + out, depth), part)
+
     def seams(self, body: Body, back: float, part: str) -> None:
         """The seams of the floorboards laid across the room from the back wall at depth `back`
         out past the camera, their ends staggered row by row."""
