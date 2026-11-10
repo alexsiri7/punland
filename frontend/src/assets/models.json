@@ -68,7 +68,7 @@
     {
       "id": "character/song-master",
       "kind": "character",
-      "model3d": { "file": "models/characters/song-master.glb", "placeholder": true, "height": 1.2 }
+      "model3d": { "file": "models/characters/song-master.glb", "placeholder": false, "height": 1.2 }
     },
     {
       "id": "character/mayor",
