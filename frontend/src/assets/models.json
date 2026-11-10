@@ -73,7 +73,7 @@
     {
       "id": "character/mayor",
       "kind": "character",
-      "model3d": { "file": "models/characters/mayor.glb", "placeholder": true, "height": 1.8 }
+      "model3d": { "file": "models/characters/mayor.glb", "placeholder": false, "height": 1.8 }
     },
     {
       "id": "object/flyer",
