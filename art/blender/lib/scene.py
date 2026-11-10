@@ -83,6 +83,15 @@ class Lens:
         right, bottom = self.at(x + width, y + height, z)[:2]
         return box((left, bottom, z - depth), (right, top, z))
 
+    def outline(self, points: Sequence[tuple[float, float]], z: float, depth: float) -> list[Point]:
+        """The pixel outline `points` at depth `z`, `depth` deep behind it."""
+        front = [self.at(x, y, z) for x, y in points]
+        return [tuple(p) for p in front] + [(p.x, p.y, z - depth) for p in front]
+
+    def metres(self, z: float) -> float:
+        """How many metres a pixel spans at depth `z`."""
+        return self.at(1, 0, z).x - self.at(0, 0, z).x
+
     def standing(self, x: float, y: float, width: float, height: float, depth: float):
         """A box over the pixel rect standing on the ground where its foot (the rect's bottom)
         meets it, `depth` deep behind that."""
@@ -94,6 +103,26 @@ def box(low: Point, high: Point) -> list[Point]:
     return [
         (x, y, z) for x in (low[0], high[0]) for y in (low[1], high[1]) for z in (low[2], high[2])
     ]
+
+
+def rect(x: float, y: float, w: float, h: float) -> list[tuple[float, float]]:
+    """A pixel rect's corners."""
+    return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+
+
+def ellipse(
+    cx: float, cy: float, rx: float, ry: float, turn: float = 0.0, sides: int = 10
+) -> list[tuple[float, float]]:
+    """`sides` points round a pixel ellipse, turned `turn` degrees."""
+    t = math.radians(turn)
+    out = []
+    for i in range(sides):
+        a = 2 * math.pi * i / sides
+        ex, ey = rx * math.cos(a), ry * math.sin(a)
+        out.append(
+            (cx + ex * math.cos(t) - ey * math.sin(t), cy + ex * math.sin(t) + ey * math.cos(t))
+        )
+    return out
 
 
 class Wall:
