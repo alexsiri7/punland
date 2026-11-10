@@ -110,6 +110,16 @@ def rect(x: float, y: float, w: float, h: float) -> list[tuple[float, float]]:
     return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
 
 
+def border(x: float, y: float, w: float, h: float, bar: float) -> list[list[tuple[float, float]]]:
+    """A pixel rect's border, `bar` pixels wide: its top, bottom, left and right strips."""
+    return [
+        rect(x, y, w, bar),
+        rect(x, y + h - bar, w, bar),
+        rect(x, y, bar, h),
+        rect(x + w - bar, y, bar, h),
+    ]
+
+
 def ellipse(
     cx: float, cy: float, rx: float, ry: float, turn: float = 0.0, sides: int = 10
 ) -> list[tuple[float, float]]:

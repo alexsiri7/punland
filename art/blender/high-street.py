@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.build import limb
 from lib.export import arguments, empty_scene, export_glb
-from lib.scene import FRONT, UP, Room, box, ellipse, rect
+from lib.scene import FRONT, UP, Room, border, box, ellipse, rect
 
 # STYLE.md's palette, and the reference art's own tones for the shop and the house.
 COLOURS = {
@@ -132,16 +132,6 @@ class HighStreet:
         """The pixel outline `points`, standing `out` off the buildings' fronts, `depth` deep."""
         self.buildings.hull(self.lens.outline(points, self.wall + out, depth), part)
 
-    def border(self, x, y, w, h, bar, out: float, part: str) -> None:
-        """A pixel rect's border, `bar` pixels wide, standing `out` off the fronts."""
-        for points in (
-            rect(x, y, w, bar),
-            rect(x, y + h - bar, w, bar),
-            rect(x, y, bar, h),
-            rect(x + w - bar, y, bar, h),
-        ):
-            self.front(points, out + 0.01, 0.01, part)
-
     # --- The street. ---------------------------------------------------------------------------
 
     def ground(self) -> None:
@@ -201,7 +191,8 @@ class HighStreet:
             rect(ROW_LEFT - 6, 160, 620 - ROW_LEFT + 6, 12), 0.08, 0.08 + BUILDING_DEPTH, "cornice"
         )
         self.front(rect(170, 180, 430, 338), 0.05, 0.05, "shopfront")
-        self.border(170, 180, 430, 338, 4, 0.05, "frame")
+        for points in border(170, 180, 430, 338, 4):
+            self.front(points, 0.06, 0.01, "frame")
         self.front(rect(180, 190, 410, 44), 0.1, 0.05, "fascia")
         room.sign(
             "shop-name",

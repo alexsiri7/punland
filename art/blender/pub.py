@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.build import limb
 from lib.export import arguments, empty_scene, export_glb
-from lib.scene import FRONT, UP, Room, box, ellipse, rect
+from lib.scene import FRONT, UP, Room, border, box, ellipse, rect
 
 # STYLE.md's palette, and the reference art's own tones for the pub's wood, brick and glass.
 COLOURS = {
@@ -218,18 +218,9 @@ class Pub:
             self.on_wall(body, rect(x0, 384, x1 - x0, 86), 0.03, 0.03, "wainscot")
             self.on_wall(body, rect(x0 - 4, 378, x1 - x0 + 8, 10), 0.05, 0.05, "rail")
         for x in (240, 500):
-            self.frame(body, x, 400, 240, 56, 2, 0.034, "moulding")
+            for points in border(x, 400, 240, 56, 2):
+                self.on_wall(body, points, 0.034, 0.006, "moulding")
         self.on_wall(body, rect(LEFT, 462, RIGHT - LEFT, 8), 0.05, 0.05, "skirting")
-
-    def frame(self, body, x, y, w, h, bar, out: float, part: str) -> None:
-        """A pixel rect's border, `bar` pixels wide, standing `out` off the back wall."""
-        for points in (
-            rect(x, y, w, bar),
-            rect(x, y + h - bar, w, bar),
-            rect(x, y, bar, h),
-            rect(x + w - bar, y, bar, h),
-        ):
-            self.on_wall(body, points, out, 0.006, part)
 
     def ceiling(self) -> None:
         """The dark ceiling, the beam along the back wall and the joists running out from it."""
@@ -343,7 +334,8 @@ class Pub:
         room, lens, wall = self.room, self.lens, self.wall
         fame = room.body()
         self.on_wall(fame, rect(496, 160, 200, 180), 0.03, 0.03, "fame-board")
-        self.frame(fame, 496, 160, 200, 180, 4, 0.034, "frame")
+        for points in border(496, 160, 200, 180, 4):
+            self.on_wall(fame, points, 0.034, 0.006, "frame")
         self.on_wall(fame, rect(500, 146, 192, 14), 0.035, 0.035, "fascia")
         name = room.sign(
             "fame-name",
