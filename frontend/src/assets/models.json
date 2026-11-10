@@ -63,7 +63,7 @@
     {
       "id": "character/rival",
       "kind": "character",
-      "model3d": { "file": "models/characters/rival.glb", "placeholder": true, "height": 1.6 }
+      "model3d": { "file": "models/characters/rival.glb", "placeholder": false, "height": 1.6 }
     },
     {
       "id": "character/song-master",
