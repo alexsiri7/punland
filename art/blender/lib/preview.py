@@ -51,6 +51,8 @@ def toon(mat: bpy.types.Material) -> None:
     tree.links.new(ramp.outputs["Color"], tint.inputs["A"])
     tree.links.new(tint.outputs["Result"], emission.inputs["Color"])
     tree.links.new(emission.outputs["Emission"], out.inputs["Surface"])
+    # The game draws only a face's front (glTF's default, single-sided), so the previews do too.
+    mat.use_backface_culling = True
 
 
 def stage() -> None:

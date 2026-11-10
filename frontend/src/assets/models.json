@@ -8,7 +8,7 @@
     {
       "id": "scene/pub",
       "kind": "scene",
-      "model3d": { "file": "models/scenes/pub.glb", "placeholder": true }
+      "model3d": { "file": "models/scenes/pub.glb", "placeholder": false }
     },
     {
       "id": "scene/feed",
