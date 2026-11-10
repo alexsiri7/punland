@@ -203,6 +203,30 @@ class Room:
             raise ValueError(f"the floor reaches past the front of the walk line: {outline}")
         return body.finish("floor")
 
+    def seams(self, body: Body, back: float, part: str) -> None:
+        """The seams of the floorboards laid across the room from the back wall at depth `back`
+        out past the camera, their ends staggered row by row."""
+        z, row = back + 0.62, 0
+        while z < 3:
+            body.plate(
+                [(-14, 0.002, z), (14, 0.002, z), (14, 0.002, z + 0.02), (-14, 0.002, z + 0.02)],
+                part,
+                UP,
+            )
+            for x in range(-12 + 2 * (row % 2), 13, 4):
+                joint = x + (0.8 * row) % 1.7
+                body.plate(
+                    [
+                        (joint, 0.002, z - 0.62),
+                        (joint + 0.02, 0.002, z - 0.62),
+                        (joint + 0.02, 0.002, z),
+                        (joint, 0.002, z),
+                    ],
+                    part,
+                    UP,
+                )
+            z, row = z + 0.64, row + 1
+
     def hotspot(self, node: str, *parts: bpy.types.Object) -> bpy.types.Object:
         """`hit_<node>`, for the content's hotspot on the scene node `node`: an empty holding the
         visible `parts` the player points at. The renderer picks and frames the node with its
