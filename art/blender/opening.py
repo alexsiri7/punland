@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib.build import Body, disc, limb
 from lib.export import arguments, empty_scene, export_glb
-from lib.scene import FRONT, UP, Room, Wall, box
+from lib.scene import FRONT, UP, Room, Wall, box, ellipse, rect
 
 # STYLE.md's palette, and the reference art's own tones for the pub and its signs.
 COLOURS = {
@@ -131,15 +131,6 @@ class Street:
         """The height at the pub's wall of a pixel row."""
         return self.lens.at(640, row, self.wall).y
 
-    def px(self, points, z: float, depth: float):
-        """The pixel outline `points` at depth `z`, `depth` deep behind it."""
-        front = [self.lens.at(x, y, z) for x, y in points]
-        return [tuple(p) for p in front] + [(p.x, p.y, z - depth) for p in front]
-
-    def metres(self, z: float) -> float:
-        """How many metres a pixel spans at depth `z`."""
-        return self.lens.at(1, 0, z).x - self.lens.at(0, 0, z).x
-
     # --- The ground. ---------------------------------------------------------------------------
 
     def ground(self) -> None:
@@ -219,14 +210,15 @@ class Street:
             "pub-name",
             "THE THREE CROWS",
             "sign-gold",
-            22 * self.metres(wall),
+            22 * self.lens.metres(wall),
             tuple(lens.at(880, 157, wall + 0.122)),
             spacing=2.2,
         )
         windows = ((502, 608, 250), (806, 954, 248), (994, 1144, 250), (1186, 1300, 252))
         for x0, x1, top in windows:
             pub.hull(
-                self.px(arch(x0, top, x1 - x0, 470 - top, 48), wall + 0.006, 0.01), "window-glow"
+                self.lens.outline(arch(x0, top, x1 - x0, 470 - top, 48), wall + 0.006, 0.01),
+                "window-glow",
             )
         bars = ((538, 572), (856, 906), (1044, 1094), (1236,))
         for (x0, x1, top), xs in zip(windows, bars, strict=True):
@@ -260,7 +252,7 @@ class Street:
         pub, z = self.pub, self.wall + 0.01
 
         def shape(points, part="patrons"):
-            pub.hull(self.px(points, z, 0.003), part)
+            pub.hull(self.lens.outline(points, z, 0.003), part)
 
         def head(cx, cy, rx, ry, ears=()):
             shape(ellipse(cx, cy, rx, ry))
@@ -325,16 +317,16 @@ class Street:
         lens, wall = self.lens, self.wall
         door = self.room.body()
         door.hull(
-            self.px([(634, 520), (636, 214), (774, 208), (776, 520)], wall + 0.035, 0.03),
+            self.lens.outline([(634, 520), (636, 214), (774, 208), (776, 520)], wall + 0.035, 0.03),
             "door-surround",
         )
-        door.hull(self.px(fan(644, 704, 766, 262, 46), wall + 0.04, 0.005), "window-glow")
+        door.hull(self.lens.outline(fan(644, 704, 766, 262, 46), wall + 0.04, 0.005), "window-glow")
         for points in (
             [(703, 216), (705, 216), (705, 262), (703, 262)],
             [(674, 226), (677, 225), (690, 262), (687, 262)],
             [(734, 224), (731, 225), (720, 262), (723, 262)],
         ):
-            door.hull(self.px(points, wall + 0.045, 0.004), "door-surround")
+            door.hull(self.lens.outline(points, wall + 0.045, 0.004), "door-surround")
         for x0, x1 in ((644, 702), (708, 766)):
             door.hull(lens.box(x0, 268, x1 - x0, 244, wall + 0.05, 0.02), "door")
             door.hull(lens.box(x0 + 8, 278, x1 - x0 - 16, 104, wall + 0.054, 0.005), "window-glow")
@@ -641,7 +633,7 @@ class Street:
             board.hull(
                 limb((x, 0, foot - 2 * lean), (x, height, foot - lean), 0.02, 0.02, 4), "easel"
             )
-        metres = self.metres(foot)
+        metres = self.lens.metres(foot)
 
         def at_row(row):
             """The middle of the board's face at the art's pixel row `row`."""
@@ -669,7 +661,7 @@ class Street:
         post.hull(lens.standing(414, 384, 56, 160, 0.14), "fascia")
         front = lens.depth_at(544)
         post.hull(lens.box(418, 392, 48, 36, front + 0.006, 0.01), "sign-gold")
-        metres = self.metres(front)
+        metres = self.lens.metres(front)
         name = room.sign(
             "street-sign",
             "HIGH ST",
@@ -740,7 +732,7 @@ class Street:
         body.hull(rotated(box((-0.4, -0.16, 0), (0.4, 0.16, 0.012)), 2, hang), "board")
         body.hull(rotated(box((-0.38, -0.145, 0.012), (0.38, 0.145, 0.014)), 2, hang), "sign-gold")
         body.hull(rotated(box((-0.37, -0.135, 0.012), (0.37, 0.135, 0.016)), 2, hang), "board")
-        metres = self.metres(front)
+        metres = self.lens.metres(front)
         for name, text, part, size, y, spacing in (
             ("pen-name", "THE HOLDING PEN", "sign-gold", 14, 0.035, 1.2),
             ("pen-below", "LIVE MUSIC BELOW", "small-print", 6.5, -0.085, 1.6),
@@ -800,22 +792,6 @@ def level(p, y: float):
 
 def square(r: float):
     return ((r, r), (-r, r), (-r, -r), (r, -r))
-
-
-def rect(x, y, w, h):
-    return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
-
-
-def ellipse(cx, cy, rx, ry, turn=0.0, sides=10):
-    t = math.radians(turn)
-    out = []
-    for i in range(sides):
-        a = 2 * math.pi * i / sides
-        ex, ey = rx * math.cos(a), ry * math.sin(a)
-        out.append(
-            (cx + ex * math.cos(t) - ey * math.sin(t), cy + ex * math.sin(t) + ey * math.cos(t))
-        )
-    return out
 
 
 def ellipse_m(cs, cy, rs, ry, sides=10):
