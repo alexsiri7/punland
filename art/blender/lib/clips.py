@@ -18,12 +18,15 @@ class Style:
     """A character's own walk; the defaults are the protagonist's.
 
     `stride` scales how far the legs and arms swing, `knee` how far the knees bend (below 1 is a
-    stiff walk), and `waddle` rolls the hips from side to side, in degrees.
+    stiff walk), and `waddle` rolls the hips from side to side, in degrees. `head` is how the head
+    is held through the idle, a turn in degrees on top of its breathing: chin up and turned aside
+    reads as aloof.
     """
 
     stride: float = 1.0
     knee: float = 1.0
     waddle: float = 0.0
+    head: tuple[float, float, float] = (0.0, 0.0, 0.0)
 
 
 def legs(left_thigh, left_shin, left_foot, right_thigh, right_shin, right_foot):
@@ -64,17 +67,18 @@ REST_ARMS = {
 def clips(rig: Rig, biped: Biped, style: Style | None = None) -> None:
     style = style or Style()
     k = biped.leg_length / PILOT_LEG
+    hx, hy, hz = style.head
     breathe_in = {
         **REST_ARMS,
         "chest": {"turn": (-2, 0, 0)},
-        "head": {"turn": (-2, 0, 0)},
+        "head": {"turn": (hx - 2, hy, hz)},
         "tail_2": {"turn": (0, 0, 8)},
         "tail_3": {"turn": (0, 0, 10)},
     }
     breathe_out = {
         **REST_ARMS,
         "chest": {"turn": (2, 0, 0)},
-        "head": {"turn": (2, 0, 0)},
+        "head": {"turn": (hx + 2, hy, hz)},
         "ear_r": {"turn": (0, 0, -10)},
         "tail_2": {"turn": (0, 0, -8)},
         "tail_3": {"turn": (0, 0, -10)},
