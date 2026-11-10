@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib.build import Body, blend, disc, limb, ring
+from lib.build import Body, blend, disc, limb, ring, symmetric
 from lib.clips import clips
 from lib.export import arguments, empty_scene, export_glb
 from lib.palette import material
@@ -99,12 +99,9 @@ def head(body: Body) -> None:
     def at(points):
         return [(px, 1.12 + py, 0.04 + pz) for px, py, pz in points]
 
-    def mirror(points):
-        return [(sx * px, py, pz) for px, py, pz in points for sx in ((1, -1) if px else (1,))]
-
     skull = body.hull(
         at(
-            mirror(
+            symmetric(
                 [
                     (0, 0.0, 0.07),
                     (0.06, 0.01, 0.05),
@@ -129,7 +126,7 @@ def head(body: Body) -> None:
     )
     body.hull(
         at(
-            mirror(
+            symmetric(
                 [
                     (0.065, 0.075, 0.07),
                     (0.05, 0.02, 0.055),
@@ -145,7 +142,7 @@ def head(body: Body) -> None:
         "head",
     )
     body.hull(
-        at(mirror([(0.018, 0.092, 0.152), (0, 0.068, 0.166), (0, 0.094, 0.17)]))
+        at(symmetric([(0.018, 0.092, 0.152), (0, 0.068, 0.166), (0, 0.094, 0.17)]))
         + at([(0, 0.08, 0.145)]),
         "nose",
         "head",

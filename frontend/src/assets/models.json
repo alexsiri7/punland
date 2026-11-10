@@ -58,7 +58,7 @@
     {
       "id": "character/crow",
       "kind": "character",
-      "model3d": { "file": "models/characters/crow.glb", "placeholder": true, "height": 1.15 }
+      "model3d": { "file": "models/characters/crow.glb", "placeholder": false, "height": 1.15 }
     },
     {
       "id": "character/rival",
