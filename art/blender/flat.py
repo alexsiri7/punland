@@ -17,7 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib.build import Body, Point, dome, limb
+from lib.build import Point, dome, limb
 from lib.export import arguments, empty_scene, export_glb
 from lib.scene import FRONT, UP, Room, border, box, rect
 
@@ -102,10 +102,6 @@ class Flat:
         self.wall = self.lens.depth_at(480)
         self.body = room.body()
 
-    def panel(self, body: Body, points, out: float, depth: float, part: str) -> None:
-        """The pixel outline `points`, standing `out` off the back wall and `depth` deep."""
-        body.hull(self.lens.outline(points, self.wall + out, depth), part)
-
     # --- The shell. ------------------------------------------------------------------------------
 
     def ground(self) -> None:
@@ -127,12 +123,12 @@ class Flat:
             (x, x + w, TOP, y),
             (x, x + w, y + h, 480),
         ):
-            self.panel(body, rect(x0, top, x1 - x0, bottom - top), 0, 0.25, "wall")
-        self.panel(body, rect(LEFT, -4, RIGHT - LEFT, 12), 0.08, 0.08, "cornice")
+            self.room.panel(body, self.wall, rect(x0, top, x1 - x0, bottom - top), 0, 0.25, "wall")
+        self.room.panel(body, self.wall, rect(LEFT, -4, RIGHT - LEFT, 12), 0.08, 0.08, "cornice")
         for x0, x1 in ((LEFT, 60), (220, RIGHT)):
-            self.panel(body, rect(x0, 400, x1 - x0, 80), 0.03, 0.03, "wainscot")
-            self.panel(body, rect(x0 - 4, 394, x1 - x0 + 8, 8), 0.05, 0.05, "rail")
-        self.panel(body, rect(LEFT, 472, RIGHT - LEFT, 8), 0.05, 0.05, "skirting")
+            self.room.panel(body, self.wall, rect(x0, 400, x1 - x0, 80), 0.03, 0.03, "wainscot")
+            self.room.panel(body, self.wall, rect(x0 - 4, 394, x1 - x0 + 8, 8), 0.05, 0.05, "rail")
+        self.room.panel(body, self.wall, rect(LEFT, 472, RIGHT - LEFT, 8), 0.05, 0.05, "skirting")
 
     def window(self) -> None:
         """The window, set back in the wall: its frame and mullion, and its sill."""
@@ -140,7 +136,7 @@ class Flat:
         x, y, w, h = WINDOW
         for points in border(x, y, w, h, 6) + [rect(MULLION - 3, y, 6, h)]:
             body.hull(lens.outline(points, z, 0.05), "window-frame")
-        self.panel(body, rect(x - 12, y + h, w + 24, 10), 0.1, 0.35, "sill")
+        self.room.panel(body, self.wall, rect(x - 12, y + h, w + 24, 10), 0.1, 0.35, "sill")
 
     def outside(self) -> None:
         """The night street through the window: the houses across it with lights in their
@@ -181,12 +177,14 @@ class Flat:
         """A framed page of music on the wall between the door and the window: its staves, and
         the notes on them."""
         lens, wall, body = self.lens, self.wall, self.body
-        self.panel(body, rect(300, 180, 120, 92), 0.02, 0.02, "paper")
+        self.room.panel(body, self.wall, rect(300, 180, 120, 92), 0.02, 0.02, "paper")
         for points in border(294, 174, 132, 104, 6):
-            self.panel(body, points, 0.03, 0.03, "window-frame")
+            self.room.panel(body, self.wall, points, 0.03, 0.03, "window-frame")
         for staff, notes in ((196, (318, 344, 366, 392)), (234, (326, 350, 380, 402))):
             for line in range(5):
-                self.panel(body, rect(310, staff + 4 * line, 100, 1), 0.022, 0.002, "ink")
+                self.room.panel(
+                    body, self.wall, rect(310, staff + 4 * line, 100, 1), 0.022, 0.002, "ink"
+                )
             for i, column in enumerate(notes):
                 head = lens.at(column, staff + 12 - 4 * (i % 3), wall + 0.022)
                 body.hull(dome(tuple(head), 0.022, 0.016, 0.004, 6), "ink")
