@@ -33,7 +33,7 @@
     {
       "id": "scene/flat",
       "kind": "scene",
-      "model3d": { "file": "models/scenes/flat.glb", "placeholder": true }
+      "model3d": { "file": "models/scenes/flat.glb", "placeholder": false }
     },
     {
       "id": "scene/mayors-office",
