@@ -53,7 +53,7 @@
     {
       "id": "character/cop",
       "kind": "character",
-      "model3d": { "file": "models/characters/cop.glb", "placeholder": true, "height": 1.2 }
+      "model3d": { "file": "models/characters/cop.glb", "placeholder": false, "height": 1.2 }
     },
     {
       "id": "character/crow",
