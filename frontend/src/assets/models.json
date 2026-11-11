@@ -38,7 +38,7 @@
     {
       "id": "scene/mayors-office",
       "kind": "scene",
-      "model3d": { "file": "models/scenes/mayors-office.glb", "placeholder": true }
+      "model3d": { "file": "models/scenes/mayors-office.glb", "placeholder": false }
     },
     {
       "id": "character/protagonist",

@@ -161,9 +161,7 @@ class MusicShop:
         shop bell over it."""
         lens, wall = self.lens, self.wall
         door = self.room.body()
-        for points in (rect(60, 150, 12, 330), rect(208, 150, 12, 330), rect(60, 150, 160, 12)):
-            door.hull(lens.outline(points, wall + 0.06, 0.06), "door-frame")
-        door.hull(lens.box(72, 162, 136, 318, wall + 0.03, 0.03), "green-door")
+        self.room.green_door(door, wall)
         door.hull(lens.box(88, 178, 104, 120, wall + 0.034, 0.004), "dusk")
         for x, y, w, h, step in (
             (88, 230, 22, 68, 1),
