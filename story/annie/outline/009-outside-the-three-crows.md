@@ -10,7 +10,7 @@ The opening street: pub door, chalkboard, beetroot cop.
 
 ## Text
 
-ROOM: Outside The Three Crows · WORLD: street · HINT: The bus is gone. Live music below.
+ROOM: Outside The Three Crows · WORLD: street · HINT: Live music below.
 
 * Pub door (go in)
 
@@ -20,10 +20,10 @@ ROOM: Outside The Three Crows · WORLD: street · HINT: The bus is gone. Live mu
 
 - look: CAT: "Live music below." Below what? Oh: downstairs. We didn't have a downstairs in Literal Village.
 
-* Beetroot cop (talk to)
-
-- talk: [talk: Beetroot cop]
-
 * Down the High Street (walk)
 
 - go: [go to: High Street]
+
+* To the coach station (walk)
+
+- go: [go to: Coach station]
