@@ -18,12 +18,13 @@ decision (listed in PENDING as decided in the game, open in Annie).
   player solves puzzles to get things done and progress through the stages.
 - **Punland** is a city where animals and plants live. Its humour runs on puns,
   including visual puns (for example, a good-looking person hands you a cookie).
-- **The protagonist** is a teenage cat who went to school in **Literal Village** and
-  decided to try his luck as a musician. Literal Village is a literal place, so he
-  arrives in Punland not used to puns. He arrives with just a broken guitar and a dream:
-  to become a successful musician.
-- **The opening.** A bus drops the cat off in front of the pub, The Three Crows. The
-  first character he talks to is a beetroot police guard on the street.
+- **The protagonist** is **Paws Anka**, a teenage cat who went to school in **Literal
+  Village** and decided to try his luck as a musician. Literal Village is a literal
+  place, so he arrives in Punland not used to puns. He arrives with just a broken guitar
+  and a dream: to become a successful musician.
+- **The opening.** Paws arrives in Punland by coach, at the coach station. The first
+  character he talks to on arrival is a beetroot police guard, who points him to the
+  pub, The Three Crows.
 - **Three worlds** the player moves between, with things crossing from one to another:
   - the **street**: the real city;
   - the **online world**: a visual version of running a band's Instagram;
@@ -31,13 +32,15 @@ decision (listed in PENDING as decided in the game, open in Annie).
 
 ## Characters
 
-- **The cat** (protagonist). Game name: **Paws Anka**, a placeholder chosen 2026-10-24,
-  read from `frontend/src/content/protagonist.ts`; Annie has the name still open.
+- **Paws Anka, the cat** (protagonist). His name is settled in Annie (the game picked it
+  2026-10-24 as a placeholder; it lives in `frontend/src/content/protagonist.ts`).
   Teenage, lanky, ginger, hoodie and worn high-tops, broken guitar on his back (see
-  `docs/design/STYLE.md`). Wants to be a music star. Appears in every room.
+  `docs/design/STYLE.md`). Arrives by coach at the coach station. Wants to be a music
+  star. Appears in every room.
 - **The beetroot cop** (minor). A police guard who is a beetroot. The first character
   the cat talks to on arrival. Doesn't know much about music, but says all the music
-  stars go to the Three Crows and points him to the pub. Outside The Three Crows.
+  stars go to the Three Crows and points him to the pub. In the game he stands outside
+  The Three Crows; whether he belongs at the coach station is open in Annie (PENDING).
 - **The Three Crows** (supporting). Three crows behind the bar of the pub who decide
   who gets to perform. All three must agree; each sets one condition:
   1. **Sheryl Caw** wants a working guitar (in the game; Annie names her but doesn't
@@ -73,9 +76,12 @@ decision (listed in PENDING as decided in the game, open in Annie).
 
 ## Places
 
+- **The coach station.** Where Paws arrives in Punland, by coach. Whether it is a room
+  the player walks around or only the arrival's backdrop is open in Annie; the game
+  has no coach station yet.
 - **Outside The Three Crows** (the game's opening room, labelled "PUNLAND · HIGH
-  STREET"). Where the bus drops the cat off: the pub door, a chalkboard ("Live music
-  below"), the beetroot cop, and the way down the High Street.
+  STREET"). The pub door, a chalkboard ("Live music below"), the beetroot cop, and the
+  way down the High Street. Not where the cat arrives: he arrives at the coach station.
 - **The Three Crows.** The pub and venue, a big leaning Victorian corner pub. A very
   famous place where great stars played. The bartender works here, the Three Crows sit
   behind the bar, the bouncer guards it, and it has a stage where the rival performs.
@@ -119,8 +125,8 @@ instruments (the four career stats).
 **Goal:** get to the first show at The Three Crows. The game's three goals are the
 crows' conditions: "A working guitar", "A song of my own", "Someone who lives here".
 
-**Opening.** The cat lands on the street and tells the beetroot cop "I'm [name], and I
-want to be a music star". The cop doesn't know much about that, but says all the music
+**Opening.** Paws arrives by coach at the coach station and tells the beetroot cop "I'm
+Paws Anka, and I want to be a music star". The cop doesn't know much about that, but says all the music
 stars go to the Three Crows and points him there. At the pub, the Three Crows must all
 agree to let him perform. Each sets a condition, which is the act's three puzzles.
 

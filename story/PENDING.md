@@ -7,8 +7,8 @@ Each item left out of `story/CANON.md` this sync, with why. Last sync: 2026-11-1
 ## Outline scenes not yet final
 
 `story/annie/outline/` holds the Act 1 outline in the story format. No scene is `final`,
-so none is copied into canon and none should be implemented from. The outline says it
-"mirrors the game as of 2026-11-10".
+so none is copied into canon and none should be implemented from (this includes the new
+Coach station room, the Map and the reworked Arrival cutscene).
 
 ### Act 1: The first show (part, `outline`)
 
@@ -18,6 +18,7 @@ so none is copied into canon and none should be implemented from. The outline sa
   - Someone who lives here (`draft`)
   - Ending: the first show (`draft`)
 - Rooms (chapter, `outline`)
+  - Coach station (`draft`, new)
   - Outside The Three Crows (`draft`)
   - The Three Crows (`draft`)
   - High Street (`draft`)
@@ -27,6 +28,7 @@ so none is copied into canon and none should be implemented from. The outline sa
   - Dream stage (`draft`)
   - Band page (`draft`)
   - Inventory (`draft`)
+  - Map (`draft`, new)
 - Cutscenes (chapter, `outline`)
   - Arrival (`draft`)
   - The last string (`draft`)
@@ -46,19 +48,42 @@ The `OPEN:` questions in those drafts are listed under their topics below.
 
 ## Names
 
-- **The cat's name.** Annie: name TBD. The game uses the placeholder Paws Anka
-  (2026-10-24). Decided in the game, open in Annie; the game's name stays in canon as a
-  placeholder.
-- **The pub's name.** Annie: name TBD, placeholder "The Root Note". The game uses The
-  Three Crows (renamed 2026-10-24). A placeholder does not change a name the game already
-  uses, so The Three Crows stays. Decided in the game, open in Annie.
+- **The pub's name.** The open-questions note no longer lists it, but the venue entry
+  still says "Name TBD (placeholder: The Root Note)". The game uses The Three Crows
+  (renamed 2026-10-24), and every outline draft does too. A placeholder does not change
+  a name the game already uses, so The Three Crows stays. Decided in the game, not yet
+  cleaned up in Annie's venue entry.
 - **The Song Master's name.** Annie: name TBD.
-- **The second and third crows' names.** Only Sheryl Caw is named; the outline drafts
-  ask whether they get pun names too.
+- **The second and third crows' names.** Only Sheryl Caw is named; still an open
+  question.
+
+(The cat's name is no longer pending: Annie now names him Paws Anka in his character
+entry and has dropped it from the open questions.)
 
 ## The protagonist
 
 - **How the guitar got broken.** Listed as an open question; no backstory written.
+
+## The arrival and the coach station
+
+- **Is the coach station a walkable room, or only the arrival's backdrop?** Open
+  question in Annie. The Coach station draft makes it a room (map stand, departures
+  board, the cop, a walk up the road to the pub); not final.
+- **Does the beetroot cop stay at the coach station?** Open question. His character
+  entry and the Act 1 plotline still say "on the street"; the Beetroot cop conversation
+  draft puts him outside the coach station. The game keeps him outside The Three Crows.
+- **The Arrival cutscene** (coach drives in, the cat is left in the bay, "Punland.", his
+  introduction to the cop, "Grab a map from the stand"). Draft, with an OPEN line saying
+  it needs the new room. Its synopsis still says "The bus drops the cat off", which
+  contradicts its own text and Paws's entry (coach).
+- **How the coach station and the pub connect** ("up the road" in the drafts).
+
+## Map
+
+- **A map of Punland.** The open question still says "Maybe a map". The drafts add a free
+  map from the coach station's stand, a "map" item that opens a Map room, places marked
+  once Paws has heard of them or been there (needs a per-room "visited" flag, draft
+  OPEN). All draft.
 
 ## Act 1 gaps
 
@@ -86,8 +111,6 @@ The `OPEN:` questions in those drafts are listed under their topics below.
   (outline draft OPEN). Annie's bible doesn't describe the dream puzzle.
 - **Is the first show itself played** (the cat on stage, the crowd, the crows)? Today
   one line ends Act 1 (outline draft OPEN).
-- **The arrival cutscene's content and the cat's first line.** The Arrival draft is "a
-  suggestion to edit"; see the conflicts below.
 - **What the bartender wants for herself**, and **what animal she is** (outline draft
   OPEN; the game made her a crow in an apron).
 - **Is the online world meant to be empty in Act 1?** (outline draft OPEN).
@@ -124,8 +147,7 @@ The `OPEN:` questions in those drafts are listed under their topics below.
 
 ## Locations
 
-- **What the locations look like and how they connect**, and whether there is a map.
-  Open question.
+- **What the locations look like and how they connect.** Open question.
 - **Is the pub on the High Street?** Annie puts the music shop and the Song Master's
   flat on the High Street and doesn't place the pub. The game labels the scene outside
   the pub "PUNLAND · HIGH STREET" and has a separate High Street room. Decided in the
@@ -141,29 +163,35 @@ The `OPEN:` questions in those drafts are listed under their topics below.
   yet ("leaning D, Indie dusk"; revisit after the story). The game's
   `docs/design/STYLE.md` already implements option D. Decided in the game, open in Annie.
   Annie's note also says SVG art; the game draws rooms in 3D with 2D SVG reference art.
+  The same note still says "a bus drops the teenage cat off in front of the pub/venue";
+  being an open note it doesn't override Paws's entry (coach, coach station).
 
 ## Conflicts and gaps: canon vs the game today
 
-The conflicts recorded at the last sync (Act 1's goals, the open mic and late slot, the
-bartender's role, when the dream opens, the missing characters and rooms) are resolved:
-the game now has the three crows' conditions as Act 1's goals, the beetroot cop, the
-crows, the dog, the Song Master, the Mayor, the High Street, music shop, flat, Mayor's
-office, the stage and the Wall of Fame. What remains:
-
-- **The arrival by bus.** Canon: a bus drops the cat off. The game starts with him
-  already outside the pub (the hint says "The bus is gone."). Annie's Arrival cutscene
-  is only a draft, so this waits for it.
+- **The arrival.** Canon now: Paws arrives by coach at the coach station (Annie's Paws
+  Anka entry; it replaces "a bus drops him off in front of the pub"). The game still
+  says the bus: the opening room's hint "The bus is gone. Live music below."
+  (`frontend/src/content/rooms/opening.json`), the scenes spec's "Opening scene"
+  scenario ("outside the pub ... where the bus has dropped them off",
+  `openspec/specs/scenes/spec.md`), the docstring of `art/blender/opening.py`, and
+  `docs/design/STYLE.md` ("the pub where the bus drops the cat off"). The game has no
+  coach station; building one waits for Annie to settle whether it is a room.
+- **The protagonist's name.** Canon now: Paws Anka, settled in Annie. The game still
+  marks it a placeholder (`placeholderName: true` and the "PLACEHOLDER ... may change"
+  comment in `frontend/src/content/protagonist.ts`, its unit test, and `CLAUDE.md`'s
+  "a placeholder name ... that may change"; `CLAUDE.md` is the owner's to change).
 - **The bouncer.** Canon: he guards the venue and is talked past. The game has no
   bouncer in any room; a leftover backend brief
   (`backend/src/punland_api/content/characters/bouncer.json`) still sends him to "the
   stairs down to tonight's open mic", which canon no longer has.
-- **The cat introducing himself to the cop** ("I'm [name], and I want to be a music
+- **The cat introducing himself to the cop** ("I'm Paws Anka, and I want to be a music
   star"). Left to the improvised dialogue; not scripted in the game.
 
 ## Decided in the game, open in Annie (kept in canon as the game's decision)
 
-- Paws Anka; The Three Crows; The Holding Pen; the opening scene labelled High Street;
-  the Indie dusk art direction (all above).
+- The Three Crows (pub name); The Holding Pen; the opening scene labelled High Street;
+  the beetroot cop standing outside The Three Crows; the Indie dusk art direction (all
+  above).
 - **Act 1's step-by-step puzzle chain**: the flyer, intercom and invitation; the way to
   the Mayor's opening once strings sell out; the mane string used on the broken guitar;
   the dream unlocking after the dog's song; writing "my own song" in the dream; giving

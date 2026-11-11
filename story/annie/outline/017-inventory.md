@@ -18,6 +18,10 @@ ROOM: Inventory · WORLD: any · HINT: What the cat carries. He starts with the 
 
 - use: CAT: My guitar's in enough pieces already.
 
+* "map"
+
+- use: [go to: Map]
+
 * "lesson flyer"
 
 - use: CAT: The Song Master's flyer won't help with that.
