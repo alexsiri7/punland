@@ -7,7 +7,9 @@ The story the game implements. Only settled material from the Annie story bible
 tentative, and every place where the game decided something Annie leaves open, is in
 `story/PENDING.md`.
 
-Last sync: 2026-11-09 (first sync).
+Last sync: 2026-11-11. No outline scene in `story/annie/outline/` is `final` yet, so no
+outline lines are copied here; Act 1's step-by-step detail below is the game's own
+decision (listed in PENDING as decided in the game, open in Annie).
 
 ## Premise and world
 
@@ -35,58 +37,64 @@ Last sync: 2026-11-09 (first sync).
   `docs/design/STYLE.md`). Wants to be a music star. Appears in every room.
 - **The beetroot cop** (minor). A police guard who is a beetroot. The first character
   the cat talks to on arrival. Doesn't know much about music, but says all the music
-  stars go to the Three Crows and points him to the pub. Street, opening.
+  stars go to the Three Crows and points him to the pub. Outside The Three Crows.
 - **The Three Crows** (supporting). Three crows behind the bar of the pub who decide
-  who gets to perform. The cat must convince all three; each sets one condition:
-  1. one wants a working guitar;
-  2. one wants a good song of the cat's own;
-  3. one wants someone who lives in Punland. This third crow says "I won't vouch for
+  who gets to perform. All three must agree; each sets one condition:
+  1. **Sheryl Caw** wants a working guitar (in the game; Annie names her but doesn't
+     say which condition is hers);
+  2. the **second crow** wants a good song of the cat's own;
+  3. the **third crow** wants someone who lives in Punland. He says "I won't vouch for
      you"; the bartender can convince him if the cat is staying.
-  One of the three is **Sheryl Caw**. The pub.
+  The pub.
 - **The bartender** (supporting). Love interest. Works behind the bar at the pub. In
   Act 1 she says she can convince the third crow to vouch for the cat, if he's going to
-  stay, and gets him a job in the pub's kitchen. The pub.
+  stay, and gets him a job in the pub's kitchen. The game makes her a crow in an apron.
+  The pub.
 - **The Mayor** (supporting). The Mayor of Punland is a mare. The cat is sent to her
   for another reason first; she makes him a guitar string out of her mane (Act 1,
-  guitar thread).
+  guitar thread). The Mayor's office.
 - **The rival, the dog** (antagonist). A male singer. Appears in Act 1 and is always
   one step ahead of the cat: he buys the last guitar string at the music shop, and he is
   on stage at the pub playing the exact same song the Song Master taught the cat. By the
   end of Act 2 the cat is beating him, and the rival then does something that sends the
-  cat's story down a different path (Act 3). Music shop, the pub's stage.
+  cat's story down a different path (Act 3). Music shop, the pub's stage, and the dream.
 - **The Song Master** (supporting). A rat. A wise old master in the spirit of Monkey
   Island's sword-fighting trainer, here a songwriting trainer. Name open in Annie. His
   info is seen on the High Street. He lives in a flat on the High Street: press the
   intercom and you are invited in. His lesson plays like a cutscene. He always gives the
   same lesson and the same basic, rhyming song to everyone. The author's example of the
-  register (not the final lyric): "I came to the city / to find my dream / my guitar is
-  broken / my clothes ain't clean". After the dog performs that song, the Song Master
-  stops answering the doorbell.
+  register, which the game uses as the song: "I came to the city / to find my dream /
+  my guitar is broken / my clothes ain't clean". After the dog performs that song, the
+  Song Master stops answering the doorbell.
 - **The bouncer** (minor). Guards the venue. A character you talk your way past with
-  improvised dialogue.
+  improvised dialogue. Not placed in any room yet.
 - **Influencers** (supporting). Online-world characters you can chat with; they can
-  repost you and grow your following.
+  repost you and grow your following. Not in the game yet.
 
 ## Places
 
-- **The Three Crows.** The pub and venue, a big leaning Victorian corner pub where the
-  bus drops the cat off. A very famous place where great stars played. The bartender
-  works here, the Three Crows sit behind the bar, the bouncer guards it, and it has a
-  stage where the rival performs. Opening scene: outside; then the interior.
+- **Outside The Three Crows** (the game's opening room, labelled "PUNLAND · HIGH
+  STREET"). Where the bus drops the cat off: the pub door, a chalkboard ("Live music
+  below"), the beetroot cop, and the way down the High Street.
+- **The Three Crows.** The pub and venue, a big leaning Victorian corner pub. A very
+  famous place where great stars played. The bartender works here, the Three Crows sit
+  behind the bar, the bouncer guards it, and it has a stage where the rival performs.
   - **The Wall of Fame.** A wall in the pub with photos of famous acts that played
     there, as visual puns: the Rolling Stones (a pile of rocks), the Beetles (beetles
     with 60s haircuts), Tuna and Pike Turner, Katty Purry.
   - **The Holding Pen.** The game's name for the live-music room down the stairs beside
-    the pub ("Live music below"). Decided in the game; see PENDING.
-- **The High Street.** A street with shops, including the music shop. Here the cat sees
-  the Song Master's info, and here is the flat with the intercom that gets him invited
-  in to the Song Master. The game labels the opening scene "PUNLAND · HIGH STREET".
+    the pub ("Live music below"). Scenery only: its stairs and sign are outside the pub,
+    there is no room. Decided in the game; see PENDING.
+- **The High Street.** A street with shops, including the music shop. Here the cat
+  sees the Song Master's info (a flyer), and here is the flat with the intercom that
+  gets him invited in to the Song Master. In the game a way to the Mayor's opens here
+  once the strings are sold out.
 - **The music shop.** On the High Street. Where the cat goes for a guitar string, only
   to find the dog buying the last one.
 - **The Song Master's flat.** On the High Street, behind the intercom. Where the lesson
   happens.
-- **The Mayor's.** Where the Mayor makes the string from her mane. Its look and
-  location are not described.
+- **The Mayor's office.** Where the Mayor makes the string from her mane. Reached from
+  the High Street in the game.
 - **Literal Village.** Where the cat went to school. Backstory only; not a room.
 - **The online world.** A visual version of running a band's Instagram: chat to people,
   send announcements, take pictures, talk to influencers who can repost you. Full of
@@ -95,7 +103,8 @@ Last sync: 2026-11-09 (first sync).
 - **The dream world (songwriting).** You dream your songs. A trippy world you walk
   around in, where things become parts of the song. Things you did in the real world
   show up here (kick a can in the street, the can appears in the dream) and can be used
-  in the song. No pill, just dreaming. Game: the dream stage room.
+  in the song. No pill, just dreaming. Game: the dream stage room, locked ("Nothing to
+  dream about yet.") until the dog has sung the stolen song.
 
 ## Acts and puzzles
 
@@ -107,20 +116,25 @@ instruments (the four career stats).
 
 ### Act 1: The first show
 
-**Goal:** get to the first show at The Three Crows.
+**Goal:** get to the first show at The Three Crows. The game's three goals are the
+crows' conditions: "A working guitar", "A song of my own", "Someone who lives here".
 
 **Opening.** The cat lands on the street and tells the beetroot cop "I'm [name], and I
 want to be a music star". The cop doesn't know much about that, but says all the music
 stars go to the Three Crows and points him there. At the pub, the Three Crows must all
 agree to let him perform. Each sets a condition, which is the act's three puzzles.
 
-**1. A working guitar** (first crow)
+**1. A working guitar** (Sheryl Caw)
 
 - Obstacle: the guitar has a broken string. The cat goes to the music shop on the High
   Street for a string, but the dog, the rival, is buying the last one.
 - Solution: the cat is told, for another reason, to go and see the Mayor. The Mayor, a
   mare, makes him a string out of her mane. With the string the guitar works.
-- Unlocks: the first crow's agreement.
+- Game steps: buy strings at the music shop (the dog takes the last one; strings are
+  sold out); the way to the Mayor's opens on the High Street; talk to the Mayor (she
+  gives the mane string); use the mane string on the broken guitar (a working guitar);
+  give the guitar to Sheryl Caw.
+- Unlocks: Sheryl Caw's agreement.
 
 **2. A good song of his own** (second crow)
 
@@ -133,15 +147,24 @@ agree to let him perform. Each sets a condition, which is the act's three puzzle
   needs to write a new song. The Song Master no longer answers the doorbell.
 - That is when the cat starts dreaming for songs: the dream world opens here, at the
   end of the Song Master thread, not before.
-- Unlocks: songwriting in the dream world, and, with a song of his own, the second
-  crow's agreement. (How the dream produces that song is not yet written; see PENDING.)
+- Game steps: pick up the Song Master's flyer on the High Street; press the intercom
+  (invited); go up and listen to the Song Master (the lesson); listen to the dog on
+  stage at the pub (the stolen song; the dream unlocks); in the dream, write about the
+  dream of the stolen song (the cat gets "my own song"); give it to the second crow.
+- Unlocks: songwriting in the dream world, and the second crow's agreement.
 
 **3. Someone who lives here** (third crow)
 
 - Obstacle: the third crow says "I won't vouch for you".
 - Solution: the bartender says she can convince the third crow, if the cat is going to
   stay. She gets him a job in the pub's kitchen.
-- Unlocks: the third crow's agreement, and with all three, the first show.
+- Game steps: the bartender's conversation goal (he says he is staying) gives the
+  kitchen job and followers +10; the third crow then vouches for him.
+- Unlocks: the third crow's agreement.
+
+**Ending.** When all three crows agree, the cat gets his first show at The Three Crows
+(game: followers +50, the line "All three crows agree. My first show, at The Three
+Crows!", and Act 2 starts).
 
 Throughout Act 1 the rival is always one step ahead of the cat.
 
@@ -176,22 +199,23 @@ The real endings are not settled in Annie.
 - **Improvised dialogue.** Talking to a character shows an AI-written line in character,
   using what that character knows and what has happened so far. Each turn offers three
   suggested replies and a field to type your own. A conversation may have a goal (for
-  example getting past the bouncer, or convincing a crow); the options escalate toward
-  it: at first none of the three reaches it, later one does, eventually all three do. A
-  clever typed reply may reach the goal at any time. Reaching the goal triggers the
+  example getting past the bouncer, or convincing the bartender); the options escalate
+  toward it: at first none of the three reaches it, later one does, eventually all three
+  do. A clever typed reply may reach the goal at any time. Reaching the goal triggers the
   puzzle step. Characters remember earlier conversations in the same game. The player
   can leave at any time. If the AI is unavailable, or the player's turn limit is
   reached, the character gives a short canned in-character line and the conversation
   ends without breaking the game.
-- **Inventory and puzzles.** The cat picks things up and uses them on hotspots; a use
-  that does nothing gets a line from the cat. A new game starts with the broken guitar
-  in the inventory.
+- **Inventory and puzzles.** The cat picks things up and uses them on hotspots and on
+  each other; a use that does nothing gets a line from the cat. A new game starts with
+  the broken guitar in the inventory. Act 1 items: broken guitar, Song Master's flyer,
+  mane string, guitar, my own song.
 - **Career stats.** Followers, musicians, practice, instruments. Story events change
   them; they are shown to the player; they steer which Act 4 the player gets.
 - **Worlds and cross-world items.** The three worlds are shown and the player switches
   to any unlocked one. Things from one world are usable in the others where the story
   allows: something done in the street that the story marks as dream material appears
-  in the dream and can be used in a song.
+  in the dream and can be used in a song (Act 1: the dog singing the stolen song).
 - **Acts.** Completing an act's goals starts the next act; the last act is chosen from
   decisions and stats.
 - **Autosave**, no sign-up; Continue resumes from the last save.
