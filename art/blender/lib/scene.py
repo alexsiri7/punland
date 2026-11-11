@@ -216,6 +216,14 @@ class Room:
         `depth` deep."""
         body.hull(self.lens.outline(points, wall + out, depth), part)
 
+    def green_door(self, body: Body, wall: float) -> None:
+        """The reference art's green door on the left of a room, from (60, 150) to (220, 480), on
+        the back wall at depth `wall`: its frame's posts and head, in `door-frame`, and the door in
+        them, in `green-door`."""
+        for points in (rect(60, 150, 12, 330), rect(208, 150, 12, 330), rect(60, 150, 160, 12)):
+            body.hull(self.lens.outline(points, wall + 0.06, 0.06), "door-frame")
+        body.hull(self.lens.box(72, 162, 136, 318, wall + 0.03, 0.03), "green-door")
+
     def seams(self, body: Body, back: float, part: str) -> None:
         """The seams of the floorboards laid across the room from the back wall at depth `back`
         out past the camera, their ends staggered row by row."""

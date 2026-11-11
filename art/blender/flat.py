@@ -161,9 +161,7 @@ class Flat:
         knob."""
         lens, wall = self.lens, self.wall
         door = self.room.body()
-        for points in (rect(60, 150, 12, 330), rect(208, 150, 12, 330), rect(60, 150, 160, 12)):
-            door.hull(lens.outline(points, wall + 0.06, 0.06), "door-frame")
-        door.hull(lens.box(72, 162, 136, 318, wall + 0.03, 0.03), "green-door")
+        self.room.green_door(door, wall)
         for panel in ((88, 182, 82, 130), (88, 340, 82, 120)):
             for points in border(*panel, 5):
                 door.hull(lens.outline(points, wall + 0.036, 0.006), "door-panel")
