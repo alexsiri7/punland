@@ -6,7 +6,8 @@ model is told which of its replies those are, and picking one reaches the goal.
 
 A turn is prepare (the prompt for the model), the model's answer, then conclude (the
 conversation after the turn and what the player sees). Neither changes the conversation
-it is given.
+it is given. The prompt tells the model the character's `must_say` lines that hold for
+what the cat carries.
 """
 
 import json
@@ -103,7 +104,12 @@ def goal_options(attempts: int) -> int:
     return 0
 
 
-def prepare(character: Character, conv: Conversation, reply: str | None) -> Prompt:
+def prepare(
+    character: Character,
+    conv: Conversation,
+    reply: str | None,
+    carrying: frozenset[str] = frozenset(),
+) -> Prompt:
     goal_open = character.goal is not None and not conv.goal_reached
     reply = reply.strip() if reply is not None else None
     picked = next((o for o in conv.offered if o.text == reply), None)
@@ -117,7 +123,7 @@ def prepare(character: Character, conv: Conversation, reply: str | None) -> Prom
         conceding=conceding,
         attempts=attempts,
         reaching=n,
-        messages=build_messages(character, conv, reply, goal_open, n, conceding),
+        messages=build_messages(character, conv, reply, goal_open, n, conceding, carrying),
     )
 
 
@@ -156,8 +162,14 @@ def build_messages(
     goal_open: bool,
     n: int,
     conceding: bool,
+    carrying: frozenset[str] = frozenset(),
 ) -> list[dict[str, str]]:
     system = [character.sheet, THE_CAT, "Stay in character; say one or two sentences."]
+    system.extend(
+        f"You must say this, in your own words: {must.line}"
+        for must in character.must_say
+        if must.unless_carrying not in carrying
+    )
     if goal_open:
         system.append(f"The cat wants you to {character.goal}.")
         if conceding:

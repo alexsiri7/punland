@@ -1,7 +1,8 @@
 """Acceptance tests for openspec/specs/dialogue/spec.md, the backend's side (#6, #7).
 
 The game talks to POST /dialogue/turn with the player's anonymous id in X-Player-Id and
-{"character": <id>, "reply": <text, or null to start>}; the answer is
+{"character": <id>, "reply": <text, or null to start>, "carrying": [<item id>, ...]}; the
+answer is
 {"line", "options": [{"text", "reaches_goal"}], "goal_reached", "ended"}.
 
 The model is replaced by a fake that records the chat messages it is sent and answers in
@@ -38,10 +39,13 @@ def dialogue_client(model: object) -> TestClient:
     return TestClient(create_app(Settings(), model=model))
 
 
-def turn(client: TestClient, character: str, reply: str | None = None) -> dict:
-    res = client.post(
-        "/dialogue/turn", headers=PLAYER, json={"character": character, "reply": reply}
-    )
+def turn(
+    client: TestClient, character: str, reply: str | None = None, carrying: list[str] | None = None
+) -> dict:
+    body = {"character": character, "reply": reply}
+    if carrying is not None:
+        body["carrying"] = carrying
+    res = client.post("/dialogue/turn", headers=PLAYER, json=body)
     assert res.status_code == 200
     return res.json()
 
@@ -109,13 +113,32 @@ def system_prompt(model: FakeModel) -> str:
 
 
 def test_talking_to_the_beetroot_cop() -> None:
-    # Requirement: Act 1 conversations. The beetroot cop says the music stars go to The
-    # Three Crows, and so does his canned line when the AI is unavailable.
+    # Requirement: Act 1 conversations. The beetroot cop says the music lot go to The Three
+    # Crows, the pub up the road, and only while the cat has no map, to grab one.
     model = FakeModel()
-    turn(dialogue_client(model), "cop")
+    client = dialogue_client(model)
+    turn(client, "cop", carrying=["broken-guitar"])
     assert "beetroot" in system_prompt(model)
-    assert "music stars go to The Three Crows" in system_prompt(model)
-    assert "The Three Crows" in turn(dialogue_client(UnreachableModel()), "cop")["line"]
+    assert "music lot go to The Three Crows, the pub up the road" in system_prompt(model)
+    assert "Grab a map from the stand" in system_prompt(model)
+    turn(client, "cop", "Thanks.", carrying=["broken-guitar", "map"])
+    assert "music lot go to The Three Crows" in system_prompt(model)
+    assert "Grab a map" not in system_prompt(model)
+
+
+def test_the_beetroot_cop_with_the_ai_unavailable() -> None:
+    # Requirement: Leaving and failure. With the AI unavailable the cop points up the road.
+    assert turn(dialogue_client(UnreachableModel()), "cop")["line"] == (
+        "The beetroot cop points his truncheon up the road: The Three Crows, son. "
+        "And take a map. Move along."
+    )
+
+
+def test_the_bartender_with_the_ai_unavailable() -> None:
+    # Requirement: Leaving and failure. With the AI unavailable the bartender is too busy.
+    assert turn(dialogue_client(UnreachableModel()), "bartender")["line"] == (
+        "The bartender raises a wing: busy night, kid. Come back later."
+    )
 
 
 def test_talking_to_a_crow() -> None:
