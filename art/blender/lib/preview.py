@@ -22,6 +22,7 @@ SHADE = 0.25 + 0.75 * 0.52
 SCENE_WIDTH, SCENE_HEIGHT = 1280, 640
 UI_GROUND = "#1C1D22"
 PAVEMENT = "#5E5A62"
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
 def toon(mat: bpy.types.Material) -> None:
@@ -122,21 +123,19 @@ def render(path: str, cam: bpy.types.Object, width: int = SIZE, height: int = SI
     bpy.ops.render.render(write_still=True)
 
 
-def turnaround(rig: Rig, folder: str, height: float) -> None:
-    """Front, three-quarter, side and back, the rig turned under a fixed camera and light."""
+def turnaround(obj: bpy.types.Object, folder: str, height: float) -> None:
+    """Front, three-quarter, side and back, `obj` turned under a fixed camera and light."""
     centre = blender((0, height / 2, 0))
     cam = camera(
         "turnaround",
-        centre + blender((0, 0.25, 6)),
-        centre + blender((0, 0.05, 0)),
+        centre + blender((0, height / 6, 6)),
+        centre + blender((0, height / 30, 0)),
         ortho=height * 1.18,
     )
-    idle = bpy.data.actions["idle"]
-    rig.play(idle, 0)
     for view, degrees in (("front", 0), ("three-quarter", -40), ("side", -90), ("back", 180)):
-        rig.object.rotation_euler = (0, 0, math.radians(degrees))
+        obj.rotation_euler = (0, 0, math.radians(degrees))
         render(os.path.join(folder, f"turnaround-{view}.png"), cam)
-    rig.object.rotation_euler = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
 
 
 def frames(rig: Rig, folder: str, height: float, clip: str, count: int = 4) -> None:
@@ -155,19 +154,19 @@ def frames(rig: Rig, folder: str, height: float, clip: str, count: int = 4) -> N
     rig.object.rotation_euler = (0, 0, 0)
 
 
-def in_scene(rig: Rig, folder: str, repo: str, room: str, entity: str | None = None) -> None:
-    """The rig where the room places `entity`, or at the room's start point, seen from the room's
+def in_scene(target: bpy.types.Object, folder: str, room: str, entity: str | None = None) -> None:
+    """`target` where the room places `entity`, or at the room's start point, seen from the room's
     `cam_main` as the game sees it."""
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(
-        filepath=os.path.join(repo, "frontend/public/models/scenes", f"{room}.glb")
+        filepath=os.path.join(REPO, "frontend/public/models/scenes", f"{room}.glb")
     )
     imported = set(bpy.data.objects) - before
     for mat in bpy.data.materials:
         if mat.node_tree and any(node.type == "BSDF_PRINCIPLED" for node in mat.node_tree.nodes):
             toon(mat)
     cam = next(obj for obj in imported if obj.type == "CAMERA")
-    with open(os.path.join(repo, "frontend/src/content/rooms", f"{room}.json")) as file:
+    with open(os.path.join(REPO, "frontend/src/content/rooms", f"{room}.json")) as file:
         content = json.load(file)
     at = next(
         (
@@ -177,10 +176,9 @@ def in_scene(rig: Rig, folder: str, repo: str, room: str, entity: str | None = N
         ),
         content["start"],
     )
-    rig.play(bpy.data.actions["idle"], 0)
-    rig.object.location = floor_point(cam, at["x"], at["y"])
+    target.location = floor_point(cam, at["x"], at["y"])
     render(os.path.join(folder, f"scene-{room}.png"), cam, 2 * SIZE, SIZE)
-    rig.object.location = (0, 0, 0)
+    target.location = (0, 0, 0)
     for obj in imported:
         obj.hide_render = True
 
@@ -206,13 +204,25 @@ def previews(
 ) -> None:
     """A turnaround, frames of each of `clips`, and the rig in `room` (see `in_scene`)."""
     os.makedirs(folder, exist_ok=True)
-    repo = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
     stage()
     floor = ground()
-    turnaround(rig, folder, height)
+    rig.play(bpy.data.actions["idle"], 0)
+    turnaround(rig.object, folder, height)
     for clip in clips:
         frames(rig, folder, height, clip)
     floor.hide_render = True
-    in_scene(rig, folder, repo, room, entity)
+    rig.play(bpy.data.actions["idle"], 0)
+    in_scene(rig.object, folder, room, entity)
+
+
+def object_previews(
+    obj: bpy.types.Object, folder: str, size: float, room: str, entity: str | None = None
+) -> None:
+    """A turnaround of an object about `size` across, and the object in `room` (see
+    `in_scene`)."""
+    os.makedirs(folder, exist_ok=True)
+    stage()
+    floor = ground()
+    turnaround(obj, folder, size)
+    floor.hide_render = True
+    in_scene(obj, folder, room, entity)
