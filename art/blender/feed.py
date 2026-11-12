@@ -52,18 +52,9 @@ HEADER = (400, 40, 480, 120)
 AVATAR, AVATAR_RADIUS = (470, 160), 44
 SLOTS = ((430, 236, 200, 120), (650, 236, 200, 120), (430, 372, 200, 110), (650, 372, 200, 110))
 #: Blank posts hanging in the dark beyond the phone, the feed scrolling away: the art's four, in
-#: pixel rects, this far behind the phone, the near end of the depth ramp's second layer; and
-#: smaller ones further off, in its third and fourth, (pixel rect, metres behind the phone).
+#: pixel rects, this far behind the phone, the near end of the depth ramp's second layer.
 POSTS = ((60, 80, 150, 190), (60, 300, 150, 190), (1070, 80, 150, 190), (1070, 300, 150, 190))
 POSTS_BEHIND = 8.0
-FAR_POSTS = (
-    ((236, 120, 96, 120), 30.0),
-    ((250, 270, 80, 100), 30.0),
-    ((952, 140, 90, 110), 30.0),
-    ((300, 40, 50, 64), 80.0),
-    ((930, 290, 56, 70), 80.0),
-    ((1240, 220, 40, 50), 80.0),
-)
 #: The like button standing on the floor right of the phone, and the play button on its left.
 LIKE, PLAY = (960, 430, 80, 90), (220, 460, 60, 60)
 #: The scroll bar's thumb on the floor, a pixel rect.
@@ -218,9 +209,8 @@ class Feed:
     # --- The void. -------------------------------------------------------------------------------
 
     def void(self) -> None:
-        """The dark the phone stands in, and the feed's blank posts hanging in it, scrolling away:
-        each a step lighter and bluer in the depth ramp the further off it is. The art's four show
-        their picture and caption in the ramp's next two tones, as the art draws them."""
+        """The dark the phone stands in, and the art's four blank posts hanging in it, a step
+        lighter and bluer in the depth ramp, their picture and caption in its next two tones."""
         room, lens = self.room, self.lens
         far = room.body()
         z = self.wall - POSTS_BEHIND
@@ -229,8 +219,6 @@ class Feed:
             far.hull(lens.outline(rect(x + 16, y + 16, w - 32, 100), z + 0.01, 0.01), "depth-2")
             for length, row in ((94, 135), (64, 149)):
                 far.hull(lens.outline(rect(x + 16, y + row, length, 3), z + 0.01, 0.01), "depth-3")
-        for (x, y, w, h), behind in FAR_POSTS:
-            room.far(far, lens.outline(rect(x, y, w, h), self.wall - behind, 0.1))
         far.finish("far")
         void = room.body()
         void.hull(lens.box(-600, -400, 2500, 1400, -300, 1), "void")
