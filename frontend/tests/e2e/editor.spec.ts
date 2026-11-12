@@ -120,3 +120,20 @@ test('The owner starts a game before the backend has answered', async ({ page })
   await expect(page.locator('#game')).toHaveAttribute('data-scene', 'coach-station');
   await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
 });
+
+test('Signing out while the backend is unreachable', async ({ page }) => {
+  // Requirement: Owner sign-in. Sign-out ends the session only when the backend confirms it.
+  // A failed request stubbed by page.route logs a console error, so fetch itself fails here.
+  await page.addInitScript((url) => {
+    const fetch = window.fetch.bind(window);
+    window.fetch = (input, init) =>
+      String(input) === url ? Promise.reject(new TypeError('Failed to fetch')) : fetch(input, init);
+  }, `${API}/auth/signout`);
+  await backendSays(page, true);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Owner sign-out' }).click();
+  await expect(page.getByRole('button', { name: 'Owner sign-out' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Owner sign-in' })).toBeHidden();
+  await startNewGame(page);
+  await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
+});
