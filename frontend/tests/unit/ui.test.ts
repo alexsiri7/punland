@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
-import { type Content, type DialogueTurn, type GameState, newGame } from '../../src/domain';
+import { type Content, type DialogueTurn, type GameState, newGame, speechMs } from '../../src/domain';
 import type { ScenePoint } from '../../src/presentation/renderer';
 import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
 import { createProgress } from '../../src/presentation/ui/progress';
-import { speechMs } from '../../src/presentation/ui/speech';
 import { bounds, content, edited } from './fixtures/content';
 import { readBytes } from './support/files';
 

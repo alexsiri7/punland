@@ -255,7 +255,8 @@ export interface Room {
   hotspots: Hotspot[];
   /**
    * A cutscene: once the room is shown at the start of a play, the effects of the first reaction
-   * whose conditions hold run. No `goTo`, `goBack`, `pickUp` or `talk`.
+   * whose conditions hold run, each line followed by a `wait` while it is up (`speechMs`). No
+   * `goTo`, `goBack`, `pickUp` or `talk`.
    */
   onStart?: Reaction[];
 }

@@ -13,6 +13,7 @@ import {
   type Place,
   type Room,
   type Speaker,
+  speechMs,
   type World,
 } from '../domain';
 
@@ -85,7 +86,7 @@ function step(content: Content, state: GameState, command: Command, events: Game
       return useItem(content, state, command.item, events);
     case 'begin': {
       const reaction = roomOf(content, state.room).onStart?.find(({ when }) => allHold(state, when));
-      return reaction ? runEffects(content, state, reaction.effects, null, events) : state;
+      return reaction ? runEffects(content, state, paced(reaction.effects), null, events) : state;
     }
     case 'enterWorld':
       return enterWorld(content, state, command.world, events);
@@ -107,6 +108,11 @@ function step(content: Content, state: GameState, command: Command, events: Game
 function tick(content: Content, state: GameState, dtMs: number, events: GameEvent[]): GameState {
   const cued = state.cue ? countDown(content, state, state.cue, dtMs, events) : state;
   return cued.walk ? walkOn(content, cued, cued.walk, dtMs, events) : cued;
+}
+
+/** A cutscene's effects, each line followed by a wait while it is up, so no click can hush the rest. */
+function paced(effects: readonly Effect[]): Effect[] {
+  return effects.flatMap((effect): Effect[] => ('say' in effect ? [effect, { wait: speechMs(effect.say) }] : [effect]));
 }
 
 /** A `wait` counting down; once it is over, the rest of its effects run. */

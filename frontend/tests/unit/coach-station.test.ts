@@ -2,8 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadContent } from '../../src/content';
 import { PROTAGONIST } from '../../src/content/protagonist';
-import { type Command, type GameEvent, type GameState, newGame } from '../../src/domain';
-import { speechMs } from '../../src/presentation/ui/speech';
+import { type Command, type GameEvent, type GameState, newGame, speechMs } from '../../src/domain';
 import { apply, isPresent } from '../../src/rules';
 
 // Act 1's opening as the story has it (story/CANON.md, #116): the Arrival in the coach station,
@@ -54,12 +53,19 @@ describe('the coach station', () => {
 
   it('keeps the player waiting until each line of the Arrival has been up its time, and the last has gone', () => {
     // The speech line shows each line for speechMs; a click before the cutscene ends would hush the rest.
-    const effects = content.rooms['coach-station']!.onStart!.flatMap((reaction) => reaction.effects);
-    effects.forEach((effect, i) => {
-      if (!('say' in effect)) return;
-      const next = effects[i + 1];
-      expect(next && 'wait' in next ? next.wait : 0, effect.say).toBeGreaterThanOrEqual(speechMs(effect.say));
+    const lines: { line: string; at: number }[] = [];
+    let step = apply(content, newGame(content), { type: 'begin' });
+    let ms = 0;
+    while (step.state.cue) {
+      step = apply(content, step.state, { type: 'tick', dtMs: 50 });
+      ms += 50;
+      for (const e of step.events) if (e.type === 'said') lines.push({ line: e.line, at: ms });
+    }
+    expect(lines).toHaveLength(7);
+    lines.forEach(({ line, at }, i) => {
+      expect((lines[i + 1]?.at ?? ms) - at, line).toBeGreaterThanOrEqual(speechMs(line));
     });
+
     let state = apply(content, newGame(content), { type: 'begin' }).state;
     for (let ms = 0; ms < 3300 + speechMs('Punland.') / 2; ms += 50) {
       state = apply(content, state, { type: 'tick', dtMs: 50 }).state;

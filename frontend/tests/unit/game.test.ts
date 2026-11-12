@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { playGame } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
-import { newGame } from '../../src/domain';
+import { newGame, speechMs } from '../../src/domain';
 import { FakeRenderer } from './fakes/renderer';
 import { content, editedRoom } from './fixtures/content';
 
@@ -137,8 +137,10 @@ describe('the game, drawn by a renderer', () => {
     renderer.step(100);
     expect(container.dataset.say).toBe('');
     renderer.step(100);
-    expect(game.state.cue).toBeNull();
     expect(container.dataset.say).toBe('Here at last.');
+    expect(game.state.cue).not.toBeNull();
+    renderer.step(speechMs('Here at last.'));
+    expect(game.state.cue).toBeNull();
   });
 
   it('takes input only once the latest room asked for is drawn', async () => {

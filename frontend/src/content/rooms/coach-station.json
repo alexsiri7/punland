@@ -96,19 +96,12 @@
         { "wait": 2500 },
         { "set": "coach", "to": "gone" },
         { "say": "Punland." },
-        { "wait": 3000 },
         { "say": "Hi, I'm {protagonist}, and I want to be a star!" },
-        { "wait": 3000 },
         { "say": "A star? Son, the only star I know about is the one on my badge.", "by": "cop" },
-        { "wait": 3780 },
         { "say": "But you could try The Three Crows. That's where the music lot go.", "by": "cop" },
-        { "wait": 3900 },
         { "say": "Three crows? We only had the one crow in Literal Village." },
-        { "wait": 3420 },
         { "say": "It's a pub, son. Grab a map from the stand. You'll get lost otherwise.", "by": "cop" },
-        { "wait": 4200 },
         { "say": "Oh! Right. Thanks. Bye!" },
-        { "wait": 3000 },
         { "set": "arrived", "to": true }
       ]
     }

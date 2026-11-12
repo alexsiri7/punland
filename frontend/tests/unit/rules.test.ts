@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { type Content, type GameState, newGame } from '../../src/domain';
+import { type Content, type GameState, newGame, speechMs } from '../../src/domain';
 import { apply, type Command, type GameEvent } from '../../src/rules';
 import { content, edited, editedRoom } from './fixtures/content';
 
@@ -331,14 +331,8 @@ describe('use an item on its own', () => {
 
 describe('cutscenes', () => {
   const begin: Command = { type: 'begin' };
-  const scene = [
-    { wait: 500 },
-    { set: 'echo', to: true },
-    { say: 'Hear that?' },
-    { wait: 300 },
-    { say: 'Gone.' },
-    { set: 'met', to: true },
-  ];
+  const scene = [{ wait: 500 }, { set: 'echo', to: true }, { say: 'Hear that?' }, { say: 'Gone.' }, { set: 'met', to: true }];
+  const paced = [...scene.slice(0, 3), { wait: speechMs('Hear that?') }, scene[3], { wait: speechMs('Gone.') }, scene[4]];
   const given = editedRoom('street', (room) => {
     room.hotspots.find((h: { id: string }) => h.id === 'echo').presentWhen = [{ flag: 'echo' }];
     room.onStart = [{ when: [{ not: { flag: 'met' } }], effects: scene }];
@@ -346,27 +340,29 @@ describe('cutscenes', () => {
 
   it("begins with the room's cutscene, once its conditions hold", () => {
     const { state, events } = apply(given, newGame(given), begin);
-    expect(state.cue).toEqual({ ms: 500, effects: scene.slice(1), hotspot: null });
+    expect(state.cue).toEqual({ ms: 500, effects: paced.slice(1), hotspot: null });
     expect(events).toEqual([{ type: 'saved' }]);
     const met = { ...newGame(given), flags: { met: true } };
     expect(apply(given, met, begin)).toEqual({ state: met, events: [] });
     expect(apply(content, newGame(content), begin)).toEqual({ state: newGame(content), events: [] });
   });
 
-  it('runs the rest of the effects once each wait is over, the hotspots that came or went with them', () => {
+  it('runs the rest of the effects once each wait is over, each line waiting while it is up', () => {
     let step = apply(given, newGame(given), begin);
     step = apply(given, step.state, tick(200));
-    expect(step).toEqual({ state: { ...step.state, cue: { ms: 300, effects: scene.slice(1), hotspot: null } }, events: [] });
+    expect(step).toEqual({ state: { ...step.state, cue: { ms: 300, effects: paced.slice(1), hotspot: null } }, events: [] });
     step = apply(given, step.state, tick(300));
-    expect(step.state.cue).toEqual({ ms: 300, effects: scene.slice(4), hotspot: null });
+    expect(step.state.cue).toEqual({ ms: speechMs('Hear that?'), effects: paced.slice(4), hotspot: null });
     expect(step.events).toEqual([
       { type: 'said', line: 'Hear that?', by: 'player' },
       { type: 'hotspotShown', hotspot: 'echo' },
       { type: 'saved' },
     ]);
-    step = apply(given, step.state, tick(1000));
-    expect(step.state).toMatchObject({ cue: null, flags: { echo: true, met: true } });
+    step = apply(given, step.state, tick(speechMs('Hear that?')));
+    expect(step.state.cue).toEqual({ ms: speechMs('Gone.'), effects: paced.slice(6), hotspot: null });
     expect(step.events).toEqual([{ type: 'said', line: 'Gone.', by: 'player' }, { type: 'saved' }]);
+    step = apply(given, step.state, tick(speechMs('Gone.')));
+    expect(step.state).toMatchObject({ cue: null, flags: { echo: true, met: true } });
   });
 
   it("ignores the player's commands until the cutscene is over", () => {

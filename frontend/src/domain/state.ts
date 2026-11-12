@@ -5,6 +5,11 @@ import type { JourneyState, Place } from './journey';
 /** Who says a line: the protagonist, or a character by id. */
 export type Speaker = 'player' | string;
 
+/** How long a spoken line stays up, in ms: longer lines for longer. */
+export function speechMs(line: string): number {
+  return Math.max(3000, 60 * line.length);
+}
+
 /**
  * The whole game as plain data (docs/ARCHITECTURE.md, section 3). The rules (src/rules) turn
  * one state into the next. `selected`, `walk`, `saying` and `cue` are transient and never saved.

@@ -1,12 +1,7 @@
-import type { Speaker } from '../../domain';
+import { type Speaker, speechMs } from '../../domain';
 import type { Renderer, ScenePoint } from '../renderer';
 import type { Session } from '../session';
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
-
-/** How long a spoken line stays up, in ms: longer lines for longer. */
-export function speechMs(line: string): number {
-  return Math.max(3000, 60 * line.length);
-}
 
 export interface SpokenLine {
   text: string;
