@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Map room art: Punland from above, spread out on the floor (story/CANON.md, the Map). The streets the cat knows,
+     the places marked with pins, the blank streets at the back still to find, and the tab that closes the map.
+     Drawn to docs/design/STYLE.md. The placeholder scene model is laid out over it (frontend/scripts/make-placeholders.mjs),
+     so its shapes, the model and the room's floor points line up.
+     Layers follow docs/design/STYLE.md "Scene build": one <g id="layer-*"> per layer, back to front. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="The map of Punland seen from above at dusk: pale paper with dark streets, red pins on the coach station and The Three Crows, a haze of blank streets at the back, and a red-banded tab to close it on the right">
+<style>
+.p-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p-sign{font-family:'Bebas Neue',sans-serif;text-anchor:middle}
+</style>
+
+<g id="layer-sky">
+<rect x="0" y="0" width="1280" height="400" fill="#2E3A52"></rect>
+</g>
+
+<g id="layer-ground">
+<rect x="0" y="400" width="1280" height="240" fill="#D9CDB4"></rect>
+<polygon id="streets" points="200,400 1080,400 1200,470 80,470" fill="#6E6478"></polygon>
+<polygon points="80,520 1200,520 1200,530 80,530" fill="#2F2D35"></polygon>
+<polygon points="60,575 1220,575 1220,585 60,585" fill="#2F2D35"></polygon>
+<polygon points="490,470 505,470 450,615 410,615" fill="#2F2D35"></polygon>
+<polygon points="715,470 730,470 770,615 750,615" fill="#2F2D35"></polygon>
+</g>
+
+<g id="layer-props">
+<g id="close">
+<rect x="1190" y="410" width="56" height="160" fill="#1A2822"></rect>
+<rect x="1196" y="422" width="44" height="26" fill="#C8483B"></rect>
+<text x="1218" y="441" class="p-sign" font-size="18" fill="#1A2822">CLOSE</text>
+</g>
+</g>
+
+<g id="layer-actors">
+<g id="pin-coach-station" transform="translate(300 560)"><rect x="-3" y="-110" width="6" height="110" fill="#2F2D35"></rect><rect x="-20" y="-150" width="40" height="40" fill="#C8483B"></rect></g>
+<g id="pin-pub" transform="translate(560 510)"><rect x="-3" y="-90" width="6" height="90" fill="#2F2D35"></rect><rect x="-16" y="-122" width="32" height="32" fill="#C8483B"></rect></g>
+<g id="pin-high-street" transform="translate(860 540)" opacity="0.4"><rect x="-3" y="-100" width="6" height="100" fill="#2F2D35"></rect><rect x="-18" y="-136" width="36" height="36" fill="#C8483B"></rect></g>
+<g id="pin-mayors-office" transform="translate(1060 500)" opacity="0.4"><rect x="-3" y="-86" width="6" height="86" fill="#2F2D35"></rect><rect x="-15" y="-116" width="30" height="30" fill="#C8483B"></rect></g>
+</g>
+</svg>

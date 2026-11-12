@@ -22,6 +22,11 @@
       "name": "Song Master's flyer",
       "noUse": "The Song Master's flyer won't help with that."
     },
+    "map": {
+      "name": "Map",
+      "noUse": "The map won't help with that.",
+      "onUse": [{ "when": [{ "world": "street" }], "effects": [{ "goTo": "map" }] }]
+    },
     "mane-string": { "name": "Mane string", "noUse": "This string is for my guitar." },
     "guitar": { "name": "Guitar", "noUse": "It plays now. Just not for that." },
     "own-song": { "name": "My own song", "noUse": "My song is for the crows." }

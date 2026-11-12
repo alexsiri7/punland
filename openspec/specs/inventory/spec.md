@@ -14,7 +14,7 @@ The player SHALL be able to pick up items from rooms into the inventory.
 - THEN it disappears from the room and appears in the inventory
 
 ### Requirement: Using items
-The player SHALL be able to use an inventory item on a hotspot or on another item in the inventory, and the game MUST respond whether or not a use on a hotspot does anything.
+The player SHALL be able to use an inventory item on a hotspot or on another item in the inventory, and an item the story gives a use of its own (the map) on its own; the game MUST respond whether or not a use on a hotspot does anything.
 
 #### Scenario: A use that works
 - WHEN the player uses an item on a hotspot that accepts it
@@ -23,6 +23,10 @@ The player SHALL be able to use an inventory item on a hotspot or on another ite
 #### Scenario: Using an item on another item
 - WHEN the player uses an item on an inventory item that accepts it
 - THEN the puzzle step happens
+
+#### Scenario: Using the map
+- WHEN the player uses the map
+- THEN the Map opens
 
 #### Scenario: A use that does not work
 - WHEN the player uses an item on a hotspot that does not accept it

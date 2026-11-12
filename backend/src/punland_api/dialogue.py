@@ -5,6 +5,7 @@ HTTP to them and back, keeping the conversation in a DialogueStore between turns
 """
 
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -23,6 +24,10 @@ log = logging.getLogger(__name__)
 class TurnRequest(BaseModel):
     character: str = Field(max_length=40)
     reply: str | None = Field(default=None, max_length=REPLY_MAX)
+    # The item ids the cat carries, for the character's must_say lines.
+    carrying: list[Annotated[str, Field(max_length=40)]] = Field(
+        default_factory=list, max_length=20
+    )
 
 
 class TurnAnswer(BaseModel):
@@ -59,7 +64,7 @@ def router(
 
         async with store.lock(player, character.id):
             conv = await store.get(player, character.id)
-            prompt = prepare(character, conv, body.reply)
+            prompt = prepare(character, conv, body.reply, frozenset(body.carrying))
             try:
                 answer = parse_answer(await model(prompt.messages))
             except Exception as exc:

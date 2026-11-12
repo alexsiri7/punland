@@ -137,9 +137,23 @@ def test_character_content_loads() -> None:
         characters.keys()
     )
     assert characters["cop"].goal is None
+    assert [(m.line, m.unless_carrying) for m in characters["cop"].must_say] == [
+        ("The music lot go to The Three Crows, the pub up the road.", None),
+        ("Grab a map from the stand, or you'll get lost.", "map"),
+    ]
     assert characters["bouncer"].goal == GOAL
     bartender = characters["bartender"].goal
     assert bartender is not None and "kitchen" in bartender and "third crow" in bartender
+
+
+def test_must_say_items_are_frontend_items() -> None:
+    # The frontend sends `carrying` as ids from its items.json; a renamed item would leave a
+    # character's must_say line on for good.
+    items_json = Path(__file__).parents[2] / "frontend/src/content/items.json"
+    items = json.loads(items_json.read_text())["items"]
+    for character in load_characters().values():
+        for must in character.must_say:
+            assert must.unless_carrying in (None, *items), (character.id, must.unless_carrying)
 
 
 def test_answer_matches_the_frontend_wire_shape() -> None:
@@ -231,6 +245,15 @@ def test_player_id_must_be_a_uuid() -> None:
     assert (
         client.post("/dialogue/turn", headers={"X-Player-Id": "nope"}, json=body).status_code == 422
     )
+
+
+def test_carrying_is_limited() -> None:
+    client = TestClient(create_app(Settings(), model=ScriptedModel(answer())))
+    headers = {"X-Player-Id": "6f1c0e2a-4b7d-4c1e-9a53-2d8e7f0b1c94"}
+    too_many = {"character": "cop", "carrying": [f"item-{i}" for i in range(21)]}
+    too_long = {"character": "cop", "carrying": ["x" * 41]}
+    assert client.post("/dialogue/turn", headers=headers, json=too_many).status_code == 422
+    assert client.post("/dialogue/turn", headers=headers, json=too_long).status_code == 422
 
 
 @pytest.fixture

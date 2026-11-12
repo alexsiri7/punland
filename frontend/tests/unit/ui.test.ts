@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
-import { type Content, type DialogueTurn, type GameState, newGame } from '../../src/domain';
+import { type Content, type DialogueTurn, type GameState, newGame, speechMs } from '../../src/domain';
 import type { ScenePoint } from '../../src/presentation/renderer';
 import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
 import { createProgress } from '../../src/presentation/ui/progress';
-import { speechMs } from '../../src/presentation/ui/speech';
 import { bounds, content, edited } from './fixtures/content';
 import { readBytes } from './support/files';
 
@@ -14,11 +13,11 @@ import { readBytes } from './support/files';
 describe('the DOM UI', () => {
   let container: HTMLElement;
   let hovered: string[];
-  let asked: { character: string; reply: string | null }[];
+  let asked: { character: string; reply: string | null; carrying: readonly string[] }[];
   let answers: ((turn: DialogueTurn | null) => void)[];
   const dialogue: DialogueBackend = {
-    turn: (character, reply) => {
-      asked.push({ character, reply });
+    turn: (character, reply, carrying) => {
+      asked.push({ character, reply, carrying });
       return new Promise((resolve) => answers.push(resolve));
     },
   };
@@ -203,6 +202,24 @@ describe('the DOM UI', () => {
     expect(items).toEqual(['Guitar', 'Flyer']);
   });
 
+  it('uses an item on its own when the story gives it a use, and selects one it gives none', () => {
+    const given = edited({
+      items: (file) => {
+        file.items.flyer.onUse = [{ effects: [{ say: 'Open mic tonight.' }] }];
+      },
+    });
+    const { game, button } = mount({
+      given,
+      state: { ...newGame(given), inventory: { carried: ['guitar', 'flyer'], pickedUp: [] } },
+    });
+    button('Inventory', 'Flyer').click();
+    expect(game.state).toMatchObject({ selected: null, saying: { line: 'Open mic tonight.' } });
+    button('Inventory', 'Guitar').click();
+    expect(game.state.selected).toBe('guitar');
+    button('Inventory', 'Guitar').click();
+    expect(game.state.selected).toBeNull();
+  });
+
   it('enables a world in the switcher once it unlocks', () => {
     const given = edited({
       worlds: (file) => {
@@ -302,7 +319,7 @@ describe('the DOM UI', () => {
       const { panel, options, field } = talk();
       expect(panel.hidden).toBe(false);
       expect(panel.getAttribute('aria-label')).toBe('Bartender');
-      expect(asked).toEqual([{ character: 'bartender', reply: null }]);
+      expect(asked).toEqual([{ character: 'bartender', reply: null, carrying: ['guitar'] }]);
       await answer(turn('Evening.'));
       expect(panel.querySelector('.dialogue-line')?.textContent).toBe('Evening.');
       expect(options()).toEqual(OPTIONS.map((text, i) => `${i + 1}${text}`));

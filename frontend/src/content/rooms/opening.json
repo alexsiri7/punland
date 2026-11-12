@@ -3,7 +3,7 @@
   "world": "street",
   "label": "PUNLAND · HIGH STREET",
   "place": { "verb": "Outside", "name": "The Three Crows" },
-  "hint": "The bus is gone. Live music below.",
+  "hint": "Live music below.",
   "start": { "x": 560, "y": 590 },
   "walkable": [
     { "x": 400, "y": 540 },
@@ -38,14 +38,6 @@
       ]
     },
     {
-      "id": "cop",
-      "name": "Beetroot cop",
-      "verb": "Talk to",
-      "target": { "entity": "cop", "at": { "x": 1080, "y": 550 } },
-      "walkTo": { "x": 990, "y": 575 },
-      "interactions": [{ "verb": "talk", "effects": [{ "talk": "cop" }] }]
-    },
-    {
       "id": "street",
       "name": "Down the High Street",
       "verb": "Walk",
@@ -55,6 +47,19 @@
         {
           "verb": "go",
           "effects": [{ "goTo": "high-street", "at": { "x": 150, "y": 575 } }]
+        }
+      ]
+    },
+    {
+      "id": "station",
+      "name": "To the coach station",
+      "verb": "Walk",
+      "target": { "node": "station" },
+      "walkTo": { "x": 1166, "y": 588 },
+      "interactions": [
+        {
+          "verb": "go",
+          "effects": [{ "goTo": "coach-station", "at": { "x": 1180, "y": 585 } }]
         }
       ]
     }

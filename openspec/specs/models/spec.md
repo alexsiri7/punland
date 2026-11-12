@@ -11,7 +11,7 @@ Rooms SHALL be drawn in 3D from their scene model, seen through that room's fixe
 
 #### Scenario: Opening scene in 3D
 - WHEN a new game starts
-- THEN the opening room is drawn from its scene model, with the player character's model standing on its floor
+- THEN the coach station is drawn from its scene model, with the player character's model standing on its floor
 
 ### Requirement: One model per entity
 Each scene, character and object SHALL have exactly one entry in the model registry, giving its model file and metadata (kind, anchors, hit areas, animations), and content SHALL refer to models only by that entry's id, so a model is defined once and reused in every room it appears in.

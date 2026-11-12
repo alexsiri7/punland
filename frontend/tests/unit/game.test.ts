@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { playGame } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
-import { newGame } from '../../src/domain';
+import { newGame, speechMs } from '../../src/domain';
 import { FakeRenderer } from './fakes/renderer';
 import { content, editedRoom } from './fixtures/content';
 
@@ -120,6 +120,27 @@ describe('the game, drawn by a renderer', () => {
     expect(container.dataset.say).toBe('The door!');
     expect(container.querySelector<HTMLElement>('.speech')!.hidden).toBe(false);
     expect(container.querySelector<HTMLElement>('[aria-label="Bartender"]')!.hidden).toBe(false);
+  });
+
+  it("plays the first room's cutscene once it is drawn, its frames ticking its waits", async () => {
+    const given = editedRoom('street', (room) => {
+      room.onStart = [{ effects: [{ wait: 150 }, { say: 'Here at last.' }] }];
+    });
+    container.remove();
+    container = document.createElement('div');
+    document.body.append(container);
+    renderer = new FakeRenderer();
+    game = new GameSession(given, newGame(given), { save: async () => {} });
+    await playGame(container, game, renderer, { turn: async () => null });
+    expect(game.state.cue).not.toBeNull();
+
+    renderer.step(100);
+    expect(container.dataset.say).toBe('');
+    renderer.step(100);
+    expect(container.dataset.say).toBe('Here at last.');
+    expect(game.state.cue).not.toBeNull();
+    renderer.step(speechMs('Here at last.'));
+    expect(game.state.cue).toBeNull();
   });
 
   it('takes input only once the latest room asked for is drawn', async () => {

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { type Content, type GameState, newGame } from '../../src/domain';
+import { type Content, type GameState, newGame, speechMs } from '../../src/domain';
 import { apply, type Command, type GameEvent } from '../../src/rules';
 import { content, edited, editedRoom } from './fixtures/content';
 
@@ -52,9 +52,12 @@ describe('newGame', () => {
       stats: { fame: 0, skill: 1 },
       act: 'one',
       goals: [],
+      visited: ['street'],
+      back: null,
       selected: null,
       walk: null,
       saying: null,
+      cue: null,
     });
   });
 });
@@ -240,6 +243,155 @@ describe('use X on another item', () => {
     }
     const same = carrying();
     expect(apply(given, same, combine('flyer', 'flyer'))).toEqual({ state: same, events: [] });
+  });
+});
+
+describe('visited rooms and going back', () => {
+  const goBack = { id: 'close', name: 'Close', verb: 'Click', target: { node: 'close' }, walkTo: { x: 300, y: 550 } };
+  const given = edited({
+    items: (file) => {
+      file.items.flyer.onUse = [{ when: [{ world: 'street' }], effects: [{ goTo: 'pub' }] }];
+    },
+    'rooms/street': (room) => {
+      room.hotspots.find((h: { id: string }) => h.id === 'sign').presentWhen = [{ visited: 'pub' }];
+    },
+    'rooms/pub': (room) => room.hotspots.push({ ...goBack, interactions: [{ verb: 'go', effects: [{ goBack: true }] }] }),
+  });
+  const withFlyer = (): GameState => ({ ...newGame(given), inventory: { carried: ['guitar', 'flyer'], pickedUp: [] } });
+  const useFlyer: Command = { type: 'useItem', item: 'flyer' };
+
+  it('records every room the player has been in, for visited conditions', () => {
+    const state = newGame(given);
+    expect(state.visited).toEqual(['street']);
+    expect(state.room).toBe('street');
+    const { state: there } = play(state, [activate('door'), activate('door')], given);
+    expect(there.visited).toEqual(['street', 'pub']);
+    expect(play(state, [activate('sign')], given).state.saying).toBeNull();
+    expect(play(there, [activate('sign')], given).state.saying?.line).toBe('A sign.');
+  });
+
+  it('goes back to the room and the spot the player left it from', () => {
+    const walked = play(withFlyer(), [{ type: 'walk', to: { x: 250, y: 580 } }], given).state;
+    const opened = play(walked, [useFlyer], given).state;
+    expect(opened).toMatchObject({ room: 'pub', back: { room: 'street', at: { x: 250, y: 580 } } });
+    const { state, events } = play(opened, [activate('close')], given);
+    expect(state).toMatchObject({ room: 'street', at: { x: 250, y: 580 }, back: { room: 'pub', at: { x: 300, y: 550 } } });
+    expect(events).toContainEqual({ type: 'roomChanged', room: 'street', at: { x: 250, y: 580 } });
+  });
+
+  it('goes back within the world, past a trip to another world', () => {
+    const opened = play(withFlyer(), [useFlyer], given).state;
+    const away = play(opened, [enterWorld('dream'), enterWorld('street')], given).state;
+    expect(away).toMatchObject({ room: 'pub', back: { room: 'street' } });
+    expect(play(away, [activate('close')], given).state.room).toBe('street');
+  });
+
+  it("goes back to the world's start with nowhere to go back to", () => {
+    const inPub = { ...newGame(given), room: 'pub', at: { x: 300, y: 550 } };
+    expect(play(inPub, [activate('close')], given).state).toMatchObject({ room: 'street', at: { x: 100, y: 550 } });
+  });
+});
+
+describe('use an item on its own', () => {
+  const given = edited({
+    items: (file) => {
+      file.items.flyer.onUse = [{ when: [{ world: 'street' }], effects: [{ say: 'Open mic tonight.' }] }];
+    },
+  });
+  const carrying = (state = newGame(given)): GameState => ({
+    ...state,
+    inventory: { carried: ['guitar', 'flyer'], pickedUp: [] },
+    saying: { line: 'Hm.', by: 'player' },
+  });
+  const useItem = (item: string): Command => ({ type: 'useItem', item });
+
+  it('runs its first reaction that holds, with nothing selected', () => {
+    const { state, events } = apply(given, { ...carrying(), selected: null }, useItem('flyer'));
+    expect(state).toMatchObject({ selected: null, saying: { line: 'Open mic tonight.' } });
+    expect(events).toEqual([{ type: 'hushed' }, { type: 'said', line: 'Open mic tonight.', by: 'player' }, { type: 'saved' }]);
+  });
+
+  it('selects an item with no use of its own, or none that holds, as a select would', () => {
+    const inDream = carrying({ ...newGame(given), room: 'dream' });
+    const cases: [Content, GameState, string][] = [
+      [given, carrying(), 'guitar'],
+      [given, inDream, 'flyer'],
+      [content, carrying(), 'flyer'],
+    ];
+    for (const [using, state, item] of cases) {
+      expect(apply(using, state, useItem(item))).toEqual(apply(using, state, select(item)));
+    }
+  });
+
+  it('does nothing with an item the player does not carry', () => {
+    const state = newGame(given);
+    expect(apply(given, state, useItem('flyer'))).toEqual({ state, events: [] });
+  });
+});
+
+describe('cutscenes', () => {
+  const begin: Command = { type: 'begin' };
+  const scene = [{ wait: 500 }, { set: 'echo', to: true }, { say: 'Hear that?' }, { say: 'Gone.' }, { set: 'met', to: true }];
+  const paced = [...scene.slice(0, 3), { wait: speechMs('Hear that?') }, scene[3], { wait: speechMs('Gone.') }, scene[4]];
+  const given = editedRoom('street', (room) => {
+    room.hotspots.find((h: { id: string }) => h.id === 'echo').presentWhen = [{ flag: 'echo' }];
+    room.onStart = [{ when: [{ not: { flag: 'met' } }], effects: scene }];
+  });
+
+  it("begins with the room's cutscene, once its conditions hold", () => {
+    const { state, events } = apply(given, newGame(given), begin);
+    expect(state.cue).toEqual({ ms: 500, effects: paced.slice(1), hotspot: null });
+    expect(events).toEqual([{ type: 'saved' }]);
+    const met = { ...newGame(given), flags: { met: true } };
+    expect(apply(given, met, begin)).toEqual({ state: met, events: [] });
+    expect(apply(content, newGame(content), begin)).toEqual({ state: newGame(content), events: [] });
+  });
+
+  it('runs the rest of the effects once each wait is over, each line waiting while it is up', () => {
+    let step = apply(given, newGame(given), begin);
+    step = apply(given, step.state, tick(200));
+    expect(step).toEqual({ state: { ...step.state, cue: { ms: 300, effects: paced.slice(1), hotspot: null } }, events: [] });
+    step = apply(given, step.state, tick(300));
+    expect(step.state.cue).toEqual({ ms: speechMs('Hear that?'), effects: paced.slice(4), hotspot: null });
+    expect(step.events).toEqual([
+      { type: 'said', line: 'Hear that?', by: 'player' },
+      { type: 'hotspotShown', hotspot: 'echo' },
+      { type: 'saved' },
+    ]);
+    step = apply(given, step.state, tick(speechMs('Hear that?')));
+    expect(step.state.cue).toEqual({ ms: speechMs('Gone.'), effects: paced.slice(6), hotspot: null });
+    expect(step.events).toEqual([{ type: 'said', line: 'Gone.', by: 'player' }, { type: 'saved' }]);
+    step = apply(given, step.state, tick(speechMs('Gone.')));
+    expect(step.state).toMatchObject({ cue: null, flags: { echo: true, met: true } });
+  });
+
+  it("ignores the player's commands until the cutscene is over", () => {
+    const waiting = apply(given, newGame(given), begin).state;
+    const input: Command[] = [
+      { type: 'walk', to: { x: 400, y: 550 } },
+      activate('door'),
+      select('guitar'),
+      { type: 'combine', item: 'guitar', on: 'guitar' },
+      { type: 'useItem', item: 'guitar' },
+      enterWorld('dream'),
+      begin,
+    ];
+    for (const command of input) expect(apply(given, waiting, command)).toEqual({ state: waiting, events: [] });
+  });
+
+  it("waits in a hotspot's interaction, which carries on with that hotspot", () => {
+    const waits = editedRoom('street', (room) => {
+      room.hotspots.find((h: { id: string }) => h.id === 'flyer').interactions[0].effects = [{ wait: 100 }, { pickUp: 'flyer' }];
+    });
+    const at = play(newGame(waits), [activate('flyer')], waits).state;
+    expect(at.cue).toEqual({ ms: 100, effects: [{ pickUp: 'flyer' }], hotspot: 'flyer' });
+    const { state, events } = apply(waits, at, tick(100));
+    expect(state.inventory.carried).toContain('flyer');
+    expect(events).toEqual([
+      { type: 'pickedUp', item: 'flyer', hotspot: 'flyer' },
+      { type: 'hotspotHidden', hotspot: 'flyer' },
+      { type: 'saved' },
+    ]);
   });
 });
 

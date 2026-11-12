@@ -2,8 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ONCE_MS } from '../../src/app/animation';
 import { playGame } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
-import { type GameState, newGame } from '../../src/domain';
-import { speechMs } from '../../src/presentation/ui/speech';
+import { type GameState, newGame, speechMs } from '../../src/domain';
 import { FakeRenderer } from './fakes/renderer';
 import { content } from './fixtures/content';
 

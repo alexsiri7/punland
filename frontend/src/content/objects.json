@@ -1,1 +1,7 @@
-{ "objects": [{ "id": "lesson-flyer", "name": "Song Master's flyer", "model": "object/flyer" }] }
+{
+  "objects": [
+    { "id": "lesson-flyer", "name": "Song Master's flyer", "model": "object/flyer" },
+    { "id": "coach", "name": "Coach", "model": "object/coach" },
+    { "id": "map-pin", "name": "Map pin", "model": "object/map-pin" }
+  ]
+}

@@ -18,7 +18,7 @@ The title screen SHALL offer New game, and SHALL offer Continue when this browse
 
 #### Scenario: Starting a new game
 - WHEN the player chooses New game
-- THEN the game starts in the opening scene
+- THEN the game starts with the Arrival, in the coach station
 
 #### Scenario: Continuing
 - GIVEN this browser has a saved game

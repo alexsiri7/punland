@@ -40,8 +40,9 @@ A conversation MAY have a goal (such as getting past the bouncer). The suggested
 The beetroot cop, the three crows and the bartender SHALL be characters the cat can talk to; only the bartender's conversation has a goal in Act 1.
 
 #### Scenario: Talking to the beetroot cop
-- WHEN the player talks to the beetroot cop
-- THEN he says the music stars go to The Three Crows
+- WHEN the player talks to the beetroot cop in the coach station
+- THEN he says the music lot go to The Three Crows, the pub up the road
+- AND only while the cat has no map, he tells him to grab one from the stand
 
 #### Scenario: Talking to a crow
 - WHEN the player talks to one of the three crows
@@ -64,6 +65,14 @@ The player SHALL be able to leave a conversation at any time, and if the AI is u
 #### Scenario: AI unavailable
 - WHEN the AI cannot be reached
 - THEN the character gives a short canned line and the conversation ends without breaking the game
+
+#### Scenario: The beetroot cop with the AI unavailable
+- WHEN the AI cannot be reached and the player talks to the beetroot cop
+- THEN he says "The beetroot cop points his truncheon up the road: The Three Crows, son. And take a map. Move along."
+
+#### Scenario: The bartender with the AI unavailable
+- WHEN the AI cannot be reached and the player talks to the bartender
+- THEN she says "The bartender raises a wing: busy night, kid. Come back later."
 
 ### Requirement: Spending limits
 The game MUST limit how many AI dialogue turns one player can use in a period, and say so in character when the limit is reached.

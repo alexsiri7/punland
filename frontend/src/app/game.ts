@@ -30,8 +30,9 @@ export function sceneView(session: GameSession): SceneView {
  * Plays the session in `container`: `renderer` draws it, the DOM UI (presentation/ui) lies over
  * it and the #game mirror follows it. The renderer is told what to draw from the session's
  * events, the clips its characters play included, its canvas's clicks become commands and its
- * pointer the hovered hotspot through `renderer.pick`, and its frames tick the walk. Resolves
- * once the first room is shown.
+ * pointer the hovered hotspot through `renderer.pick`, and its frames tick the walk and a
+ * cutscene's waits. Once the first room is shown, the session begins (the room's cutscene, if it
+ * has one), and the promise resolves.
  */
 export async function playGame(
   container: HTMLElement,
@@ -93,8 +94,10 @@ export async function playGame(
   });
   canvas.addEventListener('pointerleave', () => ui.pointed(null));
   renderer.frame((dtMs) => {
-    if (session.state.walk) session.dispatch({ type: 'tick', dtMs });
+    if (session.state.walk || session.state.cue) session.dispatch({ type: 'tick', dtMs });
   });
 
+  // Lines said before a room is drawn are dropped, so a cutscene can't start sooner.
   await show();
+  session.dispatch({ type: 'begin' });
 }

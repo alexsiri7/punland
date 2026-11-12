@@ -26,7 +26,12 @@ describe('Rules as commands and events', () => {
   // to the game state, giving the new state and events, without a renderer or the DOM.
   it('Playing without a renderer', async () => {
     const { content, state } = await newGame();
-    const played = await play(content, state, [activate('street'), activate('lesson-flyer'), activate('intercom')]);
+    const played = await play(content, state, [
+      activate('road'),
+      activate('street'),
+      activate('lesson-flyer'),
+      activate('intercom'),
+    ]);
     expect(played.state.room).toBe('high-street');
     expect(played.state.inventory.carried).toContain('lesson-flyer');
     expect(played.state.flags).toEqual({ invited: true });

@@ -22,8 +22,8 @@ when there is none.
 
 ## Dialogue
 
-`POST /dialogue/turn` (header `X-Player-Id: <uuid>`, body `{"character", "reply"}`, `reply` null
-to start) answers `{"line", "options": [{"text", "reaches_goal"}], "goal_reached", "ended"}`.
+`POST /dialogue/turn` (header `X-Player-Id: <uuid>`, body `{"character", "reply", "carrying"}`, `reply`
+null to start, `carrying` the item ids the cat carries, for the character's `must_say` lines) answers `{"line", "options": [{"text", "reaches_goal"}], "goal_reached", "ended"}`.
 Character sheets are content data in `src/punland_api/content/characters/<id>.json`.
 
 - `REQUESTY_API_KEY` is the Requesty key (server-side only); `PUNLAND_DIALOGUE_MODEL` overrides

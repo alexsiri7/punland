@@ -1,6 +1,6 @@
 """The conversation rules on their own: prepare and conclude, without the app or a database."""
 
-from punland_api.characters import Character
+from punland_api.characters import Character, MustSay
 from punland_api.conversation import (
     HISTORY_LIMIT,
     Answer,
@@ -87,6 +87,23 @@ def test_a_reached_goal_offers_no_reaching_options() -> None:
     assert reaching == [] and reached is False
     assert after.goal_reached
     assert "The cat wants you to" not in prompt.messages[0]["content"]
+
+
+def test_must_say_lines_hold_for_what_the_cat_carries() -> None:
+    cop = Character(
+        id="cop",
+        name="Cop",
+        sheet="You walk the beat.",
+        canned="Move along.",
+        goal=None,
+        must_say=(MustSay("Pub's up the road."), MustSay("Take a map.", unless_carrying="map")),
+    )
+    without = prepare(cop, Conversation(), None).messages[0]["content"]
+    assert "You must say this, in your own words: Pub's up the road." in without
+    assert "You must say this, in your own words: Take a map." in without
+    carrying = prepare(cop, Conversation(), None, frozenset({"map"})).messages[0]["content"]
+    assert "Pub's up the road." in carrying
+    assert "Take a map." not in carrying
 
 
 def test_history_keeps_the_last_turns() -> None:

@@ -1,0 +1,109 @@
+{
+  "model": "scene/coach-station",
+  "world": "street",
+  "label": "PUNLAND · COACH STATION",
+  "place": { "verb": "At", "name": "The coach station" },
+  "hint": "Where every dreamer gets off. Free maps by the exit.",
+  "start": { "x": 430, "y": 592 },
+  "walkable": [
+    { "x": 50, "y": 540 },
+    { "x": 1230, "y": 540 },
+    { "x": 1250, "y": 612 },
+    { "x": 30, "y": 612 }
+  ],
+  "hotspots": [
+    {
+      "id": "coach",
+      "name": "Coach",
+      "verb": "Look at",
+      "target": { "entity": "coach", "at": { "x": 300, "y": 541 } },
+      "walkTo": { "x": 430, "y": 592 },
+      "interactions": [],
+      "presentWhen": [{ "flag": "coach", "is": "in" }]
+    },
+    {
+      "id": "cop",
+      "name": "Beetroot cop",
+      "verb": "Talk to",
+      "target": { "entity": "cop", "at": { "x": 1040, "y": 552 } },
+      "walkTo": { "x": 960, "y": 585 },
+      "interactions": [{ "verb": "talk", "effects": [{ "talk": "cop" }] }]
+    },
+    {
+      "id": "map-stand",
+      "name": "Map stand",
+      "verb": "Pick up",
+      "target": { "node": "map-stand" },
+      "walkTo": { "x": 850, "y": 590 },
+      "interactions": [
+        {
+          "verb": "pickup",
+          "effects": [
+            { "say": "\"Punland: free map.\" Free? In Literal Village, even the free things cost something." },
+            { "pickUp": "map" }
+          ]
+        }
+      ],
+      "presentWhen": [{ "not": { "pickedUp": "map" } }]
+    },
+    {
+      "id": "map-stand-taken",
+      "name": "Map stand",
+      "verb": "Look at",
+      "target": { "node": "map-stand" },
+      "walkTo": { "x": 850, "y": 590 },
+      "interactions": [
+        {
+          "verb": "look",
+          "effects": [{ "say": "I've got one already. One map is plenty. Two maps is a library." }]
+        }
+      ],
+      "presentWhen": [{ "pickedUp": "map" }]
+    },
+    {
+      "id": "board",
+      "name": "Departures board",
+      "verb": "Look at",
+      "target": { "node": "board" },
+      "walkTo": { "x": 660, "y": 565 },
+      "interactions": [
+        {
+          "verb": "look",
+          "effects": [{ "say": "Next coach to Literal Village: tomorrow. Not that I'm going back." }]
+        }
+      ]
+    },
+    {
+      "id": "road",
+      "name": "Up the road",
+      "verb": "Walk",
+      "target": { "node": "road" },
+      "walkTo": { "x": 1180, "y": 585 },
+      "interactions": [
+        {
+          "verb": "go",
+          "effects": [{ "goTo": "opening", "at": { "x": 1060, "y": 592 } }]
+        }
+      ]
+    }
+  ],
+  "onStart": [
+    {
+      "when": [{ "not": { "flag": "arrived" } }, { "not": { "visited": "opening" } }],
+      "effects": [
+        { "wait": 800 },
+        { "set": "coach", "to": "in" },
+        { "wait": 2500 },
+        { "set": "coach", "to": "gone" },
+        { "say": "Punland." },
+        { "say": "Hi, I'm {protagonist}, and I want to be a star!" },
+        { "say": "A star? Son, the only star I know about is the one on my badge.", "by": "cop" },
+        { "say": "But you could try The Three Crows. That's where the music lot go.", "by": "cop" },
+        { "say": "Three crows? We only had the one crow in Literal Village." },
+        { "say": "It's a pub, son. Grab a map from the stand. You'll get lost otherwise.", "by": "cop" },
+        { "say": "Oh! Right. Thanks. Bye!" },
+        { "set": "arrived", "to": true }
+      ]
+    }
+  ]
+}

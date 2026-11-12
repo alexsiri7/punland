@@ -63,7 +63,7 @@ Act 1 SHALL end when the three crows behind the bar of The Three Crows all agree
 - THEN Act 1 ends with the cat's first show and Act 2 starts
 
 ### Requirement: Story as content
-Rooms, hotspots, items, characters, puzzles and acts SHALL be defined as content data, so story can be added or changed without changing game code.
+Rooms, hotspots, items, characters, puzzles, cutscenes and acts SHALL be defined as content data, so story can be added or changed without changing game code.
 
 #### Scenario: Adding a puzzle
 - WHEN a new puzzle is added to the content data

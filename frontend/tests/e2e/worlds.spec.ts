@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import {
+  arrive,
   clickHotspot,
   clickScene,
   content,
@@ -8,7 +9,6 @@ import {
   game,
   hotspot,
   inventoryItem,
-  newGame,
   playerPosition,
   seedSave,
   worlds,
@@ -74,13 +74,13 @@ test('Switching', async ({ page }) => {
 
 test('Locked world', async ({ page }) => {
   // Requirement: Switching worlds. A locked world is shown as locked and cannot be entered.
-  await newGame(page);
+  await arrive(page);
   const locked = worlds(page).getByRole('button', { disabled: true });
   await expect(locked.first()).toBeVisible();
   await expect(locked.first()).toHaveAccessibleDescription(/locked/i);
   await locked.first().click({ force: true });
   await expect(game(page)).toHaveAttribute('data-world', 'street');
-  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
 });
 
 test('Something done in the street turns up in the dream', async ({ page }) => {
@@ -102,7 +102,7 @@ test('Something done in the street turns up in the dream', async ({ page }) => {
 test('The dream opens', async ({ page }) => {
   // Requirement: Switching worlds. The dream is locked in a new game, and unlocks once the dog
   // has played the Song Master's song on the pub stage.
-  await newGame(page);
+  await arrive(page);
   const dream = worlds(page).getByRole('button', { name: 'Dream' });
   await expect(dream).toBeDisabled();
   await expect(dream).toHaveAccessibleDescription(/locked/i);

@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { SAVE_KEY } from '../../src/services/save';
 import { expect, test } from './fixtures';
 import {
+  arrive,
   clickHotspot,
   content,
   continueGame,
@@ -15,10 +16,12 @@ import {
   newGame,
   type Save,
   seedSave,
+  startOutsidePub,
   stats,
   stubDialogue,
   stubSaves,
   toHighStreet,
+  toOutsidePub,
   useItemOn,
   useItemOnItem,
   worlds,
@@ -49,8 +52,10 @@ async function statValues(page: Page): Promise<string[]> {
 test('Closing and coming back', async ({ page, context }) => {
   // Requirement: Autosave. Progress is saved automatically, without signing up.
   const saves = new Map<string, string>();
+  test.slow();
   await stubSaves(page, saves);
   await newGame(page);
+  await toOutsidePub(page);
   await enterPub(page);
   await expect.poll(() => [...saves.values()].some((save) => save.length > 0)).toBe(true);
   await page.close();
@@ -66,8 +71,10 @@ test('Continue keeps the inventory', async ({ page, context }) => {
   // Requirement: Autosave (inventory, #10). What the cat picked up is still carried, and
   // gone from its room, after closing the browser and coming back.
   const saves = new Map<string, string>();
+  test.slow();
   await stubSaves(page, saves);
   await newGame(page);
+  await toOutsidePub(page);
   await toHighStreet(page);
   await clickHotspot(page, content.lessonFlyer);
   await expect(inventoryItem(page, content.lessonFlyer)).toBeVisible();
@@ -139,7 +146,7 @@ test('Finishing an act', async ({ page }) => {
 test("Act 1's goals", async ({ page }) => {
   // Requirement: Act 1: the first show. Act 1 shows three goals, one per crow's condition,
   // and no open mic or late slot goal.
-  await newGame(page);
+  await arrive(page);
   const goals = page.getByRole('list', { name: 'Goals' }).getByRole('checkbox');
   await expect(goals).toHaveCount(3);
   for (const name of [/working guitar/i, /song of my own/i, /lives here/i]) {
@@ -153,7 +160,7 @@ test('A working guitar', async ({ page }) => {
   // Mayor gives the cat a string from her mane, which mends the broken guitar; shown the
   // working guitar, the first crow agrees.
   test.setTimeout(90_000);
-  await newGame(page);
+  await startOutsidePub(page);
   await toHighStreet(page);
   await expect(hotspot(page, content.toMayor)).toHaveCount(0);
   await clickHotspot(page, content.musicShop);
@@ -183,7 +190,7 @@ test('A song of his own', async ({ page }) => {
   // plays it on the pub stage first, the Song Master stops answering and the dream opens; the
   // song the cat writes in the dream wins the second crow.
   test.setTimeout(120_000);
-  await newGame(page);
+  await startOutsidePub(page);
   await toHighStreet(page);
   await expect(hotspot(page, content.flatDoor)).toHaveCount(0);
   await clickHotspot(page, content.lessonFlyer);
