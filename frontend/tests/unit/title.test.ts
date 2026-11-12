@@ -74,7 +74,7 @@ describe('title screen', () => {
     const owner = (status: OwnerStatus): OwnerSignIn => ({
       status: Promise.resolve(status),
       signIn: vi.fn(),
-      signOut: vi.fn(async () => {}),
+      signOut: vi.fn(async () => true),
     });
 
     it('offers nothing without owner sign-in or a client id', async () => {
@@ -110,6 +110,17 @@ describe('title screen', () => {
       expect(deps.signOut).toHaveBeenCalled();
       expect(btn('owner-sign-out').hidden).toBe(true);
       expect(btn('owner-sign-in').hidden).toBe(false);
+    });
+
+    it('keeps the owner sign-out when signing out failed', async () => {
+      const deps = owner({ owner: true, googleClientId: 'client-1' });
+      deps.signOut = vi.fn(async () => false);
+      await initTitleScreen(document, { store: new MemoryStore(), start: vi.fn(), owner: deps });
+      await flush();
+      btn('owner-sign-out').click();
+      await flush();
+      expect(btn('owner-sign-out').hidden).toBe(false);
+      expect(btn('owner-sign-in').hidden).toBe(true);
     });
 
     it('does not hold up Continue while the backend is slow to answer', async () => {

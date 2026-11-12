@@ -18,10 +18,7 @@ if (!container) throw new Error('#game container missing');
 
 // Back from Google's sign-in, the ID token is in the address: hand it over before asking /me.
 const ownerStatus = completeSignIn().then(() => fetchOwner());
-let owner = false;
-void ownerStatus.then((status) => {
-  owner = status.owner;
-});
+let signedOut = false;
 
 void initTitleScreen(document, {
   store,
@@ -29,14 +26,16 @@ void initTitleScreen(document, {
     status: ownerStatus,
     signIn: (clientId) => location.assign(signInUrl(clientId)),
     signOut: async () => {
-      owner = false;
-      await signOut();
+      const ended = await signOut();
+      if (ended) signedOut = true;
+      return ended;
     },
   },
   start: async (save) => {
     container.hidden = false;
     const session = new GameSession(content, save ? fromSave(save, content) : newGame(content), store);
     session.save();
-    await playGame(container, session, await createRenderer(), new BackendDialogue(), { owner });
+    const [renderer, { owner }] = await Promise.all([createRenderer(), ownerStatus]);
+    await playGame(container, session, renderer, new BackendDialogue(), { owner: owner && !signedOut });
   },
 });

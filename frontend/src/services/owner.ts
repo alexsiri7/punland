@@ -101,12 +101,13 @@ export async function completeSignIn(options: Partial<OwnerOptions> = {}): Promi
   }
 }
 
-/** Ends the owner's session. Never fails. */
-export async function signOut(options: Partial<OwnerOptions> = {}): Promise<void> {
+/** Ends the owner's session; false when the backend did not confirm it. Never fails. */
+export async function signOut(options: Partial<OwnerOptions> = {}): Promise<boolean> {
   const { base, fetch } = resolve(options);
   try {
-    await fetch(`${base}/auth/signout`, ownerRequest({ method: 'POST' }));
+    const res = await fetch(`${base}/auth/signout`, ownerRequest({ method: 'POST' }));
+    return res.ok;
   } catch {
-    // The session cookie expires on its own.
+    return false;
   }
 }

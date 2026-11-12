@@ -103,3 +103,20 @@ test('Signing out', async ({ page }) => {
   await startNewGame(page);
   await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
 });
+
+test('The owner starts a game before the backend has answered', async ({ page }) => {
+  // Requirement: Owner sign-in. The owner gets the Edit button however quickly the game starts.
+  let answer = () => {};
+  const answered = new Promise<void>((resolve) => (answer = resolve));
+  await page.route(`${API}/me`, async (route) => {
+    await answered;
+    await route.fulfill(json({ owner: true, google_client_id: 'test-client' }));
+  });
+  await page.goto('/');
+  const rendererLoaded = page.waitForResponse(/\/assets\/renderer-[^/]*\.js$/);
+  await page.getByRole('button', { name: 'New game' }).click();
+  await rendererLoaded;
+  answer();
+  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'coach-station');
+  await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
+});

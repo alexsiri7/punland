@@ -13,7 +13,8 @@ export interface TitleScreenDeps {
 export interface OwnerSignIn {
   status: Promise<OwnerStatus>;
   signIn(clientId: string): void;
-  signOut(): Promise<void>;
+  /** Resolves whether the session ended; the owner stays signed in when it did not. */
+  signOut(): Promise<boolean>;
 }
 
 /**
@@ -66,7 +67,7 @@ function initOwnerSignIn(root: ParentNode, owner: OwnerSignIn): void {
   });
 
   signOut.addEventListener('click', async () => {
-    await owner.signOut();
+    if (!(await owner.signOut())) return;
     signOut.hidden = true;
     signIn.hidden = clientId === null;
   });

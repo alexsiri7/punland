@@ -102,12 +102,16 @@ describe('signing in', () => {
 describe('signOut', () => {
   it('ends the session with the CSRF header, and never fails', async () => {
     const fetch = answering(200, {});
-    await signOut({ base, fetch });
+    await expect(signOut({ base, fetch })).resolves.toBe(true);
     const [url, init] = fetch.mock.calls[0]!;
     expect(url).toBe(`${base}/auth/signout`);
     expect(init?.method).toBe('POST');
     expect(init?.credentials).toBe('include');
     expect(init?.headers).toMatchObject({ [CSRF_HEADER]: '1' });
-    await expect(signOut({ base, fetch: vi.fn(async () => Promise.reject(new TypeError('offline'))) })).resolves.toBeUndefined();
+  });
+
+  it('says so when the backend did not end the session', async () => {
+    await expect(signOut({ base, fetch: answering(503, {}) })).resolves.toBe(false);
+    await expect(signOut({ base, fetch: vi.fn(async () => Promise.reject(new TypeError('offline'))) })).resolves.toBe(false);
   });
 });
