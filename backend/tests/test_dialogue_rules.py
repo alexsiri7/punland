@@ -146,6 +146,16 @@ def test_character_content_loads() -> None:
     assert bartender is not None and "kitchen" in bartender and "third crow" in bartender
 
 
+def test_must_say_items_are_frontend_items() -> None:
+    # The frontend sends `carrying` as ids from its items.json; a renamed item would leave a
+    # character's must_say line on for good.
+    items_json = Path(__file__).parents[2] / "frontend/src/content/items.json"
+    items = json.loads(items_json.read_text())["items"]
+    for character in load_characters().values():
+        for must in character.must_say:
+            assert must.unless_carrying in (None, *items), (character.id, must.unless_carrying)
+
+
 def test_answer_matches_the_frontend_wire_shape() -> None:
     # frontend/tests/e2e/play.ts declares the same answer as DialogueTurn; keep them in step.
     client = TestClient(create_app(Settings(), model=ScriptedModel(answer())))
