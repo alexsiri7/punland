@@ -78,12 +78,12 @@
     {
       "id": "object/flyer",
       "kind": "object",
-      "model3d": { "file": "models/objects/flyer.glb", "placeholder": true }
+      "model3d": { "file": "models/objects/flyer.glb", "placeholder": false }
     },
     {
       "id": "object/broken-guitar",
       "kind": "object",
-      "model3d": { "file": "models/objects/broken-guitar.glb", "placeholder": true }
+      "model3d": { "file": "models/objects/broken-guitar.glb", "placeholder": false }
     }
   ]
 }

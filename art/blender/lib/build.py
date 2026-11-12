@@ -169,7 +169,7 @@ class Body:
         outline: Sequence[tuple[float, float]],
         depth: float,
         part: str,
-        skin: Skin,
+        skin: Skin | None,
         back: bool = False,
     ):
         """A thin part laid on `faces` over the (x, y) `outline`, standing `depth` proud."""
@@ -204,6 +204,14 @@ def _corners(faces: list[bmesh.types.BMFace]) -> list[tuple[int, ...]]:
         corners.append(tuple(range(start, start + len(face.verts))))
         start += len(face.verts)
     return corners
+
+
+def anchor(name: str, at: Point) -> bpy.types.Object:
+    """An empty at `at`: an object's anchor, such as `anchor_grip`."""
+    empty = bpy.data.objects.new(name, None)
+    bpy.context.scene.collection.objects.link(empty)
+    empty.location = blender(at)
+    return empty
 
 
 class Rig:

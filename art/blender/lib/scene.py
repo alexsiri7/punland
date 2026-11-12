@@ -20,9 +20,7 @@ from mathutils import Matrix, Vector
 
 from .build import Body, Point, blender, limb
 from .palette import material
-from .preview import render, stage, toon
-
-REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from .preview import REPO, render, stage, toon
 
 YFOV = math.radians(25)
 EYE = 2.5

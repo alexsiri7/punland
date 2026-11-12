@@ -18,6 +18,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib.build import Body, blend, disc, limb, ring, symmetric
 from lib.clips import clips
 from lib.export import arguments, empty_scene, export_glb
+from lib.guitar import COLOURS as GUITAR_COLOURS
+from lib.guitar import guitar
 from lib.palette import material
 from lib.rig import SIDES, Biped, anchors, armature
 from lib.rig import torso as torso_skin
@@ -38,11 +40,7 @@ COLOURS = {
     "jeans": "#26262C",
     "high-tops": "#E2DDD2",
     "soles": "#2A2A30",
-    "guitar": "#8A5A34",
-    "guitar-neck": "#4A3A30",
-    "headstock": "#3A2E26",
-    "tape": "#9A968C",
-    "patch": "#5FA39A",
+    **GUITAR_COLOURS,
 }
 
 #: Metres, with the ears; the registry's `height` for character/protagonist.
@@ -92,7 +90,7 @@ def build_body(body: Body) -> None:
         arm(body, side, x)
         leg(body, side, x)
     tail(body)
-    guitar(body)
+    guitar(body, on_back, "chest")
 
 
 def head(body: Body) -> None:
@@ -309,41 +307,11 @@ def tail(body: Body) -> None:
         body.hull(limb(TAIL[i], TAIL[i + 1], radii[i], radii[i + 1], 5), "fur", f"tail_{i + 1}")
 
 
-def guitar(body: Body) -> None:
-    back = -0.115
-    lower = [
-        p for z in (back, back - 0.075) for p in disc((0.0, 0.76, z), (0.0, 0.76, z - 1), 0.125, 8)
-    ]
-    upper = [
-        p
-        for z in (back, back - 0.07)
-        for p in disc((0.035, 0.93, z), (0.035, 0.93, z - 1), 0.095, 8)
-    ]
-    lobe = body.hull(lower, "guitar", "chest")
-    body.hull(upper, "guitar", "chest")
-    body.decal(
-        lobe,
-        [(-0.07, 0.73), (-0.02, 0.73), (-0.02, 0.78), (-0.07, 0.78)],
-        0.004,
-        "patch",
-        "chest",
-        back=True,
-    )
-    body.hull(
-        limb((0.04, 0.98, back - 0.035), (0.13, 1.24, back - 0.035), 0.022, 0.02, 4, 0.785),
-        "guitar-neck",
-        "chest",
-    )
-    body.hull(
-        limb((0.112, 1.18, back - 0.035), (0.122, 1.21, back - 0.035), 0.03, 0.03, 4, 0.785),
-        "tape",
-        "chest",
-    )
-    body.hull(
-        limb((0.14, 1.25, back - 0.03), (0.2, 1.18, back - 0.03), 0.028, 0.022, 4, 0.785),
-        "headstock",
-        "chest",
-    )
+def on_back(p):
+    """The guitar's frame on his back: its soundboard facing back, its neck over his left
+    shoulder."""
+    x, y, z = p
+    return (-x, 0.76 + y, -0.115 - z)
 
 
 def main() -> None:
