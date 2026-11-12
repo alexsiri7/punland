@@ -12,6 +12,7 @@ import {
   playerPosition,
   scenePixel,
   seedSave,
+  startOutsidePub,
   toHighStreet,
   useItemOn,
   useItemOnItem,
@@ -23,7 +24,7 @@ test.use({ actionTimeout: 5_000 });
 
 test('Picking up', async ({ page }) => {
   // Requirement: Picking up items. Items can be picked up from rooms into the inventory.
-  await newGame(page);
+  await startOutsidePub(page);
   await toHighStreet(page);
   await expect.poll(() => playerPosition(page)).not.toBeNull();
   const flyer = await scenePixel(page, content.lessonFlyerSprite);
@@ -74,17 +75,26 @@ test('Using an item on another item', async ({ page }) => {
 
 test('A use that does not work', async ({ page }) => {
   // Requirement: Using items. The game responds even when the use does nothing.
-  await newGame(page);
+  await startOutsidePub(page);
   await useItemOn(page, content.brokenGuitar, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-say', /\S/);
   await expect(game(page)).toHaveAttribute('data-scene', content.opening);
   await expect(inventoryItem(page, content.brokenGuitar)).toBeVisible();
 });
 
+test('Using the map', async ({ page }) => {
+  // Requirement: Using items. The map, picked up at the coach station, is used on its own: the
+  // Map opens.
+  await newGame(page);
+  await clickHotspot(page, content.mapStand);
+  await inventoryItem(page, content.mapItem).click();
+  await expect(game(page)).toHaveAttribute('data-scene', content.map);
+});
+
 test('Two items that do not go together', async ({ page }) => {
   // Requirement: Using items. An item used on an inventory item that does not accept it
   // selects that item instead: the flyer does nothing for the broken guitar.
-  await newGame(page);
+  await startOutsidePub(page);
   await toHighStreet(page);
   await clickHotspot(page, content.lessonFlyer);
   await useItemOnItem(page, content.lessonFlyer, content.brokenGuitar);

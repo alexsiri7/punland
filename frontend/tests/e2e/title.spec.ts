@@ -25,22 +25,22 @@ test('Continue is offered when this browser has a saved game, and resumes it', a
   await expect(page.locator('#game')).toHaveAttribute('data-scene', 'opening');
 });
 
-test('New game starts in the opening scene', async ({ page }) => {
+test('New game starts in the coach station', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(page.locator('#title-screen')).toBeHidden();
   await expect(page.locator('#game canvas')).toBeVisible();
-  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'opening');
+  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'coach-station');
 });
 
 test('A new game left before any action can be continued', async ({ page }) => {
   // Requirement: Autosave. A new game is saved before the player does anything.
   await page.goto('/');
   await page.getByRole('button', { name: 'New game' }).click();
-  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'opening');
+  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'coach-station');
   await page.reload();
   const cont = page.getByRole('button', { name: 'Continue' });
   await expect(cont).toBeVisible();
   await cont.click();
-  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'opening');
+  await expect(page.locator('#game')).toHaveAttribute('data-scene', 'coach-station');
 });

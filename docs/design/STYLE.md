@@ -117,7 +117,7 @@ Other characters are animals and plants of Punland. Draw them in the same angula
 
 ## Names and places
 
-- **The Three Crows.** The big leaning Victorian corner pub where the bus drops the cat off. This is the opening scene. Board 3 is canonical.
+- **The Three Crows.** The big leaning Victorian corner pub up the road from the coach station, where the coach drops the cat off. Its street is the opening scene's set. Board 3 is canonical.
   - Board 1's type and UI-bar samples still say "The Root Note" and "PUNLAND · BUS STOP". They predate the rename. Use The Three Crows.
   - The scaffold and the scenes spec used "The Root Note" until 2026-10-24.
 - **The Holding Pen.** The live-music venue down the stairs beside the pub ("Live music below").

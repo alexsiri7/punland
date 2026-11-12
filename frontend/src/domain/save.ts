@@ -1,7 +1,7 @@
 import type { Content, FlagValue } from './content';
 import type { FloorPoint } from './geometry';
 import type { InventoryState } from './inventory';
-import type { JourneyState } from './journey';
+import type { JourneyState, Place } from './journey';
 import { newGame, type GameState } from './state';
 
 /** Everything needed to resume a game. Stays `version: 1` and only grows by optional fields, so old saves load. */
@@ -25,6 +25,10 @@ export interface SaveGame {
   goals?: string[];
   /** Career stats by stat id; absent in saves from before #11: each stat's start. */
   stats?: Record<string, number>;
+  /** The rooms the player has been in; absent in saves from before #116: the save's room. */
+  visited?: string[];
+  /** Where a `goBack` returns to; absent in saves from before #116, and when there is nowhere: none. */
+  back?: Place;
 }
 
 /** A save without its timestamp, which the rules can't read: whoever writes the save stamps it. */
@@ -72,7 +76,9 @@ export function isSaveGame(value: unknown): value is SaveGame {
     (value.flags === undefined || isFlags(value.flags)) &&
     (value.act === undefined || typeof value.act === 'string') &&
     (value.goals === undefined || isStrings(value.goals)) &&
-    (value.stats === undefined || isStats(value.stats))
+    (value.stats === undefined || isStats(value.stats)) &&
+    (value.visited === undefined || isStrings(value.visited)) &&
+    (value.back === undefined || isPlace(value.back))
   );
 }
 
@@ -87,13 +93,16 @@ export function toSave(state: GameState): UnstampedSave {
     act: state.act,
     goals: [...state.goals],
     stats: { ...state.stats },
+    visited: [...state.visited],
+    ...(state.back && { back: structuredClone(state.back) }),
   };
 }
 
 /**
  * The game a save resumes. A save can name items, rooms, acts, goals and stats the content no
  * longer has (content changed since): they are dropped, an unknown room resumes at the start of
- * a new game, and an unknown act at the first act. A stat the save lacks starts at its start.
+ * a new game, and an unknown act at the first act. A stat the save lacks starts at its start, and
+ * a save without visited rooms has visited the room it resumes in.
  */
 export function fromSave(save: UnstampedSave, content: Content): GameState {
   const game = newGame(content);
@@ -125,5 +134,7 @@ export function fromSave(save: UnstampedSave, content: Content): GameState {
     stats: Object.fromEntries(content.stats.map(({ id, start }) => [id, saved(id) ?? start])),
     act: act ? act.id : game.act,
     goals: act ? (save.goals ?? []).filter((goal) => act.goals.some((g) => g.id === goal)) : game.goals,
+    visited: save.visited ? [...save.visited] : [room ? save.room : game.room],
+    back: save.back && Object.hasOwn(content.rooms, save.back.room) ? structuredClone(save.back) : null,
   };
 }

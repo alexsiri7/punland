@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { type ContentFiles, loadContent, validateContent } from '../../src/content';
+import { PROTAGONIST } from '../../src/content/protagonist';
 
 // Content is checked as it loads (architecture spec, "Validated content"): each problem names
 // the file and the field it is in.
@@ -22,6 +23,8 @@ function broken(path: string, edit: (file: Json) => void): ContentFiles {
 const WORLDS = 'content/worlds.json';
 const ITEMS = 'content/items.json';
 const OPENING = 'content/rooms/opening.json';
+const COACH_STATION = 'content/rooms/coach-station.json';
+const MAP = 'content/rooms/map.json';
 const PUB = 'content/rooms/pub.json';
 const HIGH_STREET = 'content/rooms/high-street.json';
 const CHARACTERS = 'content/characters.json';
@@ -33,7 +36,15 @@ const hotspot = (room: Json, id: string): Json => room.hotspots.find((h: Json) =
 describe('content validation', () => {
   it('passes today’s content', () => {
     expect(validateContent(files)).toEqual([]);
-    expect(loadContent().start).toEqual({ room: 'opening', items: ['broken-guitar'] });
+    expect(loadContent().start).toEqual({ room: 'coach-station', items: ['broken-guitar'] });
+  });
+
+  it('reads {protagonist} in a line or a hint as his name', () => {
+    const { rooms } = loadContent();
+    expect(rooms['coach-station']?.onStart?.[0]?.effects).toContainEqual({
+      say: `Hi, I'm ${PROTAGONIST.name}, and I want to be a star!`,
+    });
+    expect(rooms.map?.hint).toBe(`Punland from above. Only the places ${PROTAGONIST.name} knows about are marked.`);
   });
 
   it('has a backend sheet for every character the player can talk to', () => {
@@ -177,16 +188,16 @@ describe('content validation', () => {
     },
     {
       problem: 'an unknown entity',
-      file: OPENING,
+      file: COACH_STATION,
       edit: (room) => (hotspot(room, 'cop').target.entity = 'kazoo'),
-      field: 'hotspots[2].target.entity',
+      field: 'hotspots[1].target.entity',
       message: /"kazoo" is not a known character or object/,
     },
     {
       problem: 'an entity placed off the floor',
-      file: OPENING,
+      file: COACH_STATION,
       edit: (room) => (hotspot(room, 'cop').target.at = { x: 0, y: 0 }),
-      field: 'hotspots[2].target.at',
+      field: 'hotspots[1].target.at',
       message: /floor/,
     },
     {
@@ -195,6 +206,55 @@ describe('content validation', () => {
       edit: (room) => (hotspot(room, 'lesson-flyer').presentWhen[0].not.pickedUp = 'kazoo'),
       field: 'hotspots[2].presentWhen[0].not.pickedUp',
       message: /"kazoo" is not a known item/,
+    },
+    {
+      problem: 'an unknown room visited',
+      file: MAP,
+      edit: (room) => (hotspot(room, 'high-street').presentWhen[0].visited = 'moon'),
+      field: 'hotspots[2].presentWhen[0].visited',
+      message: /"moon" is not a known room/,
+    },
+    {
+      problem: 'a world condition outside an item’s onUse',
+      file: MAP,
+      edit: (room) => (hotspot(room, 'high-street').presentWhen[0] = { world: 'street' }),
+      field: 'hotspots[2].presentWhen[0].world',
+      message: /only in an item's onUse/,
+    },
+    {
+      problem: 'an unknown world to use an item in',
+      file: ITEMS,
+      edit: (file) => (file.items.map.onUse[0].when[0].world = 'moon'),
+      field: 'items.map.onUse[0].when[0].world',
+      message: /"moon" is not a known world/,
+    },
+    {
+      problem: 'a pick-up when an item is used on its own',
+      file: ITEMS,
+      edit: (file) => (file.items.map.onUse[0].effects[0] = { pickUp: 'map' }),
+      field: 'items.map.onUse[0].effects[0]',
+      message: /only in a hotspot's interactions/,
+    },
+    {
+      problem: 'an exit in a cutscene',
+      file: COACH_STATION,
+      edit: (room) => (room.onStart[0].effects[1] = { goTo: 'opening' }),
+      field: 'onStart[0].effects[1]',
+      message: /only in a hotspot's interactions/,
+    },
+    {
+      problem: 'a wait of no time',
+      file: COACH_STATION,
+      edit: (room) => (room.onStart[0].effects[0].wait = 0),
+      field: 'onStart[0].effects[0].wait',
+      message: /more than 0/,
+    },
+    {
+      problem: 'a go-back that is not true',
+      file: MAP,
+      edit: (room) => (hotspot(room, 'close').interactions[0].effects[0].goBack = false),
+      field: 'hotspots[5].interactions[0].effects[0].goBack',
+      message: /must be true/,
     },
     {
       problem: 'a line said by an unknown character',

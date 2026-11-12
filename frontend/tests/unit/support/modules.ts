@@ -50,7 +50,7 @@ export const contentFiles: ContentFiles = Object.fromEntries(
   ).map(([path, data]) => [path.replace(/^\/src\//, ''), data]),
 );
 
-/** Applies each command in turn, ticking after each until the player has stopped walking. */
+/** Applies each command in turn, ticking after each until the player has stopped walking and no wait is left. */
 export async function play(
   content: Content,
   state: GameState,
@@ -61,7 +61,7 @@ export async function play(
   for (const command of commands) {
     let step = apply(content, state, command);
     events.push(...step.events);
-    for (let ticks = 0; step.state.walk !== null && ticks < 1000; ticks++) {
+    for (let ticks = 0; (step.state.walk !== null || step.state.cue !== null) && ticks < 1000; ticks++) {
       step = apply(content, step.state, { type: 'tick', dtMs: 50 });
       events.push(...step.events);
     }

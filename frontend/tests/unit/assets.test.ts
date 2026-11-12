@@ -40,14 +40,14 @@ describe('the model registry', () => {
       problem: 'a duplicate id',
       registry: broken('object/flyer', (model) => (model.id = 'character/bartender')),
       file: 'assets/models.json',
-      field: 'models[15].id',
+      field: 'models[17].id',
       message: /another model/,
     },
     {
       problem: 'an unknown kind',
       registry: broken('object/flyer', (model) => (model.kind = 'prop')),
       file: 'assets/models.json',
-      field: 'models[15].kind',
+      field: 'models[17].kind',
       message: /must be scene, character or object/,
     },
     {
@@ -75,7 +75,7 @@ describe('the model registry', () => {
       problem: 'a model with no model file',
       registry: broken('object/broken-guitar', (model) => delete model.model3d),
       file: 'assets/models.json',
-      field: 'models[16].model3d',
+      field: 'models[18].model3d',
       message: /must be an object/,
     },
     {

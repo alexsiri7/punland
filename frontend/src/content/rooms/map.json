@@ -1,0 +1,68 @@
+{
+  "model": "scene/map",
+  "world": "street",
+  "label": "PUNLAND · MAP",
+  "place": { "verb": "Looking at", "name": "The map" },
+  "hint": "Punland from above. Only the places {protagonist} knows about are marked.",
+  "start": { "x": 640, "y": 600 },
+  "walkable": [
+    { "x": 120, "y": 480 },
+    { "x": 1160, "y": 480 },
+    { "x": 1240, "y": 615 },
+    { "x": 40, "y": 615 }
+  ],
+  "hotspots": [
+    {
+      "id": "coach-station",
+      "name": "Coach station",
+      "verb": "Go to",
+      "target": { "entity": "map-pin", "at": { "x": 300, "y": 560 } },
+      "walkTo": { "x": 300, "y": 592 },
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "coach-station" }] }]
+    },
+    {
+      "id": "pub",
+      "name": "The Three Crows",
+      "verb": "Go to",
+      "target": { "entity": "map-pin", "at": { "x": 560, "y": 510 } },
+      "walkTo": { "x": 560, "y": 545 },
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "opening" }] }]
+    },
+    {
+      "id": "high-street",
+      "name": "High Street",
+      "verb": "Go to",
+      "target": { "entity": "map-pin", "at": { "x": 860, "y": 540 } },
+      "walkTo": { "x": 860, "y": 575 },
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "high-street" }] }],
+      "presentWhen": [{ "visited": "high-street" }]
+    },
+    {
+      "id": "mayors-office",
+      "name": "Mayor's office",
+      "verb": "Go to",
+      "target": { "entity": "map-pin", "at": { "x": 1060, "y": 500 } },
+      "walkTo": { "x": 1060, "y": 540 },
+      "interactions": [{ "verb": "go", "effects": [{ "goTo": "mayors-office" }] }],
+      "presentWhen": [{ "flag": "string-sold-out" }]
+    },
+    {
+      "id": "streets",
+      "name": "Blank streets",
+      "verb": "Look at",
+      "target": { "node": "streets" },
+      "walkTo": { "x": 640, "y": 500 },
+      "interactions": [
+        { "verb": "look", "effects": [{ "say": "The rest is just streets. I'll find out what's there." }] }
+      ]
+    },
+    {
+      "id": "close",
+      "name": "Close the map",
+      "verb": "Click",
+      "target": { "node": "close" },
+      "walkTo": { "x": 1150, "y": 600 },
+      "interactions": [{ "verb": "go", "effects": [{ "goBack": true }] }]
+    }
+  ]
+}

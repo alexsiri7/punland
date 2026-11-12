@@ -1,6 +1,6 @@
 {
   "worlds": [
-    { "id": "street", "name": "Street", "start": "opening" },
+    { "id": "street", "name": "Street", "start": "coach-station" },
     {
       "id": "online",
       "name": "Online",

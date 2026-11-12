@@ -27,14 +27,33 @@ import { expect } from './fixtures';
  * place, in the PR that removes the test's expected-to-fail marker.
  */
 
-/** Content the tests rely on: the opening rooms and Act 1, the Three Crows' conditions (#4, #5, #11, #71). */
+/** Content the tests rely on: the opening rooms and Act 1, the Three Crows' conditions (#4, #5, #11, #71, #116). */
 export const content = {
+  /** Where a new game starts, once the Arrival has played: the coach station (#116). */
+  coachStation: 'coach-station',
+  /** Outside The Three Crows, up the road from the coach station. */
   opening: 'opening',
+  /** The coach of the Arrival, in the coach station only while it stands at its bay. */
+  coach: /^coach$/i,
+  mapStand: /^map stand$/i,
+  departures: /departures board/i,
+  upTheRoad: /up the road/i,
+  toStation: /to the coach station/i,
+  /** The map item, and the room using it opens, with its marked places and the way to close it. */
+  mapItem: /^map$/i,
+  map: 'map',
+  places: {
+    coachStation: /^coach station$/i,
+    pub: /^the three crows$/i,
+    highStreet: /^high street$/i,
+    mayorsOffice: /^mayor's office$/i,
+  },
+  closeMap: /close the map/i,
   pubInterior: /pub/,
   pubDoor: /door/i,
-  /** The chalkboard on the pavement: a thing to look at in the opening scene. */
+  /** A thing to look at: the departures board in the coach station, the chalkboard outside the pub. */
   board: /tonight|board/i,
-  /** The beetroot cop on the pavement outside the pub: the first character to talk to. */
+  /** The beetroot cop outside the coach station: the first character to talk to. */
   cop: /cop/i,
   /** The way from the opening scene down the High Street, and the High Street's room id. */
   streetExit: /down the high street/i,
@@ -83,7 +102,7 @@ export const content = {
   act3Goals: ['act3-first', 'act3-last'],
   /** The career stats of a new game. */
   newStats: { followers: 0, musicians: 0, practice: 0, instruments: 1 },
-  /** A walkable spot on the pavement outside the pub, in scene pixels. */
+  /** A walkable spot on the pavement outside the pub, and in the coach station, in scene pixels. */
   pavement: { x: 900, y: 585 },
   /** Where the player stands on coming into the pub, just inside its street door. */
   pubEntrance: { x: 250, y: 585 },
@@ -104,19 +123,39 @@ export const goal = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('list', { name: 'Goals' }).getByRole('checkbox', { name });
 export const conversation = (page: Page): Locator => page.getByRole('dialog');
 
-/** The opening room's scene model, which the renderer draws it from (models spec). */
+/** The scene model of the room a new game starts in, the coach station, which the renderer draws it from (models spec). */
+export const startSceneModel = '/models/scenes/coach-station.glb';
+
+/** The scene model of the room outside The Three Crows. */
 export const openingSceneModel = '/models/scenes/opening.glb';
 
 /** The protagonist's model, which the renderer draws the player with in every room. */
 export const playerModel = '/models/characters/protagonist.glb';
 
+/** The Arrival's first line: the player has control once it is said. */
+export const ARRIVED = 'Punland.';
+
+/** Starts a new game, and waits in the coach station until the Arrival hands the player control. */
 export async function newGame(page: Page): Promise<void> {
   const requested: string[] = [];
   page.on('request', (request) => requested.push(new URL(request.url()).pathname));
   await page.goto('/');
   await page.getByRole('button', { name: 'New game' }).click();
-  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
   await expect.poll(() => requested, 'the renderer loads the player model').toContain(playerModel);
+  await expect(game(page)).toHaveAttribute('data-say', ARRIVED, { timeout: 10_000 });
+}
+
+/** Up the road from the coach station to outside The Three Crows. */
+export async function toOutsidePub(page: Page): Promise<void> {
+  await clickHotspot(page, content.upTheRoad);
+  await expect(game(page)).toHaveAttribute('data-scene', content.opening, { timeout: 10_000 });
+}
+
+/** Starts a new game and walks up the road, to outside The Three Crows. */
+export async function startOutsidePub(page: Page): Promise<void> {
+  await newGame(page);
+  await toOutsidePub(page);
 }
 
 export async function enterPub(page: Page): Promise<void> {
@@ -213,12 +252,12 @@ export type { DialogueTurn };
 
 /**
  * Stands in for the backend's dialogue endpoint (#6): `turn` gets the request body
- * ({ character, reply }; reply is null when the conversation starts) and returns the
- * response the game should see.
+ * ({ character, reply, carrying }; reply is null when the conversation starts, carrying the
+ * items the cat carries) and returns the response the game should see.
  */
 export async function stubDialogue(
   page: Page,
-  turn: (body: { character: string; reply: string | null }) => DialogueTurn,
+  turn: (body: { character: string; reply: string | null; carrying: string[] }) => DialogueTurn,
 ): Promise<void> {
   await page.route(apiPath('/dialogue/'), (route: Route) =>
     route.fulfill({

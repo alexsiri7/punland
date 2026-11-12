@@ -15,6 +15,7 @@ import {
   newGame,
   type Save,
   seedSave,
+  startOutsidePub,
   stats,
   stubDialogue,
   stubSaves,
@@ -50,7 +51,7 @@ test('Closing and coming back', async ({ page, context }) => {
   // Requirement: Autosave. Progress is saved automatically, without signing up.
   const saves = new Map<string, string>();
   await stubSaves(page, saves);
-  await newGame(page);
+  await startOutsidePub(page);
   await enterPub(page);
   await expect.poll(() => [...saves.values()].some((save) => save.length > 0)).toBe(true);
   await page.close();
@@ -67,7 +68,7 @@ test('Continue keeps the inventory', async ({ page, context }) => {
   // gone from its room, after closing the browser and coming back.
   const saves = new Map<string, string>();
   await stubSaves(page, saves);
-  await newGame(page);
+  await startOutsidePub(page);
   await toHighStreet(page);
   await clickHotspot(page, content.lessonFlyer);
   await expect(inventoryItem(page, content.lessonFlyer)).toBeVisible();
@@ -153,7 +154,7 @@ test('A working guitar', async ({ page }) => {
   // Mayor gives the cat a string from her mane, which mends the broken guitar; shown the
   // working guitar, the first crow agrees.
   test.setTimeout(90_000);
-  await newGame(page);
+  await startOutsidePub(page);
   await toHighStreet(page);
   await expect(hotspot(page, content.toMayor)).toHaveCount(0);
   await clickHotspot(page, content.musicShop);
@@ -183,7 +184,7 @@ test('A song of his own', async ({ page }) => {
   // plays it on the pub stage first, the Song Master stops answering and the dream opens; the
   // song the cat writes in the dream wins the second crow.
   test.setTimeout(120_000);
-  await newGame(page);
+  await startOutsidePub(page);
   await toHighStreet(page);
   await expect(hotspot(page, content.flatDoor)).toHaveCount(0);
   await clickHotspot(page, content.lessonFlyer);

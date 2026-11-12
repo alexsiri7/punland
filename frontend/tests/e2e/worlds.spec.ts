@@ -80,7 +80,7 @@ test('Locked world', async ({ page }) => {
   await expect(locked.first()).toHaveAccessibleDescription(/locked/i);
   await locked.first().click({ force: true });
   await expect(game(page)).toHaveAttribute('data-world', 'street');
-  await expect(game(page)).toHaveAttribute('data-scene', content.opening);
+  await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
 });
 
 test('Something done in the street turns up in the dream', async ({ page }) => {

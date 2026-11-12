@@ -10,8 +10,12 @@ export type Command =
   | { type: 'select'; item: string | null }
   /** The selected `item` used on another carried item, `on`; with no use for the two, `on` is selected instead. */
   | { type: 'combine'; item: string; on: string }
+  /** A carried item used on its own: its `onUse`, or with none that holds, it is selected. */
+  | { type: 'useItem'; item: string }
   | { type: 'enterWorld'; world: string }
-  /** Advances walking; runs what the walk was for on arrival. */
+  /** Once the room is first shown in a play: the room's `onStart` cutscene, if one holds. */
+  | { type: 'begin' }
+  /** Advances walking and a `wait`: runs what the walk was for on arrival, and what the wait held back once it is over. */
   | { type: 'tick'; dtMs: number }
   /** From the dialogue panel, when a reply reaches the conversation's goal. */
   | { type: 'dialogueResult'; character: string; goalReached: boolean };

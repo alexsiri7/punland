@@ -8,10 +8,11 @@ import {
   game,
   hotspot,
   newGame,
-  openingSceneModel,
   playerModel,
   playerPosition,
   pointAtHotspot,
+  startOutsidePub,
+  startSceneModel,
   stubDialogue,
 } from './play';
 
@@ -28,7 +29,7 @@ test('Opening scene in 3D', async ({ page }) => {
     if (response.ok()) loaded.push(new URL(response.url()).pathname);
   });
   await newGame(page);
-  await expect.poll(() => loaded).toEqual(expect.arrayContaining([openingSceneModel, playerModel]));
+  await expect.poll(() => loaded).toEqual(expect.arrayContaining([startSceneModel, playerModel]));
   const webgl = await page
     .locator('#game canvas')
     .evaluate((canvas: HTMLCanvasElement) => !!(canvas.getContext('webgl2') ?? canvas.getContext('webgl')));
@@ -44,7 +45,7 @@ test('Replacing a placeholder', async ({ page }) => {
     replaced = true;
     return route.fulfill({ status: 200, contentType: 'model/gltf-binary', body: Buffer.from(fixtures.character()) });
   });
-  await newGame(page);
+  await startOutsidePub(page);
   await expect.poll(() => replaced).toBe(true);
   await clickHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-scene', content.pubInterior);
@@ -55,7 +56,7 @@ test('Replacing a placeholder', async ({ page }) => {
 
 test('Hovering a model', async ({ page }) => {
   // Requirement: Picking in 3D. The pointer over an entity's model or hit area hovers its hotspot.
-  await newGame(page);
+  await startOutsidePub(page);
   await pointAtHotspot(page, content.pubDoor);
   await expect(game(page)).toHaveAttribute('data-hover', content.pubDoor);
 });

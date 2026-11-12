@@ -105,7 +105,7 @@ export interface Character extends Entity {
   id: CharacterId;
   /**
    * When a conversation with the character reaches its goal, the effects of the first reaction
-   * whose conditions hold run. No `goTo`, `pickUp` or `talk`: those go only in a hotspot's interactions.
+   * whose conditions hold run. No `goTo`, `goBack`, `pickUp` or `talk`: those go only in a hotspot's interactions.
    */
   onGoal?: Reaction[];
 }
@@ -122,11 +122,17 @@ export interface Item {
   noUse: string;
   /** What using other items on this one does. */
   uses?: ItemUse[];
+  /**
+   * Using the item on its own (inventory spec, "Using the map"): the effects of the first reaction
+   * whose conditions hold run. Only `goTo` and `goBack` of the hotspot-only effects. With none, the
+   * item is selected instead.
+   */
+  onUse?: Reaction[];
 }
 
 /**
  * Using `item` on the item that has this use, or that item on `item`: the effects run if every
- * condition in `when` holds. No `goTo`, `pickUp` or `talk`: those go only in a hotspot's interactions.
+ * condition in `when` holds. No `goTo`, `goBack`, `pickUp` or `talk`: those go only in a hotspot's interactions.
  */
 export interface ItemUse {
   item: ItemId;
@@ -167,6 +173,10 @@ export type Condition =
   | { act: ActId }
   /** The goal of the current act is reached. */
   | { goal: GoalId }
+  /** The player has been in the room. */
+  | { visited: RoomId }
+  /** The player is in a room of the world. */
+  | { world: WorldId }
   | { not: Condition };
 
 /** One thing an interaction does. */
@@ -175,6 +185,13 @@ export type Effect =
   | { say: string; by?: CharacterId }
   /** Into another room of the same world: at `at`, or that room's `start`. */
   | { goTo: RoomId; at?: FloorPoint }
+  /** Back to the room, and the spot, the player last left by a `goTo` or `goBack`. */
+  | { goBack: true }
+  /**
+   * The effects after this one run once `ms` have passed; until then the player has no control
+   * (a cutscene's beat, CANON "Systems: Cutscenes").
+   */
+  | { wait: number }
   /** The item goes into the inventory, and counts as picked up for good. */
   | { pickUp: ItemId }
   /** The item goes into the inventory. */
@@ -236,4 +253,9 @@ export interface Room {
   /** The floor, a convex polygon: the player walks in straight lines inside it. */
   walkable: FloorPoint[];
   hotspots: Hotspot[];
+  /**
+   * A cutscene: once the room is shown at the start of a play, the effects of the first reaction
+   * whose conditions hold run. No `goTo`, `goBack`, `pickUp` or `talk`.
+   */
+  onStart?: Reaction[];
 }

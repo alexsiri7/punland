@@ -41,6 +41,16 @@
       "model3d": { "file": "models/scenes/mayors-office.glb", "placeholder": false }
     },
     {
+      "id": "scene/coach-station",
+      "kind": "scene",
+      "model3d": { "file": "models/scenes/coach-station.glb", "placeholder": true }
+    },
+    {
+      "id": "scene/map",
+      "kind": "scene",
+      "model3d": { "file": "models/scenes/map.glb", "placeholder": true }
+    },
+    {
       "id": "character/protagonist",
       "kind": "character",
       "model3d": { "file": "models/characters/protagonist.glb", "placeholder": false, "height": 1.5 }
@@ -84,6 +94,16 @@
       "id": "object/broken-guitar",
       "kind": "object",
       "model3d": { "file": "models/objects/broken-guitar.glb", "placeholder": false }
+    },
+    {
+      "id": "object/coach",
+      "kind": "object",
+      "model3d": { "file": "models/objects/coach.glb", "placeholder": true }
+    },
+    {
+      "id": "object/map-pin",
+      "kind": "object",
+      "model3d": { "file": "models/objects/map-pin.glb", "placeholder": true }
     }
   ]
 }

@@ -63,6 +63,8 @@ describe('GameSession', () => {
       act: 'one',
       goals: [],
       stats: { fame: 0, skill: 1 },
+      visited: ['street', 'pub'],
+      back: { room: 'street', at: { x: 500, y: 550 } },
     });
     expect(saves.every(isSaveGame)).toBe(true);
   });
@@ -85,6 +87,8 @@ describe('GameSession', () => {
         act: 'one',
         goals: [],
         stats: { fame: 0, skill: 1 },
+        visited: ['pub', 'street'],
+        back: { room: 'pub', at: { x: 100, y: 550 } },
       },
     ]);
   });

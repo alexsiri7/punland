@@ -40,15 +40,15 @@ export class BackendDialogue {
   }
 
   /**
-   * The character's answer to `reply`, or its opening line when `reply` is null. Null when the
-   * backend can't be reached, refuses, or answers with something else.
+   * The character's answer to `reply`, or its opening line when `reply` is null, to a cat carrying
+   * `carrying`. Null when the backend can't be reached, refuses, or answers with something else.
    */
-  async turn(character: string, reply: string | null): Promise<DialogueTurn | null> {
+  async turn(character: string, reply: string | null, carrying: readonly string[]): Promise<DialogueTurn | null> {
     try {
       const res = await this.options.fetch(`${this.options.base}/dialogue/turn`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Player-Id': this.options.player },
-        body: JSON.stringify({ character, reply }),
+        body: JSON.stringify({ character, reply, carrying }),
       });
       if (!res.ok) return null;
       const turn: unknown = await res.json();

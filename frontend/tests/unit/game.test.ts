@@ -122,6 +122,25 @@ describe('the game, drawn by a renderer', () => {
     expect(container.querySelector<HTMLElement>('[aria-label="Bartender"]')!.hidden).toBe(false);
   });
 
+  it("plays the first room's cutscene once it is drawn, its frames ticking its waits", async () => {
+    const given = editedRoom('street', (room) => {
+      room.onStart = [{ effects: [{ wait: 150 }, { say: 'Here at last.' }] }];
+    });
+    container.remove();
+    container = document.createElement('div');
+    document.body.append(container);
+    renderer = new FakeRenderer();
+    game = new GameSession(given, newGame(given), { save: async () => {} });
+    await playGame(container, game, renderer, { turn: async () => null });
+    expect(game.state.cue).not.toBeNull();
+
+    renderer.step(100);
+    expect(container.dataset.say).toBe('');
+    renderer.step(100);
+    expect(game.state.cue).toBeNull();
+    expect(container.dataset.say).toBe('Here at last.');
+  });
+
   it('takes input only once the latest room asked for is drawn', async () => {
     const drawn: Array<() => void> = [];
     renderer.show = () => new Promise((resolve) => drawn.push(resolve));

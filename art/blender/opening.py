@@ -1,8 +1,8 @@
 """The opening room: the street outside The Three Crows, the big leaning Victorian corner pub
-where the bus drops the cat off. docs/design/STYLE.md, board 3 (docs/design/canvas/Pub.dc.html),
+up the road from the coach station. docs/design/STYLE.md, board 3 (docs/design/canvas/Pub.dc.html),
 is the reference, and its SVG, docs/design/rooms/opening.svg, the layout: the green shopfront
-with its lit arched windows, the door, the fascia, the chalkboard and the High Street sign on the
-pavement, the steps down to The Holding Pen, the lamp post, and the side street running back
+with its lit arched windows, the door, the fascia, the chalkboard, the High Street and coach station
+signs on the pavement, the steps down to The Holding Pen, the lamp post, and the side street running back
 past the pub's corner to the city.
 
     blender -b --factory-startup --python art/blender/opening.py -- \\
@@ -94,6 +94,7 @@ def main() -> None:
     street.city()
     street.board()
     room.signpost("signpost", "street", 414, "HIGH ST", "sign-gold", -1)
+    room.signpost("signpost-station", "station", 1138, "COACHES", "sign-gold", 1)
     street.holding_pen()
     street.lamp_post()
     street.lean()

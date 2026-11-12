@@ -47,8 +47,8 @@ describe('Interactions as data', () => {
   // with effects the rules already know needs no code change.
   it('Adding a puzzle step', async () => {
     const [{ loadContent, validateContent }, { newGame }] = await Promise.all([load('content'), load('domain')]);
-    const line = 'I hold the guitar up to the board. Still no slot for broken instruments.';
-    const files = withEdit('content/rooms/opening.json', (room) => {
+    const line = 'I hold the guitar up to the board. Still no coach for broken instruments.';
+    const files = withEdit('content/rooms/coach-station.json', (room) => {
       const board = (room.hotspots as Json[]).find((hotspot) => hotspot.id === 'board')!;
       (board.interactions as Json[]).push({ verb: 'use', item: 'broken-guitar', effects: [{ say: line }] });
     });

@@ -7,9 +7,9 @@ export interface InventoryBar {
 /**
  * The inventory slots in the UI bar (STYLE.md, UI), as a list of buttons over the canvas so
  * a player with a keyboard or a screen reader can use them too: the items carried, the selected
- * one marked, again whenever they or the selection change. Clicking an item selects it, or
- * unselects it, or uses the selected item on it; the item under the pointer or focus goes to
- * `on.hover`, null once none is.
+ * one marked, again whenever they or the selection change. Clicking an item uses it on its own
+ * (selects it, when the story gives it no use of its own), or unselects it, or uses the selected
+ * item on it; the item under the pointer or focus goes to `on.hover`, null once none is.
  */
 export function createInventoryBar(
   doc: Document,
@@ -22,8 +22,9 @@ export function createInventoryBar(
   list.setAttribute('aria-label', 'Inventory');
   const select = (id: string) => {
     const { selected } = session.state;
-    if (selected !== null && selected !== id) session.dispatch({ type: 'combine', item: selected, on: id });
-    else session.dispatch({ type: 'select', item: selected === id ? null : id });
+    if (selected === null) session.dispatch({ type: 'useItem', item: id });
+    else if (selected !== id) session.dispatch({ type: 'combine', item: selected, on: id });
+    else session.dispatch({ type: 'select', item: null });
     on.hover(id);
   };
   // Removing a focused or hovered button fires blur/pointerleave: stop listening first.

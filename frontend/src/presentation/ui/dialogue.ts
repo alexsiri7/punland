@@ -3,8 +3,11 @@ import type { Session } from '../session';
 
 /** The backend's side of a conversation (services/dialogue.ts). */
 export interface DialogueBackend {
-  /** The character's answer to `reply`, or its opening line for null; null when there is no answer. */
-  turn(character: string, reply: string | null): Promise<DialogueTurn | null>;
+  /**
+   * The character's answer to `reply`, or its opening line for null; null when there is no answer.
+   * `carrying`, the items the cat carries, is what the character's brief may depend on.
+   */
+  turn(character: string, reply: string | null, carrying: readonly string[]): Promise<DialogueTurn | null>;
 }
 
 export interface DialoguePanel {
@@ -102,7 +105,7 @@ export function createDialoguePanel(
     options.replaceChildren();
     field.disabled = true;
     send.disabled = true;
-    const turn = await backend.turn(character, text);
+    const turn = await backend.turn(character, text, session.state.inventory.carried);
     if (asked === conversation) answered(turn);
   };
 

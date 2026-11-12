@@ -1,6 +1,18 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { clickHotspot, content, conversation, enterPub, game, goal, newGame, stubDialogue, type DialogueTurn } from './play';
+import {
+  clickHotspot,
+  content,
+  conversation,
+  enterPub,
+  game,
+  goal,
+  inventoryItem,
+  newGame,
+  startOutsidePub,
+  stubDialogue,
+  type DialogueTurn,
+} from './play';
 
 // Acceptance tests for openspec/specs/dialogue/spec.md, from the player's side. The backend
 // is stubbed, so these cover the conversation panel (#8); the backend's own part of
@@ -22,7 +34,7 @@ function reply(line: string, extra: Partial<DialogueTurn> = {}): DialogueTurn {
 }
 
 async function talkToBartender(page: Page): Promise<void> {
-  await newGame(page);
+  await startOutsidePub(page);
   await enterPub(page);
   await clickHotspot(page, content.bartender);
   await expect(conversation(page)).toBeVisible();
@@ -87,17 +99,28 @@ test('Reaching the goal', async ({ page }) => {
 });
 
 test('Talking to the beetroot cop', async ({ page }) => {
-  // Requirement: Act 1 conversations. The beetroot cop outside the pub is a character to talk to.
+  // Requirement: Act 1 conversations. The beetroot cop in the coach station is a character to
+  // talk to, whose brief depends on whether the cat has a map: the game tells the backend what
+  // the cat carries (backend/tests/test_dialogue.py has the brief).
   const asked: unknown[] = [];
   await stubDialogue(page, (body) => {
     asked.push(body);
-    return reply('All the music stars go to The Three Crows. That way.');
+    return reply('The music lot go to The Three Crows, the pub up the road.');
   });
   await newGame(page);
   await clickHotspot(page, content.cop);
   await expect(conversation(page)).toHaveAccessibleName(content.cop);
   await expect(conversation(page)).toContainText('The Three Crows');
-  expect(asked).toEqual([{ character: 'cop', reply: null }]);
+  await conversation(page).getByRole('button', { name: 'Leave' }).click();
+  await clickHotspot(page, content.mapStand);
+  await expect(inventoryItem(page, content.mapItem)).toBeVisible();
+  await clickHotspot(page, content.cop);
+  await expect(conversation(page)).toBeVisible();
+  await expect.poll(() => asked).toHaveLength(2);
+  expect(asked).toEqual([
+    { character: 'cop', reply: null, carrying: ['broken-guitar'] },
+    { character: 'cop', reply: null, carrying: ['broken-guitar', 'map'] },
+  ]);
 });
 
 test('Talking to a crow', async ({ page }) => {
@@ -108,7 +131,7 @@ test('Talking to a crow', async ({ page }) => {
     asked.push(body.character);
     return reply('Caw.');
   });
-  await newGame(page);
+  await startOutsidePub(page);
   await enterPub(page);
   for (const crow of [content.sherylCaw, content.secondCrow, content.thirdCrow]) {
     await clickHotspot(page, crow);

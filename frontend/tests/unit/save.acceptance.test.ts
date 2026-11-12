@@ -24,6 +24,7 @@ describe('Serialisable game state', () => {
     ]);
     const content = loadContent();
     const { state } = await play(content, newGame(content), [
+      { type: 'activate', hotspot: 'road' },
       { type: 'activate', hotspot: 'street' },
       { type: 'activate', hotspot: 'lesson-flyer' },
     ]);

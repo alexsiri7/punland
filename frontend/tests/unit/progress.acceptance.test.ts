@@ -13,7 +13,7 @@ describe('Story as content', () => {
     const [{ loadContent, validateContent }, { newGame }] = await Promise.all([load('content'), load('domain')]);
     const line = 'Someone will fix it for a coin.';
     const files: ContentFiles = structuredClone(contentFiles);
-    ((files['content/rooms/opening.json'] as Json).hotspots as Json[]).push({
+    ((files['content/rooms/coach-station.json'] as Json).hotspots as Json[]).push({
       id: 'test-hat',
       name: 'Busker hat',
       verb: 'Look at',

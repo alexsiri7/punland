@@ -95,6 +95,8 @@ export function placeholders() {
     'models/characters/mayor.glb': glb(mayor()),
     'models/objects/flyer.glb': glb(flyer()),
     'models/objects/broken-guitar.glb': glb(brokenGuitar()),
+    'models/objects/coach.glb': glb(coach()),
+    'models/objects/map-pin.glb': glb(mapPin()),
     'models/scenes/opening.glb': glb(opening()),
     'models/scenes/pub.glb': glb(pub()),
     'models/scenes/feed.glb': glb(feed()),
@@ -103,6 +105,8 @@ export function placeholders() {
     'models/scenes/music-shop.glb': glb(musicShop()),
     'models/scenes/flat.glb': glb(flat()),
     'models/scenes/mayors-office.glb': glb(mayorsOffice()),
+    'models/scenes/coach-station.glb': glb(coachStation()),
+    'models/scenes/map.glb': glb(map()),
   };
 }
 
@@ -453,6 +457,33 @@ function brokenGuitar() {
   };
 }
 
+/** A coach seen side-on, 5 m long and 3 m high: a blue body over its wheels, a band of lit windows, the door at the front. */
+function coach() {
+  return {
+    name: 'coach',
+    part: 'header',
+    shape: box([-2.5, 0.4, -0.8], [5, 2.6, 1.6]),
+    children: [
+      { name: 'windows', part: 'glow', shape: box([-2.25, 1.7, 0.8], [4, 0.9, 0.02]) },
+      { name: 'coach-door', part: 'fascia', shape: box([1.75, 0.45, 0.8], [0.55, 2.2, 0.03]) },
+      { name: 'stripe', part: 'sign-gold', shape: box([-2.5, 1.2, 0.8], [4.2, 0.12, 0.02]) },
+      ...[-1.6, 1.4].flatMap((x, i) =>
+        [0.65, -0.85].map((z, j) => ({ name: `wheel_${i}_${j}`, part: 'road', shape: box([x - 0.4, 0, z], [0.8, 0.75, 0.2]) })),
+      ),
+    ],
+  };
+}
+
+/** A pin for a place on the map, a little under 1 m tall: a red head on a dark stem. */
+function mapPin() {
+  return {
+    name: 'map-pin',
+    part: 'beam',
+    shape: frustum(4, 0.02, 0.03, 0.65),
+    children: [{ name: 'pin-head', part: 'sash', shape: frustum(6, 0.14, 0.14, 0.24, [0, 0.65, 0]) }],
+  };
+}
+
 // --- The rooms. Each one is laid out in the scene pixels of its reference art (1280 x 640), through
 // its camera: the walkable area's front centre (content/rooms/<room>.json) is the origin, and
 // a wall or prop stands on the plane where its foot meets the floor. ---------------------------
@@ -764,6 +795,73 @@ function mayorsOffice() {
       { name: 'flagpole', part: 'beam', shape: room.panel(rect(1090, 100, 8, 380), wall + 0.3, 0.04) },
       { name: 'desk', part: 'bar', shape: room.panel(rect(420, 380, 440, 100), wall + 0.8, 0.8) },
       { name: 'hit_door', part: 'green-door', shape: room.panel(rect(60, 150, 160, 330), wall + 0.06, 0.06) },
+      room.camera,
+    ],
+  };
+}
+
+/** The coach station: the bays and the departures board under the canopy, the map stand by the exit, the way up the road. */
+function coachStation() {
+  const room = shell({ x: 640, y: 612 });
+  const wall = room.depthAt(500);
+  return {
+    name: 'coach-station',
+    children: [
+      ...room.floor(500, 'pavement', 'road'),
+      { name: 'hall', part: 'skyline', shape: room.panel(rect(-40, -400, 1360, 900), wall, 1) },
+      { name: 'canopy', part: 'beam', shape: room.panel(rect(-40, 40, 1360, 50), wall + 0.12, 0.12) },
+      ...[60, 250, 440].map((x, i) => ({ name: `bay_${i}`, part: 'kerb', shape: room.panel(rect(x, 90, 16, 410), wall + 0.2, 0.1) })),
+      ...[80, 270].map((x, i) => ({ name: `bay-sign_${i}`, part: 'sign-gold', shape: room.panel(rect(x + 50, 110, 60, 30), wall + 0.1, 0.02) })),
+      { name: 'exit', part: 'glow', shape: room.panel(rect(1060, 180, 200, 320), wall + 0.02, 0.02) },
+      {
+        name: 'hit_board',
+        part: 'screen',
+        shape: room.panel(rect(540, 190, 220, 120), wall + 0.06, 0.06),
+        children: [0, 1, 2].map((i) => ({
+          name: `departure_${i}`,
+          part: 'sign-gold',
+          shape: room.panel(rect(556, 210 + i * 32, 188, 12), wall + 0.07, 0.01),
+        })),
+      },
+      {
+        name: 'hit_map-stand',
+        part: 'card',
+        shape: room.standing(rect(880, 430, 64, 120), 0.3),
+        children: [440, 480].map((y, i) => ({
+          name: `free-map_${i}`,
+          part: 'paper',
+          shape: room.panel(rect(890, y, 44, 28), room.depthAt(550) + 0.01, 0.01),
+        })),
+      },
+      signpost(room, 'road', rect(1150, 384, 56, 160), 'sign-gold'),
+      room.camera,
+    ],
+  };
+}
+
+/** The map: Punland from above, spread on the floor, its streets, the blank streets at the back still to find, and the tab that closes it. */
+function map() {
+  const room = shell({ x: 640, y: 615 });
+  /** A strip `lift` above the map, from pixel column `x0` to `x1` where it meets row `y1`, back from there to row `y0`. */
+  const strip = (x0, x1, y0, y1, lift) => {
+    const [near, far] = [room.depthAt(y1), room.depthAt(y0)];
+    const [left] = room.point(x0, y1, near);
+    const [right] = room.point(x1, y1, near);
+    return box([left, 0, far], [right - left, lift, near - far]);
+  };
+  return {
+    name: 'map',
+    children: [
+      ...room.floor(400, 'paper', 'paper'),
+      { name: 'table', part: 'night', shape: room.panel(rect(-40, -400, 1360, 800), room.depthAt(400), 1) },
+      ...[
+        [80, 1200, 520, 530],
+        [60, 1220, 575, 585],
+        [410, 430, 470, 615],
+        [750, 770, 470, 615],
+      ].map(([x0, x1, y0, y1], i) => ({ name: `street_${i}`, part: 'road', shape: strip(x0, x1, y0, y1, 0.004) })),
+      { name: 'hit_streets', part: 'haze', shape: strip(80, 1200, 400, 470, 0.02) },
+      signpost(room, 'close', rect(1190, 410, 56, 160), 'sash'),
       room.camera,
     ],
   };

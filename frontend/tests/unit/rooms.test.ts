@@ -6,7 +6,7 @@ import { loadContent } from '../../src/content';
 // models against their art (assets.test.ts).
 
 describe('room content', () => {
-  it('starts a new game outside The Three Crows', () => {
-    expect(loadContent().start.room).toBe('opening');
+  it('starts a new game in the coach station', () => {
+    expect(loadContent().start.room).toBe('coach-station');
   });
 });

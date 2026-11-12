@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Coach station room art: where the coach drops the cat off in Punland (story/CANON.md, the Arrival), with the bays under
+     the canopy, the departures board, the map stand by the exit, the beetroot cop's spot and the signpost up the road.
+     Drawn to docs/design/STYLE.md. The placeholder scene model is laid out over it (frontend/scripts/make-placeholders.mjs),
+     so its shapes, the model and the room's floor points line up.
+     Layers follow docs/design/STYLE.md "Scene build": one <g id="layer-*"> per layer, back to front. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="A Punland coach station at dusk: coach bays under a dark canopy, a departures board with three lit rows, a lit exit with a stand of free maps beside it, and a signpost up the road on the right">
+<style>
+.p-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p-sign{font-family:'Bebas Neue',sans-serif;text-anchor:middle}
+</style>
+
+<g id="layer-sky">
+<rect x="0" y="0" width="1280" height="500" fill="#4A4A5E"></rect>
+<rect x="0" y="40" width="1280" height="50" fill="#2F2D35"></rect>
+</g>
+
+<g id="layer-far">
+<rect x="1060" y="180" width="200" height="320" fill="#E8B566"></rect>
+<rect x="1200" y="180" width="60" height="320" fill="#D9A457"></rect>
+</g>
+
+<g id="layer-mid">
+<rect x="60" y="90" width="16" height="410" fill="#4A464E"></rect>
+<rect x="250" y="90" width="16" height="410" fill="#4A464E"></rect>
+<rect x="440" y="90" width="16" height="410" fill="#4A464E"></rect>
+<rect x="130" y="110" width="60" height="30" fill="#E3C58A"></rect><text x="160" y="133" class="p-sign" font-size="22" fill="#2F2D35">BAY 1</text>
+<rect x="320" y="110" width="60" height="30" fill="#E3C58A"></rect><text x="350" y="133" class="p-sign" font-size="22" fill="#2F2D35">BAY 2</text>
+<g id="board">
+<rect x="540" y="190" width="220" height="120" fill="#1E1E24"></rect>
+<rect x="556" y="210" width="188" height="12" fill="#E3C58A"></rect>
+<rect x="556" y="242" width="188" height="12" fill="#E3C58A"></rect>
+<rect x="556" y="274" width="188" height="12" fill="#E3C58A"></rect>
+</g>
+</g>
+
+<g id="layer-ground">
+<rect x="0" y="500" width="1280" height="140" fill="#5E5A62"></rect>
+<rect x="0" y="612" width="1280" height="28" fill="#2F2D35"></rect>
+<path d="M0 500 H1280" class="p-line" stroke="#4A464E" style="stroke-width:4"></path>
+</g>
+
+<g id="layer-props">
+<g id="map-stand">
+<rect x="880" y="430" width="64" height="120" fill="#3A3C46"></rect>
+<rect x="890" y="440" width="44" height="28" fill="#D9CDB4"></rect>
+<rect x="890" y="480" width="44" height="28" fill="#D9CDB4"></rect>
+<polygon points="880,550 944,550 1000,562 930,564" fill="#141218" opacity="0.45"></polygon>
+</g>
+<g id="road">
+<rect x="1150" y="384" width="56" height="160" fill="#1A2822"></rect>
+<rect x="1156" y="396" width="44" height="26" fill="#E3C58A"></rect>
+<text x="1178" y="415" class="p-sign" font-size="16" fill="#1A2822">THE THREE CROWS</text>
+</g>
+</g>
+
+<g id="layer-actors">
+<g id="coach" transform="translate(300 541)">
+<rect x="-250" y="-260" width="500" height="220" fill="#46607E"></rect>
+<rect x="-225" y="-200" width="400" height="70" fill="#E8B566"></rect>
+<rect x="175" y="-215" width="55" height="175" fill="#1A2822"></rect>
+<rect x="-160" y="-40" width="80" height="40" fill="#2F2D35"></rect><rect x="100" y="-40" width="80" height="40" fill="#2F2D35"></rect>
+</g>
+<g id="cop" transform="translate(1040 552)">
+<polygon points="-24,0 24,0 86,16 50,18" fill="#141218" opacity="0.45"></polygon>
+<rect x="-12" y="-60" width="6" height="60" fill="#3E5E44"></rect><rect x="6" y="-60" width="6" height="60" fill="#3E5E44"></rect>
+<ellipse cx="0" cy="-110" rx="40" ry="56" fill="#C8483B"></ellipse>
+<rect x="-24" y="-176" width="48" height="16" fill="#2E3A52"></rect><rect x="-4" y="-170" width="8" height="8" fill="#E3C58A"></rect>
+</g>
+</g>
+</svg>

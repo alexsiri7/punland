@@ -33,7 +33,8 @@ import { PROTAGONIST } from './protagonist';
 /**
  * Content checked as it loads (architecture spec, "Validated content"): the shapes of
  * worlds.json, items.json, characters.json, objects.json, stats.json, acts.json and
- * rooms/<room>.json, and that they hold together.
+ * rooms/<room>.json, and that they hold together. `{protagonist}` in a line or a hint reads as
+ * the protagonist's name.
  */
 
 /** A problem in a content file: the file by its path under src/, and the field's JSON path in it. */
@@ -164,7 +165,15 @@ function readItems(file: Field, known: Known): { items: Record<string, Item>; st
       const uses = item.get('uses').optional((field) =>
         field.list((use) => ({ item: use.get('item').id('item', known.item), ...readReaction(use, known) })),
       );
-      return { name: item.get('name').text(), noUse: item.get('noUse').text(), ...(uses !== undefined && { uses }) };
+      const onUse = item
+        .get('onUse')
+        .optional((field) => field.list((reaction) => readReaction(reaction, known, ['goTo', 'goBack'], true)));
+      return {
+        name: item.get('name').text(),
+        noUse: item.get('noUse').text(),
+        ...(uses !== undefined && { uses }),
+        ...(onUse !== undefined && { onUse }),
+      };
     }),
     start: file.get('start').list((item) => item.id('item', known.item)),
   };
@@ -188,14 +197,22 @@ function readEntities<K extends 'character' | 'object', T>(
   return Object.fromEntries(entries);
 }
 
-/** Effects that move the player, need a hotspot or open a conversation, which a reaction can't. */
-const HOTSPOT_ONLY = ['goTo', 'pickUp', 'talk'] as const;
+/** Effects that move the player, need a hotspot or open a conversation: a reaction can't have them, but for those `allowed`. */
+const HOTSPOT_ONLY = ['goTo', 'goBack', 'pickUp', 'talk'] as const;
 
-function readReaction(reaction: Field, known: Known): Reaction {
-  const when = reaction.get('when').optional((field) => conditions(field, known));
+/** `inWorld`: the reaction's conditions may be `world` ones, as an item's `onUse` may. */
+function readReaction(
+  reaction: Field,
+  known: Known,
+  allowed: readonly (typeof HOTSPOT_ONLY)[number][] = [],
+  inWorld = false,
+): Reaction {
+  const when = reaction.get('when').optional((field) => conditions(field, known, inWorld));
   const effects = reaction.get('effects').list((field) => {
     const effect = readEffect(field, known);
-    if (HOTSPOT_ONLY.some((kind) => kind in effect)) field.problem("goes only in a hotspot's interactions");
+    if (HOTSPOT_ONLY.some((kind) => kind in effect && !allowed.includes(kind))) {
+      field.problem("goes only in a hotspot's interactions");
+    }
     return effect;
   });
   return { ...(when !== undefined && { when }), effects };
@@ -258,7 +275,7 @@ function readRoom(room: Field, known: Known): Room {
   const place = room.get('place');
   const verb = place.get('verb').text();
   const name = place.get('name').text();
-  const hint = room.get('hint').string();
+  const hint = named(room.get('hint').string());
   const floor = room.get('walkable').checked((field) => field.list((point) => point.point()));
   if (floor && !isConvex(floor)) room.get('walkable').problem('must be a convex polygon of at least 3 points');
   const walkable = floor && isConvex(floor) ? floor : undefined;
@@ -287,7 +304,18 @@ function readRoom(room: Field, known: Known): Room {
     };
   });
 
-  return { world, model, label, place: { verb, name }, hint, start, walkable: floor ?? [], hotspots };
+  const onStart = room.get('onStart').optional((field) => field.list((reaction) => readReaction(reaction, known)));
+  return {
+    world,
+    model,
+    label,
+    place: { verb, name },
+    hint,
+    start,
+    walkable: floor ?? [],
+    hotspots,
+    ...(onStart !== undefined && { onStart }),
+  };
 }
 
 const TARGETS = kindsOf<HotspotTarget>()(['entity', 'node']);
@@ -345,13 +373,25 @@ function kindOf<K extends string>(field: Field, kinds: readonly K[]): K | undefi
   return undefined;
 }
 
-function conditions(list: Field, known: Known): Condition[] {
-  return list.list((condition) => readCondition(condition, known));
+/** `inWorld`: `world` conditions are allowed, as only an item's `onUse` knows the world it is used in. */
+function conditions(list: Field, known: Known, inWorld = false): Condition[] {
+  return list.list((condition) => readCondition(condition, known, inWorld));
 }
 
-const CONDITIONS = kindsOf<Condition>()(['has', 'pickedUp', 'gathered', 'flag', 'stat', 'act', 'goal', 'not']);
+const CONDITIONS = kindsOf<Condition>()([
+  'has',
+  'pickedUp',
+  'gathered',
+  'flag',
+  'stat',
+  'act',
+  'goal',
+  'visited',
+  'world',
+  'not',
+]);
 
-function readCondition(condition: Field, known: Known): Condition {
+function readCondition(condition: Field, known: Known, inWorld: boolean): Condition {
   switch (kindOf(condition, CONDITIONS)) {
     case 'has':
       return { has: condition.get('has').id('item', known.item) };
@@ -369,8 +409,15 @@ function readCondition(condition: Field, known: Known): Condition {
       return { act: condition.get('act').id('act', known.act) };
     case 'goal':
       return { goal: condition.get('goal').id('goal', known.goal) };
+    case 'visited':
+      return { visited: condition.get('visited').id('room', known.room) };
+    case 'world': {
+      const world = condition.get('world');
+      if (!inWorld) world.problem("goes only in an item's onUse");
+      return { world: world.id('world', known.world) };
+    }
     case 'not':
-      return { not: readCondition(condition.get('not'), known) };
+      return { not: readCondition(condition.get('not'), known, inWorld) };
     case undefined:
       return { flag: '' };
   }
@@ -379,6 +426,8 @@ function readCondition(condition: Field, known: Known): Condition {
 const EFFECTS = kindsOf<Effect>()([
   'say',
   'goTo',
+  'goBack',
+  'wait',
   'pickUp',
   'give',
   'take',
@@ -393,11 +442,22 @@ function readEffect(effect: Field, known: Known): Effect {
   switch (kindOf(effect, EFFECTS)) {
     case 'say': {
       const by = effect.get('by').optional((field) => field.id('character', known.character));
-      return { say: effect.get('say').text(), ...(by !== undefined && { by }) };
+      return { say: named(effect.get('say').text()), ...(by !== undefined && { by }) };
     }
     case 'goTo': {
       const at = effect.get('at').optional((field) => field.checked((f) => f.point()));
       return { goTo: effect.get('goTo').id('room', known.room), ...(at !== undefined && { at }) };
+    }
+    case 'goBack': {
+      const goBack = effect.get('goBack');
+      if (goBack.value !== true) goBack.problem('must be true');
+      return { goBack: true };
+    }
+    case 'wait': {
+      const ms = effect.get('wait');
+      const wait = ms.number();
+      if (typeof ms.value === 'number' && !(wait > 0)) ms.problem('must be more than 0');
+      return { wait };
     }
     case 'pickUp':
       return { pickUp: effect.get('pickUp').id('item', known.item) };
@@ -419,6 +479,9 @@ function readEffect(effect: Field, known: Known): Effect {
       return { say: '' };
   }
 }
+
+/** Content text with `{protagonist}` for the protagonist's name (CLAUDE.md: the name lives only in protagonist.ts). */
+const named = (text: string): string => text.replaceAll('{protagonist}', PROTAGONIST.name);
 
 /** A `goTo` leads to a room in the same world (worlds are entered from the switcher), onto its floor. */
 function checkExits(field: Field, room: Room, rooms: Readonly<Record<string, Room>>, known: Known): void {

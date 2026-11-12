@@ -26,11 +26,31 @@ describe('toSave', () => {
       act: '1',
       goals: ['working-guitar'],
       stats: { followers: 10, musicians: 0, practice: 0, instruments: 1 },
+      visited: ['coach-station'],
     });
+  });
+
+  it('saves the rooms visited and where going back returns to', () => {
+    const back = { room: 'opening', at: { x: 700, y: 580 } };
+    const state = { ...newGame(content), room: 'map', visited: ['coach-station', 'opening', 'map'], back };
+    const save = toSave(state);
+    expect(save).toMatchObject({ visited: ['coach-station', 'opening', 'map'], back });
+    expect(isSaveGame({ ...save, savedAt: 'now' })).toBe(true);
+    expect(fromSave(save, content)).toMatchObject({ visited: state.visited, back });
   });
 });
 
 describe('fromSave', () => {
+  it('resumes a save from before #116 having visited only its room, with nowhere to go back to', () => {
+    const state = fromSave({ version: 1, room: 'pub' }, content);
+    expect(state.visited).toEqual(['pub']);
+    expect(state.back).toBeNull();
+  });
+
+  it('drops a place to go back to that the content no longer has', () => {
+    expect(fromSave({ version: 1, room: 'map', back: { room: 'gone' } }, content).back).toBeNull();
+  });
+
   it("resumes a save without a spot at the room's start", () => {
     const state = fromSave({ version: 1, room: 'pub' }, content);
     expect(state.at).toEqual(content.rooms.pub?.start);
@@ -116,7 +136,7 @@ describe('isSaveGame', () => {
     expect(isSaveGame(full)).toBe(true);
   });
 
-  it('rejects a malformed spot, inventory, journey, flags or progress', () => {
+  it('rejects a malformed spot, inventory, journey, flags, progress, visited rooms or place to go back to', () => {
     expect(isSaveGame({ ...game, at: { x: 1 } })).toBe(false);
     expect(isSaveGame({ ...game, inventory: { items: 'flyer', pickedUp: [] } })).toBe(false);
     expect(isSaveGame({ ...game, journey: { left: { street: { at: { x: 1, y: 2 } } }, gathered: [] } })).toBe(false);
@@ -127,5 +147,7 @@ describe('isSaveGame', () => {
     expect(isSaveGame({ ...game, goals: 'pub-job' })).toBe(false);
     expect(isSaveGame({ ...game, stats: { followers: '10' } })).toBe(false);
     expect(isSaveGame({ ...game, stats: [10] })).toBe(false);
+    expect(isSaveGame({ ...game, visited: 'pub' })).toBe(false);
+    expect(isSaveGame({ ...game, back: { at: { x: 1, y: 2 } } })).toBe(false);
   });
 });
