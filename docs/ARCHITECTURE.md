@@ -26,7 +26,7 @@ The skeleton is small (about 1,260 lines of TypeScript) and tidy, with good unit
 
 What is already right, and stays: data-driven rooms, the `SaveStore` interface (local plus backend, newest wins), DOM-first accessible controls, the `#game` `data-*` test interface, the CSP discipline, `theme.ts` tokens, and the acceptance-test conventions.
 
-The backend talks to the frontend through two endpoints only: `/saves` (`GET`, `PUT`, `DELETE`, keyed by `X-Player-Id`, body = `SaveGame`) and, from #6, `POST /dialogue/turn` (`{character, reply, carrying}` → `{line, options[{text, reaches_goal}], goal_reached, ended}`). Character sheets for the AI live in the backend (`backend/src/punland_api/content/characters/<id>.json`). The frontend's character ids MUST be the same ids. This plan does not touch `backend/`.
+The backend talks to the frontend through these endpoints only: `/saves` (`GET`, `PUT`, `DELETE`, keyed by `X-Player-Id`, body = `SaveGame`); from #6, `POST /dialogue/turn` (`{character, reply, carrying}` → `{line, options[{text, reaches_goal}], goal_reached, ended}`); and, from #122, owner sign-in (`openspec/specs/editor`): `GET /me` (→ `{owner, google_client_id}`), `POST /auth/google` (`{credential, nonce}` → `{owner}`, setting the `punland_owner` session cookie only for the owner; any refusal is the same `200 {"owner": false}`), `POST /auth/signout`, and the owner-only routes behind `require_owner` in `owner.py` (`GET /editor/ping` so far). Every owner route needs the `X-Punland-CSRF: 1` header and is called with credentials. Character sheets for the AI live in the backend (`backend/src/punland_api/content/characters/<id>.json`). The frontend's character ids MUST be the same ids. This plan does not touch `backend/`.
 
 ## 2. Layers
 
@@ -36,7 +36,7 @@ frontend/src/
   rules/         pure: commands -> (state, events); tick (walking); interactions, conditions, effects
   content/       JSON content + loaders/validators -> domain Content (worlds, rooms, items, characters, objects)
   assets/        model registry: entity id -> its 3D model (glb + metadata) + validators
-  services/      infrastructure: api.ts, save stores (local, backend), player id, storage, dialogue client
+  services/      infrastructure: api.ts, save stores (local, backend), player id, storage, dialogue client, owner sign-in
   presentation/
     renderer.ts  the Renderer interface and its types (no engine imports)
     ui/          DOM overlay: UI bar, action line, speech, hotspot buttons, inventory, world switcher, dialogue panel

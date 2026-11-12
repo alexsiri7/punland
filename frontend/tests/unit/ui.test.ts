@@ -43,12 +43,14 @@ describe('the DOM UI', () => {
     state = newGame(given),
     picksHotspots = false,
     anchors = {},
+    owner = false,
   }: {
     given?: Content;
     head?: ScenePoint;
     state?: GameState;
     picksHotspots?: boolean;
     anchors?: Record<string, ScenePoint>;
+    owner?: boolean;
   } = {}) {
     const game = new GameSession(given, state, { save: async () => {} });
     const canvas = document.createElement('canvas');
@@ -64,7 +66,7 @@ describe('the DOM UI', () => {
       hotspotBounds: (id: string) => bounds[given.rooms[game.state.room]!.model]?.[id] ?? null,
       anchor: (who: string) => (who === 'player' ? head : (anchors[who] ?? null)),
     };
-    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name), left: () => {} }, dialogue);
+    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name), left: () => {} }, dialogue, owner);
     ui.shown();
     const text = (selector: string) => container.querySelector(selector)?.textContent;
     const button = (group: string, name: string) =>
@@ -72,6 +74,16 @@ describe('the DOM UI', () => {
     const frame = () => frames.forEach((callback) => callback(16));
     return { game, ui, text, button, frame };
   }
+
+  it('shows the Edit button to the owner only, disabled until edit mode exists', () => {
+    mount();
+    expect(container.querySelector('.edit-button')).toBeNull();
+    container.replaceChildren();
+    mount({ owner: true });
+    const edit = container.querySelector<HTMLButtonElement>('.edit-button');
+    expect(edit?.textContent).toBe('Edit');
+    expect(edit?.disabled).toBe(true);
+  });
 
   it("shows the room's label, place and hint in the UI bar", () => {
     const { text } = mount();
