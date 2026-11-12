@@ -13,7 +13,7 @@
     {
       "id": "scene/feed",
       "kind": "scene",
-      "model3d": { "file": "models/scenes/feed.glb", "placeholder": true }
+      "model3d": { "file": "models/scenes/feed.glb", "placeholder": false }
     },
     {
       "id": "scene/dream",

@@ -110,6 +110,19 @@ def rect(x: float, y: float, w: float, h: float) -> list[tuple[float, float]]:
     return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
 
 
+def rounded(
+    x: float, y: float, w: float, h: float, r: float, steps: int = 4
+) -> list[tuple[float, float]]:
+    """A pixel rect's outline with its corners rounded `r` pixels, `steps` segments a corner."""
+    corners = ((x + w - r, y + r, -90), (x + w - r, y + h - r, 0))
+    corners += ((x + r, y + h - r, 90), (x + r, y + r, 180))
+    return [
+        (cx + r * math.cos(t), cy + r * math.sin(t))
+        for cx, cy, start in corners
+        for t in (math.radians(start + 90 * i / steps) for i in range(steps + 1))
+    ]
+
+
 def border(x: float, y: float, w: float, h: float, bar: float) -> list[list[tuple[float, float]]]:
     """A pixel rect's border, `bar` pixels wide: its top, bottom, left and right strips."""
     return [
