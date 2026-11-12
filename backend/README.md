@@ -34,3 +34,32 @@ Character sheets are content data in `src/punland_api/content/characters/<id>.js
   canned line and the conversation ends (`ended: true`, no options) until the day turns over.
 - Conversations are kept per player and character in the `conversations` table, next to the save;
   `DELETE /saves` (New game) clears them. Without a usable database they are kept in memory.
+
+## Owner sign-in
+
+The owner-only scene editor (`openspec/specs/editor`) starts with the owner signing in with
+Google. Every route below needs the header `X-Punland-CSRF: 1`, or answers 403.
+
+- `GET /me` answers `{"owner", "google_client_id"}`: whether the request carries the owner's
+  session, and the Google client id when sign-in is configured (null otherwise, and the title
+  screen offers no sign-in).
+- `POST /auth/google` (`{"credential", "nonce"}`, the ID token from Google's redirect sign-in)
+  checks the token with Google's tokeninfo endpoint, then its audience, issuer, expiry, nonce and
+  verified email. Only `OWNER_EMAIL` gets `{"owner": true}` and the `punland_owner` cookie
+  (HMAC-signed, HttpOnly, Secure, SameSite=Strict, 12 h). Every refusal is the same
+  `{"owner": false}` with no cookie. 404 when sign-in is not configured.
+- `POST /auth/signout` clears the cookie.
+- Owner-only routes depend on `require_owner` in `owner.py` (401 without a valid session);
+  `GET /editor/ping` is the sample one.
+
+Sign-in needs all three of these; without them nobody can sign in and the game is unchanged:
+
+- `GOOGLE_CLIENT_ID`: a Google OAuth "Web application" client with the authorized redirect URI
+  `https://punland.interstellarai.net/` (exactly, trailing slash; add `http://localhost:5173/`
+  for dev).
+- `OWNER_EMAIL`: the owner's Google account. Changing it ends the old session.
+- `SESSION_SECRET`: signs the session cookie, e.g.
+  `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Changing it ends every session.
+
+The cookie is host-only on the API, so the owner session works on the production site and on
+localhost, not on Pages previews (another site, so a SameSite=Strict cookie never goes there).

@@ -78,13 +78,15 @@ frontend/
                         content and the model files, with each room's hit_<node> nodes and floor points,
                         run in unit tests)
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), dialogue.ts
-                        (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
+                        (BackendDialogue: POST /dialogue/turn), owner.ts (owner sign-in: /me, Google redirect,
+                        sign-out), player.ts, storage.ts
   src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
                         theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
                         session.ts (the Session interface the UI sees)
   src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, renderer, on, dialogue), overlay.ts
                         (lines it up with the renderer's canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts,
-                        inventory.ts, worlds.ts, dialogue.ts (the conversation panel), progress.ts (career stats, the act's goals)
+                        inventory.ts, worlds.ts, dialogue.ts (the conversation panel), progress.ts (career stats, the act's goals),
+                        edit.ts (the owner's Edit button)
   src/presentation/three3d/  the only folder that imports three, the game's renderer: renderer.ts (Three3dRenderer
                         implements Renderer; a WebGL canvas with the scene over the UI bar, the grain overlay, a message on #game
                         without WebGL), room.ts (one SceneView: the room's scene model seen from its cam_main, the models
@@ -114,6 +116,7 @@ frontend/
 backend/
   src/punland_api/app.py     FastAPI app factory, CORS, /health
   src/punland_api/config.py  settings from env vars
+  src/punland_api/owner.py   owner sign-in: Google ID token check, the session cookie, CSRF, /me
   tests/                     pytest
 art/blender/            the Blender sources: <id>.py builds a model from scratch with bpy and exports its glb to
                         frontend/public/models/ (protagonist.py and opening.py so far), lib/ the helpers they share (rig.py: a
