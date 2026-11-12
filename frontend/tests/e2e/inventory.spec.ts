@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures';
 import {
+  arrive,
   clickHotspot,
   clickScene,
   content,
@@ -85,7 +86,7 @@ test('A use that does not work', async ({ page }) => {
 test('Using the map', async ({ page }) => {
   // Requirement: Using items. The map, picked up at the coach station, is used on its own: the
   // Map opens.
-  await newGame(page);
+  await arrive(page);
   await clickHotspot(page, content.mapStand);
   await inventoryItem(page, content.mapItem).click();
   await expect(game(page)).toHaveAttribute('data-scene', content.map);
@@ -104,6 +105,7 @@ test('Two items that do not go together', async ({ page }) => {
 
 test('New game', async ({ page }) => {
   // Requirement: Starting inventory. A new game starts with the broken guitar in the inventory.
+  test.slow();
   await newGame(page);
   await expect(inventoryItem(page, content.brokenGuitar)).toBeVisible();
 });

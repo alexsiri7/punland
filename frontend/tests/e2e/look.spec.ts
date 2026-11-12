@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { newGame, playerModel, startSceneModel } from './play';
+import { arrive, playerModel, startSceneModel } from './play';
 
 // docs/design/STYLE.md: the Tune Story look. Fonts are self-hosted (the CSP allows fonts
 // from 'self' only) and the room a new game starts in is drawn from its models.
@@ -20,6 +20,6 @@ test('the coach station loads its models', async ({ page }) => {
   page.on('response', (res) => {
     if (res.url().includes('/models/') && res.ok()) models.push(new URL(res.url()).pathname);
   });
-  await newGame(page);
+  await arrive(page);
   await expect.poll(() => models).toEqual(expect.arrayContaining([startSceneModel, playerModel]));
 });

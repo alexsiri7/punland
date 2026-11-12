@@ -1,6 +1,7 @@
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
 import type { DialogueTurn, SaveGame } from '../../src/domain';
+import { PROTAGONIST } from '../../src/content/protagonist';
 import { SAVE_KEY } from '../../src/services/save';
 import { expect } from './fixtures';
 
@@ -132,10 +133,21 @@ export const openingSceneModel = '/models/scenes/opening.glb';
 /** The protagonist's model, which the renderer draws the player with in every room. */
 export const playerModel = '/models/characters/protagonist.glb';
 
-/** The Arrival's first line: the player has control once it is said. */
-export const ARRIVED = 'Punland.';
+/** The Arrival's lines, in order: the player has control once the last has gone. */
+export const ARRIVAL = [
+  'Punland.',
+  `Hi, I'm ${PROTAGONIST.name}, and I want to be a star!`,
+  'A star? Son, the only star I know about is the one on my badge.',
+  "But you could try The Three Crows. That's where the music lot go.",
+  'Three crows? We only had the one crow in Literal Village.',
+  "It's a pub, son. Grab a map from the stand. You'll get lost otherwise.",
+  'Oh! Right. Thanks. Bye!',
+] as const;
 
-/** Starts a new game, and waits in the coach station until the Arrival hands the player control. */
+/**
+ * Starts a new game, and waits in the coach station until the Arrival hands the player control.
+ * The Arrival takes about half a minute: a test that calls this is `test.slow()`.
+ */
 export async function newGame(page: Page): Promise<void> {
   const requested: string[] = [];
   page.on('request', (request) => requested.push(new URL(request.url()).pathname));
@@ -143,7 +155,16 @@ export async function newGame(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
   await expect.poll(() => requested, 'the renderer loads the player model').toContain(playerModel);
-  await expect(game(page)).toHaveAttribute('data-say', ARRIVED, { timeout: 10_000 });
+  await expect(game(page)).toHaveAttribute('data-say', ARRIVAL[6], { timeout: 40_000 });
+  await expect(game(page)).toHaveAttribute('data-say', '', { timeout: 10_000 });
+}
+
+/** Continues a game saved in the coach station just after the Arrival: a new game, less the wait. */
+export async function arrive(page: Page): Promise<void> {
+  await seedSave(page, { room: content.coachStation, act: '1', goals: [], stats: content.newStats, flags: { arrived: true } });
+  await continueGame(page);
+  await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
+  await expect.poll(() => playerPosition(page)).not.toBeNull();
 }
 
 /** Up the road from the coach station to outside The Three Crows. */
@@ -152,9 +173,9 @@ export async function toOutsidePub(page: Page): Promise<void> {
   await expect(game(page)).toHaveAttribute('data-scene', content.opening, { timeout: 10_000 });
 }
 
-/** Starts a new game and walks up the road, to outside The Three Crows. */
+/** Starts just after the Arrival and walks up the road, to outside The Three Crows. */
 export async function startOutsidePub(page: Page): Promise<void> {
-  await newGame(page);
+  await arrive(page);
   await toOutsidePub(page);
 }
 

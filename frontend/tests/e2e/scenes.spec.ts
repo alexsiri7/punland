@@ -1,7 +1,8 @@
 import { expect, test } from './fixtures';
 import { fixtures } from '../fixtures/models/glb';
-import { PROTAGONIST } from '../../src/content/protagonist';
 import {
+  ARRIVAL,
+  arrive,
   clickHotspot,
   clickScene,
   content,
@@ -9,7 +10,6 @@ import {
   game,
   hotspot,
   inventoryItem,
-  newGame,
   openingSceneModel,
   playerPosition,
   pointAtHotspot,
@@ -35,15 +35,7 @@ test('Opening scene', async ({ page }) => {
   await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
   await expect(hotspot(page, content.coach)).toBeAttached();
   await expect(hotspot(page, content.coach)).toHaveCount(0);
-  for (const line of [
-    'Punland.',
-    `Hi, I'm ${PROTAGONIST.name}, and I want to be a star!`,
-    'A star? Son, the only star I know about is the one on my badge.',
-    "But you could try The Three Crows. That's where the music lot go.",
-    'Three crows? We only had the one crow in Literal Village.',
-    "It's a pub, son. Grab a map from the stand. You'll get lost otherwise.",
-    'Oh! Right. Thanks. Bye!',
-  ]) {
+  for (const line of ARRIVAL) {
     await expect(game(page)).toHaveAttribute('data-say', line, { timeout: 10_000 });
   }
   await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
@@ -51,10 +43,25 @@ test('Opening scene', async ({ page }) => {
   await expect(hotspot(page, content.cop)).toBeAttached();
 });
 
+test('Clicking during the Arrival', async ({ page }) => {
+  // Requirement: Rooms. The player has control once the Arrival ends: a click while its lines
+  // are said walks nowhere and hushes none of them.
+  test.slow();
+  await page.goto('/');
+  await page.getByRole('button', { name: 'New game' }).click();
+  await expect(game(page)).toHaveAttribute('data-say', ARRIVAL[0], { timeout: 10_000 });
+  const start = await playerPosition(page);
+  await clickScene(page, content.pavement);
+  for (const line of ARRIVAL.slice(1)) {
+    await expect(game(page)).toHaveAttribute('data-say', line, { timeout: 10_000 });
+  }
+  expect(await playerPosition(page)).toEqual(start);
+});
+
 test('The coach station', async ({ page }) => {
   // Requirement: The coach station. Its hint, and the cop, the map stand, the departures board
   // and the way up the road.
-  await newGame(page);
+  await arrive(page);
   await expect(page.getByText('Where every dreamer gets off. Free maps by the exit.')).toBeVisible();
   for (const name of [content.cop, content.mapStand, content.departures, content.upTheRoad]) {
     await expect(hotspot(page, name)).toBeAttached();
@@ -63,7 +70,7 @@ test('The coach station', async ({ page }) => {
 
 test('Picking up a map', async ({ page }) => {
   // Requirement: The coach station. The map stand gives a free map, and then has only a line.
-  await newGame(page);
+  await arrive(page);
   await clickHotspot(page, content.mapStand);
   await expect(game(page)).toHaveAttribute('data-say', /"Punland: free map\." Free\?/);
   await expect(inventoryItem(page, content.mapItem)).toBeVisible();
@@ -77,7 +84,7 @@ test('Picking up a map', async ({ page }) => {
 
 test('Looking at the departures board', async ({ page }) => {
   // Requirement: The coach station. The departures board has the coach home.
-  await newGame(page);
+  await arrive(page);
   await clickHotspot(page, content.departures);
   await expect(game(page)).toHaveAttribute(
     'data-say',
@@ -98,7 +105,7 @@ test('Up the road', async ({ page }) => {
 test('The map', async ({ page }) => {
   // Requirement: The map. Using the map shows the places the cat knows about; a marked place
   // goes there, and closing the map goes back where it was opened.
-  await newGame(page);
+  await arrive(page);
   await clickHotspot(page, content.mapStand);
   await expect(inventoryItem(page, content.mapItem)).toBeVisible();
   await toOutsidePub(page);
@@ -139,7 +146,7 @@ test('The map marks the Mayor’s office once the strings are sold out', async (
 
 test('Walking', async ({ page }) => {
   // Requirement: Click to walk. The player character walks to the point clicked on the floor.
-  await newGame(page);
+  await arrive(page);
   await clickScene(page, content.pavement);
   await expect
     .poll(async () => {
@@ -158,7 +165,7 @@ test('Hovering a hotspot', async ({ page }) => {
 
 test('Clicking a hotspot', async ({ page }) => {
   // Requirement: Hotspots. Clicking one walks the character to it and its action happens.
-  await newGame(page);
+  await arrive(page);
   const start = await playerPosition(page);
   await clickHotspot(page, content.board);
   await expect(game(page)).toHaveAttribute('data-say', /\S/);

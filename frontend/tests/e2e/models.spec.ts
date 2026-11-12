@@ -1,13 +1,13 @@
 import { fixtures } from '../fixtures/models/glb';
 import { expect, test } from './fixtures';
 import {
+  arrive,
   clickHotspot,
   clickScene,
   content,
   conversation,
   game,
   hotspot,
-  newGame,
   playerModel,
   playerPosition,
   pointAtHotspot,
@@ -28,7 +28,7 @@ test('Opening scene in 3D', async ({ page }) => {
   page.on('response', (response) => {
     if (response.ok()) loaded.push(new URL(response.url()).pathname);
   });
-  await newGame(page);
+  await arrive(page);
   await expect.poll(() => loaded).toEqual(expect.arrayContaining([startSceneModel, playerModel]));
   const webgl = await page
     .locator('#game canvas')
@@ -64,7 +64,7 @@ test('Hovering a model', async ({ page }) => {
 test('Clicking a model', async ({ page }) => {
   // Requirement: Picking in 3D. A click on a hotspot's model walks the character to it and
   // activates the hotspot.
-  await newGame(page);
+  await arrive(page);
   const start = await playerPosition(page);
   await clickHotspot(page, content.board);
   await expect(game(page)).toHaveAttribute('data-say', /\S/);
@@ -73,7 +73,7 @@ test('Clicking a model', async ({ page }) => {
 
 test('Walking on a 3D floor', async ({ page }) => {
   // Requirement: Picking in 3D. A click on the floor walks the player there.
-  await newGame(page);
+  await arrive(page);
   await clickScene(page, content.pavement);
   await expect
     .poll(async () => {
@@ -86,7 +86,7 @@ test('Walking on a 3D floor', async ({ page }) => {
 test('Keyboard use in 3D', async ({ page }) => {
   // Requirement: Picking in 3D. The hotspot buttons leave the pointer to the canvas but stay for
   // the keyboard: Tab to a hotspot shows its name, Enter activates it.
-  await newGame(page);
+  await arrive(page);
   const start = await playerPosition(page);
   const board = hotspot(page, content.board);
   for (let tabs = 0; tabs < 20 && !(await board.evaluate((b) => b === document.activeElement)); tabs++) {
@@ -102,7 +102,7 @@ test('Keyboard use in 3D', async ({ page }) => {
 test('Walking animation', async ({ page }) => {
   // Requirement: Character animation. The player character plays its walk animation while it
   // walks and idle once it stops, mirrored on #game as data-player-animation.
-  await newGame(page);
+  await arrive(page);
   await clickScene(page, content.pavement);
   await expect(game(page)).toHaveAttribute('data-player-animation', 'walk');
   await expect(game(page)).toHaveAttribute('data-player-animation', 'idle');

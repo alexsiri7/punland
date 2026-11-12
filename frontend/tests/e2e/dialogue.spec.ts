@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import {
+  arrive,
   clickHotspot,
   content,
   conversation,
@@ -8,7 +9,6 @@ import {
   game,
   goal,
   inventoryItem,
-  newGame,
   startOutsidePub,
   stubDialogue,
   type DialogueTurn,
@@ -107,7 +107,7 @@ test('Talking to the beetroot cop', async ({ page }) => {
     asked.push(body);
     return reply('The music lot go to The Three Crows, the pub up the road.');
   });
-  await newGame(page);
+  await arrive(page);
   await clickHotspot(page, content.cop);
   await expect(conversation(page)).toHaveAccessibleName(content.cop);
   await expect(conversation(page)).toContainText('The Three Crows');
