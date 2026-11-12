@@ -3,6 +3,7 @@ import type { Renderer } from '../renderer';
 import type { Session } from '../session';
 import { createDialoguePanel, type DialogueBackend } from './dialogue';
 import { createHotspotLayer } from './hotspots';
+import { createEditButton } from './edit';
 import { createInventoryBar } from './inventory';
 import { createOverlay } from './overlay';
 import { createProgress } from './progress';
@@ -28,7 +29,7 @@ export interface Ui {
  * controls (its hotspot buttons and the world switcher) while the room is drawn. A new part is
  * created here and appended to the overlay's root. The overlay lines up with the renderer's
  * canvas. The name of the hotspot under the pointer goes to `on.hover`, and the player leaving a
- * conversation (Leave or Escape) to `on.left`.
+ * conversation (Leave or Escape) to `on.left`. The owner (`owner`) also gets the Edit button.
  */
 export function mountUi(
   container: HTMLElement,
@@ -36,6 +37,7 @@ export function mountUi(
   renderer: Pick<Renderer, 'picksHotspots' | 'canvas' | 'onResize' | 'hotspotBounds' | 'anchor' | 'frame'>,
   on: { hover(name: string): void; left(): void },
   dialogue: DialogueBackend,
+  owner = false,
 ): Ui {
   const doc = container.ownerDocument;
   const overlay = createOverlay(container);
@@ -52,6 +54,7 @@ export function mountUi(
     speech.element,
     conversation.element,
   );
+  if (owner) overlay.root.append(createEditButton(doc));
   /** The shown room's controls; none from a room change until the new room is shown. */
   let controls: RoomControls | null = null;
   /** The hotspot the pointer is over on the canvas, while the renderer picks hotspots. */
