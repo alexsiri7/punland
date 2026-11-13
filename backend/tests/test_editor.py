@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 from punland_api.app import create_app
 from punland_api.config import Settings
-from punland_api.editor import Layout, Refused, patch_room
+from punland_api.editor import Layout, Refused, layout_of, patch_room
 from punland_api.owner import COOKIE, SESSION_SECONDS, GoogleTokenInfo, sign_session
 
 CLIENT_ID = "test-client.apps.googleusercontent.com"
@@ -254,16 +254,6 @@ PUBLISHING = Settings(
 )
 
 
-def layout_of(room: dict[str, Any]) -> dict[str, Any]:
-    hotspots = {}
-    for h in room["hotspots"]:
-        hotspots[h["id"]] = {
-            "walkTo": h["walkTo"],
-            **({"at": h["target"]["at"]} if "at" in h["target"] else {}),
-        }
-    return {"start": room["start"], "walkable": room["walkable"], "hotspots": hotspots}
-
-
 def room_text(room: str = ROOM) -> str:
     return (ROOMS / f"{room}.json").read_text()
 
@@ -341,7 +331,8 @@ def publisher(
 
 
 def publish(c: TestClient, layout: dict[str, Any], **overrides: Any) -> httpx.Response:
-    body = {"layout": layout, "before": PNG, "after": PNG, **overrides}
+    base = layout_of(json.loads(room_text()))
+    body = {"base": base, "layout": layout, "before": PNG, "after": PNG, **overrides}
     return c.post(f"/editor/rooms/{ROOM}/publish", headers=CSRF, json=body)
 
 
@@ -409,6 +400,7 @@ def _layout(**changes: Any) -> dict[str, Any]:
         (_layout(start={"x": 1281, "y": 10}), {}),
         (_layout(start={"x": 10.5, "y": 10}), {}),
         (_layout(walkable=moved_cop()["walkable"][:2]), {}),
+        (_layout(walkable=[{"x": 600 + i, "y": 600} for i in range(33)]), {}),
         (layout_of(json.loads(room_text())), {}),
         (
             _layout(
@@ -428,14 +420,44 @@ def test_an_invalid_edit_is_refused(layout: dict[str, Any], overrides: dict[str,
     owner_cookie(c, sign_session(OWNER, SECRET, time.time()))
     res = publish(c, layout, **overrides)
     assert res.status_code == 422
-    assert isinstance(res.json()["detail"], (str, list))
+    assert isinstance(res.json()["detail"], str)
+    assert github.writes() == []
+
+
+def test_an_edit_too_big_to_take_says_why() -> None:
+    c, github = publisher()
+    owner_cookie(c, sign_session(OWNER, SECRET, time.time()))
+    res = publish(c, _layout(walkable=[{"x": 600 + i, "y": 600} for i in range(33)]))
+    assert res.status_code == 422
+    assert res.json()["detail"].startswith("The edit doesn't fit: layout.walkable: ")
+    assert "32" in res.json()["detail"]
+
+
+def test_an_edit_made_before_main_changed_is_refused() -> None:
+    # The room on main moved the cop since the page loaded; the owner only moved the start.
+    c, github = publisher()
+    owner_cookie(c, sign_session(OWNER, SECRET, time.time()))
+    base = layout_of(json.loads(room_text()))
+    base["hotspots"]["cop"]["at"] = {"x": 700, "y": 560}
+    layout = copy.deepcopy(base)
+    layout["start"] = {"x": layout["start"]["x"] + 1, "y": layout["start"]["y"]}
+    res = publish(c, layout, base=base)
+    assert res.status_code == 422
+    assert res.json() == {
+        "detail": "The room changed since this page loaded: reload the page to edit it again."
+    }
     assert github.writes() == []
 
 
 def test_publishing_an_unknown_room() -> None:
     c, github = publisher()
     owner_cookie(c, sign_session(OWNER, SECRET, time.time()))
-    body = {"layout": moved_cop(), "before": PNG, "after": PNG}
+    body = {
+        "base": layout_of(json.loads(room_text())),
+        "layout": moved_cop(),
+        "before": PNG,
+        "after": PNG,
+    }
     assert c.post("/editor/rooms/nowhere/publish", headers=CSRF, json=body).status_code == 404
     assert c.post("/editor/rooms/..%2Fsecrets/publish", headers=CSRF, json=body).status_code == 404
     assert github.writes() == []
@@ -457,7 +479,12 @@ def test_publishing_without_a_session(
         owner_cookie(c, sign_session(OWNER, SECRET, time.time()))
     elif cookie == "forged":
         owner_cookie(c, _tampered())
-    body = {"layout": moved_cop(), "before": PNG, "after": PNG}
+    body = {
+        "base": layout_of(json.loads(room_text())),
+        "layout": moved_cop(),
+        "before": PNG,
+        "after": PNG,
+    }
     assert c.post(f"/editor/rooms/{ROOM}/publish", headers=headers, json=body).status_code == status
     assert github.requests == []
 
@@ -485,13 +512,14 @@ def test_patching_a_room_keeps_every_other_byte(path: Path) -> None:
     text = path.read_text()
     room = json.loads(text)
     layout = layout_of(room)
+    base = Layout.model_validate(layout)
     with pytest.raises(Refused, match="Nothing to publish"):
-        patch_room(text, Layout.model_validate(layout))
+        patch_room(text, base, base)
 
     layout["start"] = {"x": layout["start"]["x"] + 1, "y": layout["start"]["y"]}
     corners = layout["walkable"]
     layout["walkable"] = [*corners[:1], {"x": 640, "y": 600}, *corners[1:]]
-    patched = patch_room(text, Layout.model_validate(layout))
+    patched = patch_room(text, base, Layout.model_validate(layout))
     expected = copy.deepcopy(room)
     expected["start"] = layout["start"]
     expected["walkable"] = layout["walkable"]

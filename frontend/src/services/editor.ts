@@ -49,12 +49,12 @@ const REFUSED: Readonly<Record<number, string>> = {
 };
 
 /**
- * Sends a room's layout and its before/after screenshots (base64 PNG) to the backend, which
+ * Sends a room's draft and its before/after screenshots (base64 PNG) to the backend, which
  * opens a pull request with it. Never fails: a refusal comes back with the reason to show.
  */
 export async function publishRoom(
   room: string,
-  layout: RoomLayout,
+  { base: from, layout }: Draft,
   shots: { before: string; after: string },
   options: Partial<OwnerOptions> = {},
 ): Promise<PublishResult> {
@@ -66,7 +66,7 @@ export async function publishRoom(
       ownerRequest({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ layout, ...shots }),
+        body: JSON.stringify({ base: from, layout, ...shots }),
       }),
     );
   } catch {

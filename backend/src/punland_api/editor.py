@@ -1,10 +1,12 @@
 """The owner's scene editor: publishing a room's edited layout as a pull request (#123).
 
-The game checks an edit with the content validator before sending it; here the edit is only
-checked for its shape against the room's file on main, whose point lines are then rewritten in
-place, every other byte kept. The pull request changes that file alone: its before/after
-screenshots go in a first commit that the second one takes back out, and its body shows them
-from that first commit. EDITOR_GITHUB_TOKEN never leaves the server.
+The game checks an edit with the content validator before sending it, against the layout the
+room had when the page loaded (its base); here the edit is only checked for its shape, and main's
+room file must still have that base, so the pull request moves only what the owner moved. The
+file's point lines are then rewritten in place, every other byte kept. The pull request changes
+that file alone: its before/after screenshots go in a first commit that the second one takes
+back out, and its body shows them from that first commit.
+EDITOR_GITHUB_TOKEN never leaves the server.
 """
 
 import base64
@@ -15,11 +17,11 @@ import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from json.decoder import scanstring
-from typing import Any
+from typing import Annotated, Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Body, Depends, HTTPException
+from pydantic import BaseModel, Field, ValidationError
 
 from .config import Settings
 from .owner import csrf, owner_check
@@ -54,6 +56,8 @@ class Layout(BaseModel):
 
 
 class Publish(BaseModel):
+    # The room's layout as the game had it when the edit began, and the edited layout.
+    base: Layout
     layout: Layout
     # Base64 PNG: MAX_SCREENSHOT_BYTES encoded, with room to spare.
     before: str = Field(max_length=4_200_000)
@@ -137,16 +141,34 @@ def _point(p: Point) -> str:
     return f'{{ "x": {p.x}, "y": {p.y} }}'
 
 
-def patch_room(text: str, layout: Layout) -> str:
-    """The room file with the layout's points in it, written as the room files write them."""
+def layout_of(room: dict[str, Any]) -> dict[str, Any]:
+    """A room file's points, as a layout dumps them."""
+    return {
+        "start": room["start"],
+        "walkable": room["walkable"],
+        "hotspots": {
+            h["id"]: {
+                "walkTo": h["walkTo"],
+                **({"at": h["target"]["at"]} if "at" in h["target"] else {}),
+            }
+            for h in room["hotspots"]
+        },
+    }
+
+
+def patch_room(text: str, base: Layout, layout: Layout) -> str:
+    """The room file with the layout's points in it, written as the room files write them.
+
+    Refused unless the file still has the base layout: a point the owner didn't move is never
+    written, so an edit made before main changed can't take that change back out.
+    """
     root = _read(text, 0)
+    if layout_of(root.value) != base.model_dump(exclude_none=True):
+        raise Refused("The room changed since this page loaded: reload the page to edit it again.")
     hotspots = root.get("hotspots")
     ids = [h.value["id"] for h in hotspots.children]
-    unknown = sorted(set(layout.hotspots) - set(ids))
-    if unknown:
-        raise Refused(f'The room changed since this page loaded: no hotspot "{unknown[0]}".')
-    if set(ids) - set(layout.hotspots):
-        raise Refused("Every hotspot needs its walk-to point.")
+    if set(layout.hotspots) != set(ids):
+        raise Refused("The edit must keep the room's hotspots, each with its walk-to point.")
 
     edits: list[tuple[int, int, str]] = []
 
@@ -202,6 +224,13 @@ def changes(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
             if was != now:
                 lines.append(f"hotspots[id={old['id']}].{field}: {point(was)} → {point(now)}")
     return lines
+
+
+def refusal(error: ValidationError) -> str:
+    """A publish body's first problem, for the owner."""
+    first = error.errors()[0]
+    where = ".".join(str(part) for part in first["loc"])
+    return f"The edit doesn't fit: {where}: {first['msg']}."
 
 
 def screenshot(data: str) -> str:
@@ -277,7 +306,7 @@ async def open_pull_request(github: GitHub, room: str, body: Publish, now: datet
             raise HTTPException(status_code=404, detail="No such room.") from error
         raise
     text = base64.b64decode(file["content"]).decode()
-    patched = patch_room(text, body.layout)
+    patched = patch_room(text, body.base, body.layout)
 
     stamp = now.strftime("%Y%m%d-%H%M%S")
     shots = {
@@ -324,9 +353,14 @@ def router(settings: Settings, transport: httpx.AsyncBaseTransport | None = None
         status_code=201,
         dependencies=[Depends(owner_check(settings))],
     )
-    async def publish(room: str, body: Publish) -> Published:
+    async def publish(room: str, raw: Annotated[Any, Body()]) -> Published:
         if not ROOM_ID.match(room):
             raise HTTPException(status_code=404, detail="No such room.")
+        # Validated here, not by FastAPI, so that every refusal's detail is one line to show.
+        try:
+            body = Publish.model_validate(raw)
+        except ValidationError as error:
+            raise HTTPException(status_code=422, detail=refusal(error)) from error
         if not settings.editor_github_token:
             raise HTTPException(status_code=503, detail="Publishing isn't set up.")
         try:

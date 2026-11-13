@@ -264,12 +264,15 @@ test('Publishing opens a pull request', async ({ page }) => {
   const request = sent as Request | null;
   expect(request?.method()).toBe('POST');
   expect(await request?.headerValue('X-Punland-CSRF')).toBe('1');
+  type Layout = { hotspots: Record<string, { at?: { x: number; y: number } }> };
   const body = request?.postDataJSON() as {
-    layout: { hotspots: Record<string, { at?: { x: number; y: number } }> };
+    base: Layout;
+    layout: Layout;
     before: string;
     after: string;
   };
   const at = body.layout.hotspots.cop?.at;
+  expect(body.base.hotspots.cop?.at).toEqual({ x: 1040, y: 552 });
   expect(Math.abs((at?.x ?? 0) - newCopSpot.x)).toBeLessThanOrEqual(2);
   expect(Math.abs((at?.y ?? 0) - newCopSpot.y)).toBeLessThanOrEqual(2);
   for (const [name, png] of [

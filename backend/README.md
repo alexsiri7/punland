@@ -52,13 +52,15 @@ Google. Every route below needs the header `X-Punland-CSRF: 1`, or answers 403.
 - Owner-only routes depend on `owner_check` in `owner.py` (401 without a valid session);
   `GET /editor/ping` is the sample one.
 - `POST /editor/rooms/{room}/publish` (`editor.py`, #123) takes a room's edited points
-  (`{"layout": {"start", "walkable", "hotspots": {id: {"walkTo", "at"?}}}, "before", "after"}`,
-  the screenshots as base64 PNG) and opens a pull request on `alexsiri7/punland`, labelled
+  (`{"base", "layout", "before", "after"}`: `base` is the room's layout when the edit began and
+  `layout` the edited one, each `{"start", "walkable", "hotspots": {id: {"walkTo", "at"?}}}`, the
+  screenshots as base64 PNG) and opens a pull request on `alexsiri7/punland`, labelled
   `editor`, that changes only `frontend/src/content/rooms/<room>.json`: just the moved points'
   lines of main's copy are rewritten. The screenshots go in a first commit the second takes back
-  out, and the PR body shows them from the first. 201 `{"url", "number"}`; 422 for an edit that
-  doesn't fit main's file (the game checks it with the content validator before sending it, and
-  the PR's CI checks it again); 502 when GitHub refuses; 503 without `EDITOR_GITHUB_TOKEN`.
+  out, and the PR body shows them from the first. 201 `{"url", "number"}`; 422, with a one-line
+  `detail`, for an edit begun before main's file last changed (its `base` isn't main's) or one
+  that doesn't fit main's file (the game checks it with the content validator before sending it,
+  and the PR's CI checks it again); 502 when GitHub refuses; 503 without `EDITOR_GITHUB_TOKEN`.
 
 Sign-in needs all three of these; without them nobody can sign in and the game is unchanged:
 

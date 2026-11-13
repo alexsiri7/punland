@@ -89,6 +89,12 @@ Publishing SHALL check the edited room with the content validator and the room's
 #### Scenario: An invalid edit is refused
 - WHEN the owner publishes an edit that breaks the room, such as a floor that is not convex
 - THEN publishing is refused with a message and no pull request is opened
+- AND another room's draft never keeps a room from being published
+
+#### Scenario: The room changed since the edit began
+- GIVEN the room's file changed on main after the page loaded
+- WHEN the owner publishes an edit of it
+- THEN publishing is refused with a message and no pull request is opened, so no point the owner didn't move is taken back
 
 #### Scenario: Publishing without a session
 - WHEN the publish endpoint is called without the owner's session or the CSRF header

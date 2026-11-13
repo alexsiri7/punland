@@ -18,7 +18,7 @@ function answering(status: number, body: unknown) {
 describe('publishRoom', () => {
   it("posts the room's layout and screenshots with the owner's session and the CSRF header", async () => {
     const fetch = answering(201, { url: 'https://github.com/pull/7', number: 7 });
-    expect(await publishRoom('coach-station', moved, shots, { base, fetch })).toEqual({
+    expect(await publishRoom('coach-station', { base: layout, layout: moved }, shots, { base, fetch })).toEqual({
       ok: true,
       url: 'https://github.com/pull/7',
     });
@@ -27,12 +27,12 @@ describe('publishRoom', () => {
     expect(init?.method).toBe('POST');
     expect(init?.credentials).toBe('include');
     expect(init?.headers).toMatchObject({ [CSRF_HEADER]: '1', 'Content-Type': 'application/json' });
-    expect(JSON.parse(String(init?.body))).toEqual({ layout: moved, ...shots });
+    expect(JSON.parse(String(init?.body))).toEqual({ base: layout, layout: moved, ...shots });
   });
 
   it('says why the backend refused', async () => {
     const refused = async (status: number, body: unknown) =>
-      publishRoom('street', moved, shots, { base, fetch: answering(status, body) });
+      publishRoom('street', { base: layout, layout: moved }, shots, { base, fetch: answering(status, body) });
     expect(await refused(401, { detail: 'Not signed in' })).toEqual({
       ok: false,
       message: "You're signed out: sign in again to publish.",
@@ -46,7 +46,7 @@ describe('publishRoom', () => {
     const down = vi.fn(async () => {
       throw new TypeError('offline');
     });
-    expect(await publishRoom('street', moved, shots, { base, fetch: down })).toEqual({
+    expect(await publishRoom('street', { base: layout, layout: moved }, shots, { base, fetch: down })).toEqual({
       ok: false,
       message: "Couldn't reach the server.",
     });
