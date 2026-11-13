@@ -66,4 +66,16 @@ describe('title screen', () => {
     await flush();
     expect(start).toHaveBeenCalledWith();
   });
+
+  it('New game starts the game while the save is still loading', async () => {
+    const start = vi.fn();
+    const store = new MemoryStore();
+    store.load = () => new Promise(() => {});
+    void initTitleScreen(document, { store, start });
+    btn('new-game').click();
+    await flush();
+    expect(start).toHaveBeenCalledWith();
+    expect(document.querySelector<HTMLElement>('#title-screen')!.hidden).toBe(true);
+    expect(btn('continue').hidden).toBe(true);
+  });
 });
