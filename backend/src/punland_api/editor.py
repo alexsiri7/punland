@@ -141,20 +141,21 @@ def _point(p: Point) -> str:
     return f'{{ "x": {p.x}, "y": {p.y} }}'
 
 
+def _coords(p: dict[str, Any]) -> dict[str, Any]:
+    """A room file's point as the game reads it: just x and y."""
+    return {"x": p["x"], "y": p["y"]}
+
+
 def layout_of(room: dict[str, Any]) -> dict[str, Any]:
     """A room file's points, as a layout dumps them: read as the game reads them, so the same
     file gives the frontend's layoutOf whatever else its points and targets carry."""
-
-    def point(p: dict[str, Any]) -> dict[str, Any]:
-        return {"x": p["x"], "y": p["y"]}
-
     return {
-        "start": point(room["start"]),
-        "walkable": [point(p) for p in room["walkable"]],
+        "start": _coords(room["start"]),
+        "walkable": [_coords(p) for p in room["walkable"]],
         "hotspots": {
             h["id"]: {
-                "walkTo": point(h["walkTo"]),
-                **({"at": point(h["target"]["at"])} if "entity" in h["target"] else {}),
+                "walkTo": _coords(h["walkTo"]),
+                **({"at": _coords(h["target"]["at"])} if "entity" in h["target"] else {}),
             }
             for h in room["hotspots"]
         },
@@ -178,12 +179,12 @@ def patch_room(text: str, base: Layout, layout: Layout) -> str:
     edits: list[tuple[int, int, str]] = []
 
     def put(span: _Span, p: Point) -> None:
-        if span.value != p.model_dump():
+        if _coords(span.value) != p.model_dump():
             edits.append((span.start, span.end, _point(p)))
 
     put(root.get("start"), layout.start)
     walkable = root.get("walkable")
-    if walkable.value != [p.model_dump() for p in layout.walkable]:
+    if [_coords(p) for p in walkable.value] != [p.model_dump() for p in layout.walkable]:
         line = text.rfind("\n", 0, walkable.start) + 1
         indent = re.match(r" *", text[line:])
         outer = indent.group() if indent else ""

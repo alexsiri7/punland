@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 from punland_api.app import create_app
 from punland_api.config import Settings
-from punland_api.editor import Layout, Point, Refused, layout_of, patch_room
+from punland_api.editor import Layout, Point, Refused, changes, layout_of, patch_room
 from punland_api.owner import COOKIE, SESSION_SECONDS, GoogleTokenInfo, sign_session
 
 CLIENT_ID = "test-client.apps.googleusercontent.com"
@@ -543,17 +543,31 @@ def test_keys_the_game_ignores_do_not_block_a_publish() -> None:
     # The frontend reads a scene-node target without an `at` and a point as just x and y, so
     # neither is in the base it sends.
     text = room_text("high-street")
-    stray = text.replace(
-        '"target": { "node": "back" }', '"target": { "node": "back", "at": { "x": 1, "y": 2 } }'
-    ).replace(
-        '"walkTo": { "x": 140, "y": 570 }', '"walkTo": { "x": 140, "y": 570, "note": "door" }'
+    stray = (
+        text.replace(
+            '"target": { "node": "back" }', '"target": { "node": "back", "at": { "x": 1, "y": 2 } }'
+        )
+        .replace(
+            '"walkTo": { "x": 140, "y": 570 }', '"walkTo": { "x": 140, "y": 570, "note": "door" }'
+        )
+        .replace('{ "x": 80, "y": 540 }', '{ "x": 80, "y": 540, "note": "kerb" }')
     )
-    assert '"at": { "x": 1, "y": 2 }' in stray and '"note"' in stray
+    assert '"at": { "x": 1, "y": 2 }' in stray and stray.count('"note"') == 2
     base = Layout.model_validate(layout_of(json.loads(text)))
 
     moved = base.model_copy(deep=True)
     moved.start = Point(x=base.start.x + 1, y=base.start.y)
-    assert json.loads(patch_room(stray, base, moved))["start"] == moved.start.model_dump()
+    patched = patch_room(stray, base, moved)
+    # Only the moved point is written: the keys on the others stay.
+    changed = [
+        line
+        for line in difflib.unified_diff(stray.splitlines(), patched.splitlines(), lineterm="")
+        if line[:1] in "+-" and not line.startswith(("+++", "---"))
+    ]
+    assert len(changed) == 2 and all('"start"' in line for line in changed)
+    assert changes(json.loads(stray), json.loads(patched)) == [
+        f"start: ({base.start.x}, {base.start.y}) → ({moved.start.x}, {moved.start.y})"
+    ]
 
     moved.hotspots["back"].at = moved.start
     with pytest.raises(Refused, match='"back" has no spot to move'):
