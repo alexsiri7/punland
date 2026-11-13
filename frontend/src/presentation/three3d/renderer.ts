@@ -1,4 +1,4 @@
-import { Color, PCFShadowMap, WebGLRenderer } from 'three';
+import { BasicShadowMap, Color, WebGLRenderer } from 'three';
 import type { FloorPoint, Rect } from '../../domain';
 import type { AnimationName, Pick, Renderer, ScenePoint, SceneView } from '../renderer';
 import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
@@ -52,8 +52,9 @@ export class Three3dRenderer implements Renderer {
     const gl = new WebGLRenderer({ canvas, context });
     gl.setPixelRatio(window.devicePixelRatio);
     gl.shadowMap.enabled = true;
-    // Filtered, so a shadow's edge on a wall the key light grazes is a line, not a comb of texels.
-    gl.shadowMap.type = PCFShadowMap;
+    // STYLE.md wants hard, flat shadows, and a filtered map costs much more to sample under a
+    // software WebGL renderer (headless Chromium in CI), so the hard-edged map stays.
+    gl.shadowMap.type = BasicShadowMap;
     gl.autoClear = false;
     canvas.style.display = 'block';
     const grain = document.createElement('div');
