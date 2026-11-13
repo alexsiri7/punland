@@ -11,7 +11,7 @@ import {
   RedFormat,
   type Scene,
   Vector2,
-  type Vector3,
+  Vector3,
 } from 'three';
 
 /**
@@ -39,15 +39,18 @@ export function toonMaterial(base: Color | string | undefined): MeshToonMaterial
   return new MeshToonMaterial({ ...(base !== undefined && { color: base }), gradientMap: ramp });
 }
 
-/** How far from the camera, in metres, the key light's shadows reach: past every room's back wall. */
-const SHADOW_REACH = 16;
+/**
+ * How far from the camera, in metres, the key light's shadows reach: past every room's back wall,
+ * the dream's stage and the feed's far blocks, short of the sky and the city backdrops.
+ */
+export const SHADOW_REACH = 20;
 /** How far past what the camera sees, towards the light, a shadow's caster can be: an awning above the view. */
 const CASTER_REACH = 10;
 const SHADOW_MAP = 2048;
 /** How many rays across and down the view find what it sees, to fit the shadows to. */
 const SAMPLES = { across: 33, down: 17 };
-/** How far, in metres, what the view sees between its rays can reach past what they meet. */
-const BETWEEN_RAYS = 1;
+/** How far, in metres, what the view sees between its rays can reach past their points. */
+const BETWEEN_RAYS = 0.5;
 
 /**
  * Lights `scene` from the upper left, with hard shadows from the key light over what `view` sees
@@ -81,19 +84,25 @@ export function light(scene: Scene, view: PerspectiveCamera): void {
   scene.add(key);
 }
 
-/** The nearest points of `scene` that rays from `view` across its picture meet, up to SHADOW_REACH. */
+/**
+ * The nearest points of `scene` that rays from `view` across its picture meet, up to SHADOW_REACH,
+ * or, for a ray that meets nothing that near, its point at SHADOW_REACH: what is seen between a ray
+ * that meets the room and one that passes it lies between their points. None when no ray meets it.
+ */
 function seenFrom(view: PerspectiveCamera, scene: Scene): Vector3[] {
   view.updateMatrixWorld();
   const raycaster = new Raycaster();
   raycaster.far = SHADOW_REACH;
   const seen: Vector3[] = [];
+  let met = false;
   for (let i = 0; i < SAMPLES.across; i++) {
     for (let j = 0; j < SAMPLES.down; j++) {
       const at = new Vector2((2 * i) / (SAMPLES.across - 1) - 1, (2 * j) / (SAMPLES.down - 1) - 1);
       raycaster.setFromCamera(at, view);
       const hit = raycaster.intersectObject(scene)[0];
-      if (hit) seen.push(hit.point);
+      met ||= hit !== undefined;
+      seen.push(hit ? hit.point : raycaster.ray.at(SHADOW_REACH, new Vector3()));
     }
   }
-  return seen;
+  return met ? seen : [];
 }

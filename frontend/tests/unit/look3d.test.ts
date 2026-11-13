@@ -12,7 +12,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { light } from '../../src/presentation/three3d/look';
+import { light, SHADOW_REACH } from '../../src/presentation/three3d/look';
 import { SCENE_HEIGHT, SCENE_WIDTH } from '../../src/presentation/theme';
 import { modelFiles } from './support/files';
 
@@ -88,11 +88,20 @@ describe('the 3D look, the key light', () => {
     const key = keyLight(scene);
     const { left, right, top, bottom } = key.shadow.camera;
     expect(key.castShadow).toBe(true);
-    expect(right - left).toBeLessThan(15);
-    expect(top - bottom).toBeLessThan(15);
+    // Not the 500 m sky past the wall.
+    expect(right - left).toBeLessThan(SHADOW_REACH);
+    expect(top - bottom).toBeLessThan(SHADOW_REACH);
     // The floor's corner in front of the camera and the wall's top behind it are in its shadow map.
     for (const corner of [new Vector3(-3, 0, 0), new Vector3(3, 3.9, -3.9)]) expectInShadowMap(key, corner);
-    expect(key.shadow.normalBias).toBeGreaterThan(0);
+  });
+
+  // Two texels of the fitted map: enough to stop the stripes, too little to float a shadow off its caster.
+  it('biases its shadows by two texels of its shadow map', () => {
+    const { scene, view } = room();
+    light(scene, view);
+    const { shadow } = keyLight(scene);
+    const { left, right, top, bottom } = shadow.camera;
+    expect(shadow.normalBias).toBeCloseTo((2 * Math.max(right - left, top - bottom)) / shadow.mapSize.x, 6);
   });
 
   it('keeps a caster above the view, out of its picture, in its shadow map', () => {
@@ -105,12 +114,12 @@ describe('the 3D look, the key light', () => {
 
   // Everything the camera sees, not just what the light's fitting rays meet: a surface between
   // two rays left out of the shadow map would be drawn lit, its shadow cut off at a straight line.
-  it.each(['dream', 'high-street', 'feed'])('covers everything the camera sees in %s', async (id) => {
+  it.each(['dream', 'high-street', 'feed', 'opening'])('covers everything the camera sees in %s', async (id) => {
     const { scene, view } = await sceneModel(id);
     light(scene, view);
     const key = keyLight(scene);
     const raycaster = new Raycaster();
-    raycaster.far = 16;
+    raycaster.far = SHADOW_REACH;
     const across = 161;
     const down = 81;
     for (let i = 0; i < across; i++) {
@@ -120,6 +129,26 @@ describe('the 3D look, the key light', () => {
         if (hit) expectInShadowMap(key, hit.point);
       }
     }
+  });
+
+  it("reaches the back of the dream's stage", async () => {
+    const { scene, view } = await sceneModel('dream');
+    light(scene, view);
+    const key = keyLight(scene);
+    const stage = scene.getObjectByName('stage')!;
+    const raycaster = new Raycaster();
+    let seen = 0;
+    for (let i = 0; i < 161; i++) {
+      for (let j = 0; j < 81; j++) {
+        raycaster.setFromCamera(new Vector2(i / 80 - 1, j / 40 - 1), view);
+        const hit = raycaster.intersectObject(scene)[0];
+        if (hit && hit.object.parent === stage) {
+          seen++;
+          expectInShadowMap(key, hit.point);
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
   });
 
   it('casts no shadow in a room with nothing to see', () => {
