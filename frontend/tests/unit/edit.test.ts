@@ -225,6 +225,20 @@ describe('the edit mode', () => {
     expect(stored).toEqual({ pub: { base: pub, layout: flat } });
   });
 
+  it("keeps playing another room's draft while this one is edited", async () => {
+    const pub = layoutOf(content.rooms.pub!);
+    const moved = moveHandle(pub, { kind: 'start' }, { x: pub.start.x + 1, y: pub.start.y });
+    await mount({ pub: { base: pub, layout: moved } });
+    editButton().click();
+    key(handle('Flyer spot'), { key: 'ArrowRight' });
+    expect(status()).toBe('');
+    expect(game.content.rooms.street!.hotspots.find((h) => h.id === 'flyer')!.target).toEqual({
+      entity: 'flyer',
+      at: { x: 201, y: 520 },
+    });
+    expect(game.content.rooms.pub!.start).toEqual(moved.start);
+  });
+
   it('discards a draft', async () => {
     await mount();
     editButton().click();
