@@ -7,7 +7,7 @@ The story the game implements. Only settled material from the Annie story bible
 tentative, and every place where the game decided something Annie leaves open, is in
 `story/PENDING.md`.
 
-Last sync: 2026-11-11. Act 1's outline scenes in `story/annie/outline/` are all `draft`,
+Last sync: 2026-11-13. Act 1's outline scenes in `story/annie/outline/` are all `draft`,
 and a draft is built: their lines are copied verbatim under "Act 1: the outline" below
 (without their `OPEN:` lines, which are in PENDING). They are the most exact spec the
 game has for Act 1; where the prose sections here summarise them, the outline lines win.
@@ -95,7 +95,7 @@ game has for Act 1; where the prose sections here summarise them, the outline li
   behind the bar, the bouncer guards it, and it has a stage where the rival performs.
   - **The Wall of Fame.** A wall in the pub with photos of famous acts that played
     there, as visual puns: the Rolling Stones (a pile of rocks), the Beetles (beetles
-    with 60s haircuts), Tuna and Pike Turner, Katty Purry.
+    with 60s haircuts), Tuna and Pike Turner (two fish), Katty Purry (a cat).
   - **The Holding Pen.** The game's name for the live-music room down the stairs beside
     the pub ("Live music below"). Scenery only. Decided in the game; see PENDING.
 - **The High Street.** Shops, including the music shop; the Song Master's flyer and his
