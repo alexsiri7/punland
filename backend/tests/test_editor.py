@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 from punland_api.app import create_app
 from punland_api.config import Settings
-from punland_api.editor import Layout, Refused, layout_of, patch_room
+from punland_api.editor import Layout, Point, Refused, layout_of, patch_room
 from punland_api.owner import COOKIE, SESSION_SECONDS, GoogleTokenInfo, sign_session
 
 CLIENT_ID = "test-client.apps.googleusercontent.com"
@@ -537,3 +537,24 @@ def test_patching_a_room_keeps_every_other_byte(path: Path) -> None:
         "+" + start.replace(f'"x": {room["start"]["x"]},', f'"x": {layout["start"]["x"]},'),
         f'+{indent}  {{ "x": 640, "y": 600 }},',
     ]
+
+
+def test_keys_the_game_ignores_do_not_block_a_publish() -> None:
+    # The frontend reads a scene-node target without an `at` and a point as just x and y, so
+    # neither is in the base it sends.
+    text = room_text("high-street")
+    stray = text.replace(
+        '"target": { "node": "back" }', '"target": { "node": "back", "at": { "x": 1, "y": 2 } }'
+    ).replace(
+        '"walkTo": { "x": 140, "y": 570 }', '"walkTo": { "x": 140, "y": 570, "note": "door" }'
+    )
+    assert '"at": { "x": 1, "y": 2 }' in stray and '"note"' in stray
+    base = Layout.model_validate(layout_of(json.loads(text)))
+
+    moved = base.model_copy(deep=True)
+    moved.start = Point(x=base.start.x + 1, y=base.start.y)
+    assert json.loads(patch_room(stray, base, moved))["start"] == moved.start.model_dump()
+
+    moved.hotspots["back"].at = moved.start
+    with pytest.raises(Refused, match='"back" has no spot to move'):
+        patch_room(stray, base, moved)

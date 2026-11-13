@@ -142,14 +142,19 @@ def _point(p: Point) -> str:
 
 
 def layout_of(room: dict[str, Any]) -> dict[str, Any]:
-    """A room file's points, as a layout dumps them."""
+    """A room file's points, as a layout dumps them: read as the game reads them, so the same
+    file gives the frontend's layoutOf whatever else its points and targets carry."""
+
+    def point(p: dict[str, Any]) -> dict[str, Any]:
+        return {"x": p["x"], "y": p["y"]}
+
     return {
-        "start": room["start"],
-        "walkable": room["walkable"],
+        "start": point(room["start"]),
+        "walkable": [point(p) for p in room["walkable"]],
         "hotspots": {
             h["id"]: {
-                "walkTo": h["walkTo"],
-                **({"at": h["target"]["at"]} if "at" in h["target"] else {}),
+                "walkTo": point(h["walkTo"]),
+                **({"at": point(h["target"]["at"])} if "entity" in h["target"] else {}),
             }
             for h in room["hotspots"]
         },
@@ -190,7 +195,7 @@ def patch_room(text: str, base: Layout, layout: Layout) -> str:
         if moved.at is None:
             continue
         target = hotspot.get("target")
-        if "at" not in target.value:
+        if "entity" not in target.value:
             raise Refused(f'"{hotspot.value["id"]}" has no spot to move.')
         put(target.get("at"), moved.at)
 
