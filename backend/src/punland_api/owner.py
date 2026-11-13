@@ -3,7 +3,7 @@
 The browser gets a Google ID token from Google's redirect sign-in and posts it here; Google's
 tokeninfo endpoint checks it, and only OWNER_EMAIL gets a session. Every route that reads or
 sets the session needs the X-Punland-CSRF header, which a cross-origin page cannot send past
-CORS. Editor routes depend on `require_owner`.
+CORS. Editor routes depend on `owner_check`.
 """
 
 import base64
@@ -129,26 +129,33 @@ def csrf(request: Request) -> None:
         raise HTTPException(status_code=403, detail="Forbidden")
 
 
+def is_owner(request: Request, settings: Settings) -> bool:
+    value = request.cookies.get(COOKIE)
+    if not settings.owner_sign_in or not value:
+        return False
+    secret, owner_email = settings.session_secret or "", settings.owner_email or ""
+    return session_email(value, secret, owner_email, time.time()) is not None
+
+
+def owner_check(settings: Settings) -> Callable[[Request], None]:
+    """The dependency of every editor route: anyone but the owner gets a 401."""
+
+    def require_owner(request: Request) -> None:
+        if not is_owner(request, settings):
+            raise HTTPException(status_code=401, detail="Not signed in")
+
+    return require_owner
+
+
 def router(settings: Settings, tokeninfo: TokenInfo) -> APIRouter:
     api = APIRouter(dependencies=[Depends(csrf)])
     configured = settings.owner_sign_in
     secret = settings.session_secret or ""
-    owner_email = settings.owner_email or ""
-
-    def is_owner(request: Request) -> bool:
-        value = request.cookies.get(COOKIE)
-        if not configured or not value:
-            return False
-        return session_email(value, secret, owner_email, time.time()) is not None
-
-    def require_owner(request: Request) -> None:
-        if not is_owner(request):
-            raise HTTPException(status_code=401, detail="Not signed in")
 
     @api.get("/me")
     def me(request: Request) -> Me:
         return Me(
-            owner=is_owner(request),
+            owner=is_owner(request, settings),
             google_client_id=settings.google_client_id if configured else None,
         )
 
@@ -179,8 +186,8 @@ def router(settings: Settings, tokeninfo: TokenInfo) -> APIRouter:
     def sign_out(response: Response) -> None:
         response.delete_cookie(COOKIE, path="/", secure=True, httponly=True, samesite="strict")
 
-    # The sample owner-only route; the editor's routes (#123 on) depend on require_owner too.
-    @api.get("/editor/ping", status_code=204, dependencies=[Depends(require_owner)])
+    # The sample owner-only route; the editor's routes (editor.py) depend on owner_check too.
+    @api.get("/editor/ping", status_code=204, dependencies=[Depends(owner_check(settings))])
     def ping() -> None:
         return None
 
