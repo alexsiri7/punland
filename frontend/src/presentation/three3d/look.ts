@@ -45,14 +45,16 @@ const SHADOW_REACH = 16;
 const CASTER_REACH = 10;
 const SHADOW_MAP = 2048;
 /** How many rays across and down the view find what it sees, to fit the shadows to. */
-const SAMPLES = { across: 17, down: 9 };
+const SAMPLES = { across: 33, down: 17 };
+/** How far, in metres, what the view sees between its rays can reach past what they meet. */
+const BETWEEN_RAYS = 1;
 
 /**
  * Lights `scene` from the upper left, with hard shadows from the key light over what `view` sees
- * of it, up to SHADOW_REACH. Fitting the shadow map to that, and not to the whole scene with its
- * distant sky or a span that fits every room, keeps its texels small, and the normal bias of a
- * couple of texels keeps lit surfaces from shadowing themselves in stripes, most on the walls
- * the light only grazes.
+ * of it, up to SHADOW_REACH, with BETWEEN_RAYS to spare. Fitting the shadow map to that, and not to
+ * the whole scene with its distant sky or a span that fits every room, keeps its texels small, and
+ * the normal bias of a couple of texels keeps lit surfaces from shadowing themselves in stripes,
+ * most on the walls the light only grazes.
  */
 export function light(scene: Scene, view: PerspectiveCamera): void {
   scene.add(new AmbientLight(0xffffff, AMBIENT));
@@ -65,6 +67,7 @@ export function light(scene: Scene, view: PerspectiveCamera): void {
   const seen = new Box3();
   for (const point of seenFrom(view, scene)) seen.expandByPoint(point.applyMatrix4(camera.matrixWorldInverse));
   key.castShadow = !seen.isEmpty();
+  seen.expandByScalar(BETWEEN_RAYS);
   key.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
   camera.left = seen.min.x;
   camera.right = seen.max.x;
