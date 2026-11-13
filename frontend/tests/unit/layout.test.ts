@@ -32,6 +32,8 @@ describe('a room layout', () => {
     const added = addCorner(street, 0);
     expect(added.walkable[1]).toEqual({ x: 500, y: 500 });
     expect(added.walkable).toHaveLength(5);
+    const closing = addCorner(street, street.walkable.length - 1);
+    expect(closing.walkable).toEqual([...street.walkable, { x: 0, y: 550 }]);
     const three = removeCorner(street, 3);
     expect(three.walkable).toEqual(street.walkable.slice(0, 3));
     expect(removeCorner(three, 0)).toBe(three);

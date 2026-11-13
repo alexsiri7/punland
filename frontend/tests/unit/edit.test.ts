@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEditorHost } from '../../src/app/editor';
 import { sceneView } from '../../src/app/game';
 import { GameSession } from '../../src/app/session';
-import { layoutOf, moveHandle, newGame, type PublishResult, type RoomLayout } from '../../src/domain';
+import { layoutOf, moveHandle, newGame, type PublishResult } from '../../src/domain';
 import { mountUi } from '../../src/presentation/ui';
-import type { Drafts } from '../../src/services/editor';
+import type { Draft, Drafts } from '../../src/services/editor';
 import { FakeRenderer } from './fakes/renderer';
 import { content, files } from './fixtures/content';
 
@@ -17,7 +17,7 @@ describe('the edit mode', () => {
   let game: GameSession;
   let stored: Drafts;
   let editing: boolean[];
-  let published: { room: string; layout: RoomLayout }[];
+  let published: { room: string; draft: Draft }[];
 
   const street = layoutOf(content.rooms.street!);
 
@@ -33,8 +33,8 @@ describe('the edit mode', () => {
       editing: (on) => editing.push(on),
       files,
       drafts: { load: () => structuredClone(stored), save: (d) => (stored = structuredClone(d)) },
-      publish: async (room, layout): Promise<PublishResult> => {
-        published.push({ room, layout });
+      publish: async (room, draft): Promise<PublishResult> => {
+        published.push({ room, draft });
         return { ok: true, url: 'https://github.com/pull/7' };
       },
     });
@@ -198,12 +198,31 @@ describe('the edit mode', () => {
     tool('Publish').click();
     await vi.waitFor(() => expect(status()).toBe('Published: https://github.com/pull/7'));
     const layout = moveHandle(street, { kind: 'spot', hotspot: 'flyer' }, { x: 201, y: 520 });
-    expect(published).toEqual([{ room: 'street', layout }]);
+    expect(published).toEqual([{ room: 'street', draft: { base: street, layout } }]);
     expect(painted).toContain('Flyer');
     expect(container.querySelector('[role="status"] a')?.getAttribute('href')).toBe('https://github.com/pull/7');
     expect(stored).toEqual({});
     expect(flyer().target).toEqual({ entity: 'flyer', at: { x: 200, y: 520 } });
     expect(tool('Publish').disabled).toBe(true);
+  });
+
+  it("publishes a room whatever another room's draft holds", async () => {
+    const pub = layoutOf(content.rooms.pub!);
+    const flat = { ...pub, walkable: [{ x: 0, y: 500 }, { x: 10, y: 500 }, { x: 20, y: 500 }] };
+    await mount({ pub: { base: pub, layout: flat } });
+    editButton().click();
+    key(handle('Flyer spot'), { key: 'ArrowRight' });
+    expect(status()).not.toMatch(/pub\.json/);
+    expect(game.content.rooms.street!.hotspots.find((h) => h.id === 'flyer')!.target).toEqual({
+      entity: 'flyer',
+      at: { x: 201, y: 520 },
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(paintRecorder([]));
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,iVBORw0KGgo');
+    tool('Publish').click();
+    await vi.waitFor(() => expect(status()).toBe('Published: https://github.com/pull/7'));
+    expect(published.map(({ room }) => room)).toEqual(['street']);
+    expect(stored).toEqual({ pub: { base: pub, layout: flat } });
   });
 
   it('discards a draft', async () => {

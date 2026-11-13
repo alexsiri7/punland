@@ -46,12 +46,20 @@ export function createEditorHost(options: EditorOptions): EditorHost {
   store.save(drafts);
 
   const layouts = () => Object.fromEntries(Object.entries(drafts).map(([room, draft]) => [room, draft.layout]));
-  /** The content with every draft in it, and the problems keeping it from being played. */
+  /**
+   * The problems with a room's draft, checked against the deployed content as its pull request
+   * would change it, and the content to play when it has none: with every draft in it, or with
+   * only this one when the others don't hold together with it.
+   */
   const check = (room: string): { content: Content | null; issues: EditIssue[] } => {
-    const read: ContentResult =
-      Object.keys(drafts).length > 0 ? contentWithLayouts(layouts(), files) : { content: deployed, issues: [] };
-    const issues: EditIssue[] = [...read.issues, ...offFloor(room)];
-    return { content: issues.length === 0 ? read.content : null, issues };
+    const draft = drafts[room];
+    const own: ContentResult = draft
+      ? contentWithLayouts({ [room]: draft.layout }, files)
+      : { content: deployed, issues: [] };
+    const issues: EditIssue[] = [...own.issues, ...offFloor(room)];
+    if (issues.length > 0) return { content: null, issues };
+    const others = Object.keys(drafts).some((r) => r !== room);
+    return { content: (others ? contentWithLayouts(layouts(), files).content : null) ?? own.content, issues };
   };
   /** The drawn room's points the renderer finds off its floor. */
   const offFloor = (room: string): EditIssue[] => {
@@ -105,7 +113,7 @@ export function createEditorHost(options: EditorOptions): EditorHost {
     async publish(room, layout, shots): Promise<PublishResult> {
       const { issues } = check(room);
       if (issues.length > 0) return { ok: false, message: "Can't publish: the room doesn't hold together." };
-      const result = await publish(room, layout, shots);
+      const result = await publish(room, { base: base(room), layout }, shots);
       if (!result.ok) return result;
       // The edit lives in the pull request now: play the deployed room until it is merged.
       keep(room, base(room));
