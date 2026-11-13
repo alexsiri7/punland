@@ -4,12 +4,11 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-import httpx
 import sqlalchemy as sa
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import __version__, dialogue, dialogue_store, editor, owner, saves
+from . import __version__, dialogue, dialogue_store, saves
 from .characters import load_characters
 from .config import Settings
 from .model import Model, model_from_settings
@@ -21,8 +20,6 @@ def create_app(
     settings: Settings | None = None,
     model: Model | None = None,
     allowance: dialogue_store.TurnAllowance | None = None,
-    tokeninfo: owner.TokenInfo | None = None,
-    github: httpx.AsyncBaseTransport | None = None,
 ) -> FastAPI:
     settings = settings or Settings.from_env()
 
@@ -56,9 +53,7 @@ def create_app(
         allow_origins=list(settings.cors_origins),
         allow_origin_regex=settings.cors_origin_regex,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
-        allow_headers=["Content-Type", "X-Player-Id", owner.CSRF_HEADER],
-        # For the owner's session cookie; Starlette then echoes the matched origin, never `*`.
-        allow_credentials=True,
+        allow_headers=["Content-Type", "X-Player-Id"],
         max_age=600,
     )
 
@@ -76,8 +71,6 @@ def create_app(
             allowance or dialogue_store.TurnAllowance(),
         )
     )
-    app.include_router(owner.router(settings, tokeninfo or owner.GoogleTokenInfo()))
-    app.include_router(editor.router(settings, github))
     return app
 
 

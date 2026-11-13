@@ -64,12 +64,6 @@ export interface Renderer {
   play(who: 'player' | string, clip: AnimationName): void;
   /** `screen` is in scene pixels. Nothing is picked while no room is drawn. */
   pick(screen: ScenePoint): Pick;
-  /** Stands a placed character or object at another floor point (the owner's editor moves it there). */
-  place(hotspot: string, at: FloorPoint): void;
-  /** Whether a point of the scene, in scene pixels, is on the room's floor; false while no room is drawn. */
-  onFloor(screen: ScenePoint): boolean;
-  /** The room as drawn now, 1280 x 640, for the editor's screenshots; null while no room is drawn. */
-  snapshot(): HTMLCanvasElement | null;
   /** In scene pixels, for the DOM hotspot buttons. */
   hotspotBounds(hotspot: string): Rect | null;
   /** In scene pixels: `head` is where speech goes. */

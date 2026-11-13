@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ContentFiles, contentWithLayouts, loadContent, validateContent } from '../../src/content';
-import { layoutOf, moveHandle } from '../../src/domain';
+import { type ContentFiles, loadContent, validateContent } from '../../src/content';
 import { PROTAGONIST } from '../../src/content/protagonist';
 
 // Content is checked as it loads (architecture spec, "Validated content"): each problem names
@@ -434,47 +433,5 @@ describe('content validation', () => {
         '  content/rooms/opening.json hotspots[0].interactions[0].effects[0].goTo: "cellar" is not a known room',
       ].join('\n'),
     );
-  });
-});
-
-// The owner's editor checks an edited layout with the same validator (editor spec, "Publishing a room").
-describe('content with edited layouts', () => {
-  const real = loadContent(files);
-  const opening = layoutOf(real.rooms.opening!);
-
-  it('reads the files with the edited points in them', () => {
-    const moved = moveHandle(opening, { kind: 'start' }, { x: 700.4, y: 580 });
-    const { content, issues } = contentWithLayouts({ opening: moved }, files);
-    expect(issues).toEqual([]);
-    expect(content?.rooms.opening?.start).toEqual({ x: 700, y: 580 });
-    expect(content?.rooms.pub).toEqual(real.rooms.pub);
-  });
-
-  it('moves a spot and a walk-to point', () => {
-    const coach = layoutOf(real.rooms['coach-station']!);
-    const spot = moveHandle(coach, { kind: 'spot', hotspot: 'cop' }, { x: 880, y: 560 });
-    const moved = moveHandle(spot, { kind: 'walkTo', hotspot: 'cop' }, { x: 800, y: 590 });
-    const { content } = contentWithLayouts({ 'coach-station': moved }, files);
-    const cop = content?.rooms['coach-station']?.hotspots.find((h) => h.id === 'cop');
-    expect(cop?.target).toEqual({ entity: 'cop', at: { x: 880, y: 560 } });
-    expect(cop?.walkTo).toEqual({ x: 800, y: 590 });
-  });
-
-  it('reports a floor that is not convex', () => {
-    const bent = moveHandle(opening, { kind: 'corner', index: 1 }, { x: 800, y: 600 });
-    expect(contentWithLayouts({ opening: bent }, files).issues).toContainEqual({
-      file: OPENING,
-      field: 'walkable',
-      message: 'must be a convex polygon of at least 3 points',
-    });
-  });
-
-  it("reports another room's exit that no longer arrives on the floor", () => {
-    const narrow = { ...opening, walkable: opening.walkable.map((p) => ({ x: Math.max(p.x, 600), y: p.y })) };
-    expect(contentWithLayouts({ opening: narrow }, files).issues).toContainEqual({
-      file: HIGH_STREET,
-      field: 'hotspots[0].interactions[0].effects[0].at',
-      message: 'is not on the floor of "opening"',
-    });
   });
 });

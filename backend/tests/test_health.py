@@ -13,6 +13,7 @@ def test_health_ok(client: TestClient) -> None:
 def test_cors_allows_production_site(client: TestClient) -> None:
     res = client.get("/health", headers={"Origin": "https://punland.interstellarai.net"})
     assert res.headers["access-control-allow-origin"] == "https://punland.interstellarai.net"
+    assert "access-control-allow-credentials" not in res.headers
 
 
 def test_cors_allows_pages_previews(client: TestClient) -> None:
