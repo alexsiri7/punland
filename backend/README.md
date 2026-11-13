@@ -49,8 +49,18 @@ Google. Every route below needs the header `X-Punland-CSRF: 1`, or answers 403.
   (HMAC-signed, HttpOnly, Secure, SameSite=Strict, 12 h). Every refusal is the same
   `{"owner": false}` with no cookie. 404 when sign-in is not configured.
 - `POST /auth/signout` clears the cookie.
-- Owner-only routes depend on `require_owner` in `owner.py` (401 without a valid session);
+- Owner-only routes depend on `owner_check` in `owner.py` (401 without a valid session);
   `GET /editor/ping` is the sample one.
+- `POST /editor/rooms/{room}/publish` (`editor.py`, #123) takes a room's edited points
+  (`{"base", "layout", "before", "after"}`: `base` is the room's layout when the edit began and
+  `layout` the edited one, each `{"start", "walkable", "hotspots": {id: {"walkTo", "at"?}}}`, the
+  screenshots as base64 PNG) and opens a pull request on `alexsiri7/punland`, labelled
+  `editor`, that changes only `frontend/src/content/rooms/<room>.json`: just the moved points'
+  lines of main's copy are rewritten. The screenshots go in a first commit the second takes back
+  out, and the PR body shows them from the first. 201 `{"url", "number"}`; 422, with a one-line
+  `detail`, for an edit begun before main's file last changed (its `base` isn't main's) or one
+  that doesn't fit main's file (the game checks it with the content validator before sending it,
+  and the PR's CI checks it again); 502 when GitHub refuses; 503 without `EDITOR_GITHUB_TOKEN`.
 
 Sign-in needs all three of these; without them nobody can sign in and the game is unchanged:
 
@@ -60,6 +70,11 @@ Sign-in needs all three of these; without them nobody can sign in and the game i
 - `OWNER_EMAIL`: the owner's Google account. Changing it ends the old session.
 - `SESSION_SECRET`: signs the session cookie, e.g.
   `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Changing it ends every session.
+
+Publishing also needs `EDITOR_GITHUB_TOKEN`: a fine-grained token for `alexsiri7/punland` only,
+with Contents and Pull requests read/write, and Issues read/write to add the `editor` label (a
+label that can't be added leaves the PR standing). It never leaves the server. Without it,
+publishing answers 503 and the game is unchanged.
 
 The cookie is host-only on the API, so the owner session works on the production site and on
 localhost, not on Pages previews (another site, so a SameSite=Strict cookie never goes there).

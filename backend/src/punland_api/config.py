@@ -30,6 +30,8 @@ class Settings:
     google_client_id: str | None = None
     owner_email: str | None = None
     session_secret: str | None = field(default=None, repr=False)
+    # Editor publishing (#123): a fine-grained token for the repo alone. Unset: publish answers 503.
+    editor_github_token: str | None = field(default=None, repr=False)
 
     @property
     def owner_sign_in(self) -> bool:
@@ -50,4 +52,5 @@ class Settings:
             google_client_id=os.environ.get("GOOGLE_CLIENT_ID") or None,
             owner_email=os.environ.get("OWNER_EMAIL") or None,
             session_secret=os.environ.get("SESSION_SECRET") or None,
+            editor_github_token=os.environ.get("EDITOR_GITHUB_TOKEN") or None,
         )

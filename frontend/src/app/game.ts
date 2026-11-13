@@ -3,6 +3,7 @@ import type { Renderer, SceneEntity, SceneView } from '../presentation/renderer'
 import { SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../presentation/theme';
 import { type DialogueBackend, mountUi } from '../presentation/ui';
 import { animate } from './animation';
+import { createEditorHost } from './editor';
 import { createMirror } from './mirror';
 import type { GameSession } from './session';
 
@@ -32,7 +33,8 @@ export function sceneView(session: GameSession): SceneView {
  * events, the clips its characters play included, its canvas's clicks become commands and its
  * pointer the hovered hotspot through `renderer.pick`, and its frames tick the walk and a
  * cutscene's waits. Once the first room is shown, the session begins (the room's cutscene, if it
- * has one), and the promise resolves. The owner (`options.owner`) gets the Edit button.
+ * has one), and the promise resolves. The owner (`options.owner`) gets the Edit button and plays
+ * their draft edits; while they edit, the canvas takes no input and frames tick nothing.
  */
 export async function playGame(
   container: HTMLElement,
@@ -46,7 +48,11 @@ export async function playGame(
     renderer.play(who, clip);
     if (who === 'player') mirror.playerAnimation(clip);
   });
-  const ui = mountUi(container, session, renderer, { hover: mirror.hover, left: animation.conversationLeft }, dialogue, options.owner ?? false);
+  let editing = false;
+  const editor = options.owner
+    ? createEditorHost({ session, renderer, editing: (on) => (editing = on) })
+    : null;
+  const ui = mountUi(container, session, renderer, { hover: mirror.hover, left: animation.conversationLeft }, dialogue, editor);
   await renderer.mount(container);
 
   // Only the latest room drawn takes input: one asked for since replaces it.
@@ -80,6 +86,7 @@ export async function playGame(
     });
   };
   canvas.addEventListener('pointerdown', (event) => {
+    if (editing) return;
     const picked = pick(event);
     if (picked.kind === 'hotspot') {
       session.dispatch({ type: 'activate', hotspot: picked.hotspot });
@@ -89,13 +96,14 @@ export async function playGame(
     }
   });
   canvas.addEventListener('pointermove', (event) => {
+    if (editing) return;
     const picked = pick(event);
     ui.pointed(picked.kind === 'hotspot' ? picked.hotspot : null);
     canvas.style.cursor = picked.kind === 'hotspot' ? 'pointer' : '';
   });
   canvas.addEventListener('pointerleave', () => ui.pointed(null));
   renderer.frame((dtMs) => {
-    if (session.state.walk || session.state.cue) session.dispatch({ type: 'tick', dtMs });
+    if (!editing && (session.state.walk || session.state.cue)) session.dispatch({ type: 'tick', dtMs });
   });
 
   // Lines said before a room is drawn are dropped, so a cutscene can't start sooner.

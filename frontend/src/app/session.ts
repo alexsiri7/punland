@@ -21,7 +21,7 @@ export class GameSession {
   private readonly listeners = new Set<Listener>();
 
   constructor(
-    readonly content: Content,
+    private currentContent: Content,
     private current: GameState,
     private readonly store: Pick<SaveStore, 'save'>,
     private readonly now: () => Date = () => new Date(),
@@ -29,6 +29,15 @@ export class GameSession {
 
   get state(): GameState {
     return this.current;
+  }
+
+  get content(): Content {
+    return this.currentContent;
+  }
+
+  /** Plays on with other content: the owner's edited rooms (editor spec), applied live. */
+  useContent(content: Content): void {
+    this.currentContent = content;
   }
 
   dispatch(command: Command): void {

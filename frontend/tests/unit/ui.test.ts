@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameSession } from '../../src/app/session';
-import { type Content, type DialogueTurn, type GameState, newGame, speechMs } from '../../src/domain';
+import { type Content, type DialogueTurn, type GameState, layoutOf, newGame, speechMs } from '../../src/domain';
 import type { ScenePoint } from '../../src/presentation/renderer';
-import { type DialogueBackend, mountUi } from '../../src/presentation/ui';
+import { type DialogueBackend, type EditorHost, mountUi } from '../../src/presentation/ui';
 import { createProgress } from '../../src/presentation/ui/progress';
 import { bounds, content, edited } from './fixtures/content';
 import { readBytes } from './support/files';
@@ -43,14 +43,14 @@ describe('the DOM UI', () => {
     state = newGame(given),
     picksHotspots = false,
     anchors = {},
-    owner = false,
+    editor = null,
   }: {
     given?: Content;
     head?: ScenePoint;
     state?: GameState;
     picksHotspots?: boolean;
     anchors?: Record<string, ScenePoint>;
-    owner?: boolean;
+    editor?: EditorHost | null;
   } = {}) {
     const game = new GameSession(given, state, { save: async () => {} });
     const canvas = document.createElement('canvas');
@@ -65,8 +65,9 @@ describe('the DOM UI', () => {
       },
       hotspotBounds: (id: string) => bounds[given.rooms[game.state.room]!.model]?.[id] ?? null,
       anchor: (who: string) => (who === 'player' ? head : (anchors[who] ?? null)),
+      snapshot: () => null,
     };
-    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name), left: () => {} }, dialogue, owner);
+    const ui = mountUi(container, game, renderer, { hover: (name) => hovered.push(name), left: () => {} }, dialogue, editor);
     ui.shown();
     const text = (selector: string) => container.querySelector(selector)?.textContent;
     const button = (group: string, name: string) =>
@@ -75,14 +76,26 @@ describe('the DOM UI', () => {
     return { game, ui, text, button, frame };
   }
 
-  it('shows the Edit button to the owner only, disabled until edit mode exists', () => {
+  it('shows the Edit button to the owner only', () => {
     mount();
     expect(container.querySelector('.edit-button')).toBeNull();
     container.replaceChildren();
-    mount({ owner: true });
+    const layout = layoutOf(content.rooms.street!);
+    mount({
+      editor: {
+        layout: () => layout,
+        base: () => layout,
+        onFloor: () => true,
+        change: () => [],
+        discard: () => {},
+        editing: () => {},
+        preview: () => {},
+        publish: async () => ({ ok: false, message: '' }),
+      },
+    });
     const edit = container.querySelector<HTMLButtonElement>('.edit-button');
     expect(edit?.textContent).toBe('Edit');
-    expect(edit?.disabled).toBe(true);
+    expect(edit?.disabled).toBe(false);
   });
 
   it("shows the room's label, place and hint in the UI bar", () => {

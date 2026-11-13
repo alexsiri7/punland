@@ -4,11 +4,12 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import httpx
 import sqlalchemy as sa
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import __version__, dialogue, dialogue_store, owner, saves
+from . import __version__, dialogue, dialogue_store, editor, owner, saves
 from .characters import load_characters
 from .config import Settings
 from .model import Model, model_from_settings
@@ -21,6 +22,7 @@ def create_app(
     model: Model | None = None,
     allowance: dialogue_store.TurnAllowance | None = None,
     tokeninfo: owner.TokenInfo | None = None,
+    github: httpx.AsyncBaseTransport | None = None,
 ) -> FastAPI:
     settings = settings or Settings.from_env()
 
@@ -75,6 +77,7 @@ def create_app(
         )
     )
     app.include_router(owner.router(settings, tokeninfo or owner.GoogleTokenInfo()))
+    app.include_router(editor.router(settings, github))
     return app
 
 

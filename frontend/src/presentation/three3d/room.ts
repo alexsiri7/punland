@@ -86,6 +86,12 @@ export class Room {
     if (step.lengthSq() > 1e-8) this.player.rotation.y = Math.atan2(step.x, step.z);
   }
 
+  /** Stands a placed entity at another floor point. */
+  place(hotspot: string, at: FloorPoint): void {
+    const entity = this.entities.get(hotspot);
+    if (entity) this.stand(entity, at);
+  }
+
   play(who: string, clip: AnimationName): void {
     this.actors.get(who)?.play(clip);
   }
