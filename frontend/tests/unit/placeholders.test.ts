@@ -5,7 +5,7 @@ import { modelFiles } from './support/files';
 // scripts/make-placeholders.mjs writes the placeholder models (docs/ARCHITECTURE.md, section 8):
 // re-running it must reproduce the committed files the registry marks `placeholder` byte for
 // byte. A designer's file at the same path, with the flag off, is the contract's to check. The
-// coach station, the map, the coach and the map pin (#116) are placeholders.
+// map and the map pin (#116) are placeholders.
 
 const SCRIPT = '../../scripts/make-placeholders.mjs';
 interface Script {

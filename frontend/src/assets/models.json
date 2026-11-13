@@ -43,7 +43,7 @@
     {
       "id": "scene/coach-station",
       "kind": "scene",
-      "model3d": { "file": "models/scenes/coach-station.glb", "placeholder": true }
+      "model3d": { "file": "models/scenes/coach-station.glb", "placeholder": false }
     },
     {
       "id": "scene/map",
@@ -98,7 +98,7 @@
     {
       "id": "object/coach",
       "kind": "object",
-      "model3d": { "file": "models/objects/coach.glb", "placeholder": true }
+      "model3d": { "file": "models/objects/coach.glb", "placeholder": false }
     },
     {
       "id": "object/map-pin",
