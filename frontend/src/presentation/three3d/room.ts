@@ -41,7 +41,7 @@ export class Room {
       this.scene.add(model);
     }
     this.scene.updateMatrixWorld(true);
-    light(this.scene);
+    light(this.scene, this.camera);
   }
 
   /** Loads the view's models and stands them on the floor, the player facing the camera. */
