@@ -126,6 +126,9 @@ test('Talking to the beetroot cop', async ({ page }) => {
 test('Talking to a crow', async ({ page }) => {
   // Requirement: Act 1 conversations. Each of the three crows behind the bar is a character to
   // talk to, and one of them is Sheryl Caw.
+  // Three full conversations in one test, the most of any test here: a tight fit for the default
+  // timeout on the CI runner's slower, shared CPU.
+  test.setTimeout(45_000);
   const asked: string[] = [];
   await stubDialogue(page, (body) => {
     asked.push(body.character);
