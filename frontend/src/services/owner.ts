@@ -21,11 +21,12 @@ export interface OwnerOptions {
 
 const NOBODY: OwnerStatus = { owner: false, googleClientId: null };
 
-function resolve(options: Partial<OwnerOptions>): OwnerOptions {
+export function resolve(options: Partial<OwnerOptions>): OwnerOptions {
   return { base: options.base ?? apiBase(), fetch: options.fetch ?? globalThis.fetch.bind(globalThis) };
 }
 
-function ownerRequest(init: RequestInit = {}): RequestInit {
+/** A request to the backend with the owner's session cookie and the CSRF header. */
+export function ownerRequest(init: RequestInit = {}): RequestInit {
   return { ...init, credentials: 'include', headers: { ...init.headers, [CSRF_HEADER]: '1' } };
 }
 

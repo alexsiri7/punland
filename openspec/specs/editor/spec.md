@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The owner's in-game scene editor, usable only by the owner on the live site. This spec starts with owner sign-in, the base every editor part builds on.
+The owner's in-game scene editor, usable only by the owner on the live site: owner sign-in, the base every editor part builds on, then edit mode and publishing an edited room as a pull request.
 
 ## Requirements
 
@@ -55,3 +55,46 @@ Every editor endpoint MUST require the owner's session and a custom CSRF header,
 #### Scenario: Who is signed in
 - WHEN the game asks `/me`
 - THEN the answer says whether the request carries the owner's session
+
+### Requirement: Edit mode
+The owner's Edit button, or the E key, SHALL pause the game and show over the room every hotspot's click area and name, each spot, each walk-to point, the start and the floor outline. The owner SHALL be able to drag those points, only onto the floor, add or remove floor corners, and undo or redo. Each edit MUST apply live and SHALL be kept as a draft in the browser until published or discarded. Pressing Edit again SHALL return to play. Only the owner SHALL have edit mode.
+
+#### Scenario: Entering and leaving edit mode
+- GIVEN the owner is playing
+- WHEN the owner presses Edit
+- THEN the game pauses and every hotspot, spot, walk-to point, the start and the floor outline show
+- AND pressing Edit again returns to play
+
+#### Scenario: Dragging a spot
+- WHEN the owner drags a character's spot to another place on the floor and returns to play
+- THEN the character stands there, and clicking there in play reaches the character, before anything is published
+
+#### Scenario: A draft survives a reload
+- GIVEN the owner has moved a spot
+- WHEN the page is reloaded and the owner plays again
+- THEN the spot is where the owner moved it
+
+#### Scenario: Not the owner
+- WHEN anyone but the owner plays
+- THEN there is no Edit button, and the E key opens nothing
+
+### Requirement: Publishing a room
+Publishing SHALL check the edited room with the content validator and the room's floor, and MUST refuse an invalid edit with a message, sending nothing. The backend SHALL take the owner's edited points (owner session and CSRF header) and open one pull request, labelled `editor`, changing only `frontend/src/content/rooms/<room>.json`, with before/after screenshots. It MUST use the server's `EDITOR_GITHUB_TOKEN`, which never reaches the browser; without it, publishing SHALL be refused.
+
+#### Scenario: Publishing opens a pull request
+- WHEN the owner publishes an edited room
+- THEN one pull request opens, changing only that room's file, labelled `editor`, with before/after screenshots
+- AND the page links to it
+
+#### Scenario: An invalid edit is refused
+- WHEN the owner publishes an edit that breaks the room, such as a floor that is not convex
+- THEN publishing is refused with a message and no pull request is opened
+
+#### Scenario: Publishing without a session
+- WHEN the publish endpoint is called without the owner's session or the CSRF header
+- THEN it is refused
+
+#### Scenario: Publishing not set up
+- GIVEN no `EDITOR_GITHUB_TOKEN` is configured
+- WHEN the owner publishes
+- THEN publishing is refused, and nothing is sent to GitHub

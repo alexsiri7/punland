@@ -12,7 +12,8 @@ export type RendererCall =
   | { method: 'show'; view: SceneView }
   | { method: 'setPlayer'; at: FloorPoint; facing: 'left' | 'right' }
   | { method: 'setVisible'; hotspot: string; visible: boolean }
-  | { method: 'play'; who: string; clip: AnimationName };
+  | { method: 'play'; who: string; clip: AnimationName }
+  | { method: 'place'; hotspot: string; at: FloorPoint };
 
 /**
  * A renderer for jsdom (docs/ARCHITECTURE.md, section 5): it draws nothing and records what it
@@ -60,6 +61,19 @@ export class FakeRenderer implements Renderer {
   pick(screen: ScenePoint): Pick {
     if (!this.view || screen.y >= SCENE_HEIGHT) return { kind: 'none' };
     return { kind: 'floor', at: { x: screen.x, y: screen.y } };
+  }
+
+  place(hotspot: string, at: FloorPoint): void {
+    this.calls.push({ method: 'place', hotspot, at });
+  }
+
+  /** It has no floor model: the whole scene is floor. */
+  onFloor(screen: ScenePoint): boolean {
+    return this.view !== null && screen.y < SCENE_HEIGHT;
+  }
+
+  snapshot(): HTMLCanvasElement | null {
+    return this.element && this.element.ownerDocument.createElement('canvas');
   }
 
   hotspotBounds(hotspot: string): Rect | null {

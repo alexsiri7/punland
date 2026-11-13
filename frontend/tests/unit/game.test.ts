@@ -122,6 +122,29 @@ describe('the game, drawn by a renderer', () => {
     expect(container.querySelector<HTMLElement>('[aria-label="Bartender"]')!.hidden).toBe(false);
   });
 
+  it("pauses the owner's game while they edit, and plays on after", async () => {
+    container.remove();
+    container = document.createElement('div');
+    document.body.append(container);
+    renderer = new FakeRenderer();
+    game = new GameSession(content, newGame(content), { save: async () => {} });
+    await playGame(container, game, renderer, { turn: async () => null }, { owner: true });
+    const edit = container.querySelector<HTMLButtonElement>('.edit-button')!;
+    click(900, 585);
+    renderer.step(100);
+    const walking = game.state.walk;
+    const at = container.dataset.player;
+
+    edit.click();
+    renderer.step(1000);
+    click(100, 585);
+    expect([game.state.walk, container.dataset.player]).toEqual([walking, at]);
+
+    edit.click();
+    await walk();
+    expect(container.dataset.player).toBe('900,585');
+  });
+
   it("plays the first room's cutscene once it is drawn, its frames ticking its waits", async () => {
     const given = editedRoom('street', (room) => {
       room.onStart = [{ effects: [{ wait: 150 }, { say: 'Here at last.' }] }];

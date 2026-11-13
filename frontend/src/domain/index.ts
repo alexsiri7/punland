@@ -34,6 +34,20 @@ export {
 } from './content';
 export { type FloorPoint, insidePolygon, isConvex, nearestWalkable, type Rect, SCENE } from './geometry';
 export type { InventoryState } from './inventory';
+export {
+  addCorner,
+  type Handle,
+  type HotspotLayout,
+  handlesOf,
+  layoutOf,
+  MIN_CORNERS,
+  moveHandle,
+  pointAt,
+  type PublishResult,
+  type RoomLayout,
+  removeCorner,
+  sameLayout,
+} from './layout';
 export type { JourneyState, Place } from './journey';
 export { fromSave, isSaveGame, type SaveGame, toSave, type UnstampedSave } from './save';
 export { type GameState, newGame, type Speaker, speechMs } from './state';

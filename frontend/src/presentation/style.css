@@ -9,6 +9,8 @@
   --label-text: #8e8b98;
   --sign-gold: #e3c58a;
   --sign-gold-hover: #f2ddb0;
+  --window-glow: #e8b566;
+  --horizon-clay: #c98a6c;
   --cast-shadow: #141218;
   --font-ui: 'Inter', system-ui, sans-serif;
   --font-sign: 'Bebas Neue', Impact, sans-serif;
@@ -575,9 +577,158 @@ body {
   pointer-events: auto;
 }
 
-.edit-button:disabled {
+.edit-button[aria-pressed='true'] {
+  border-color: var(--sign-gold);
+  color: var(--sign-gold);
+}
+
+/*
+ * The owner's edit mode (ui/edit.ts): the room's floor, click areas and points over the scene,
+ * the toolbar over the UI bar. Point colours match paintLayout's in edit.ts.
+ */
+.editor {
+  position: absolute;
+  inset: 0;
+}
+
+.edit-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: calc(var(--scene-height) * var(--s));
+  pointer-events: auto;
+  background: rgb(28 29 34 / 0.25);
+}
+
+.edit-layer svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.edit-floor {
+  fill: rgb(227 197 138 / 0.12);
+  stroke: var(--sign-gold);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.edit-area {
+  fill: none;
+  stroke: var(--ui-text);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 6;
+  vector-effect: non-scaling-stroke;
+}
+
+.edit-label {
+  fill: var(--ui-text);
+  font: 500 16px var(--font-ui);
+  paint-order: stroke fill;
+  stroke: var(--cast-shadow);
+  stroke-width: 4px;
+}
+
+.edit-area.is-absent,
+.edit-label.is-absent {
+  opacity: 0.4;
+}
+
+.edit-handle {
+  position: absolute;
+  width: calc(18px * var(--s));
+  height: calc(18px * var(--s));
+  padding: 0;
+  border: calc(2px * var(--s)) solid var(--cast-shadow);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  touch-action: none;
+}
+
+.edit-handle.is-start {
+  background: var(--window-glow);
+}
+
+.edit-handle.is-corner {
+  border-radius: 0;
+  background: var(--sign-gold);
+}
+
+.edit-handle.is-walkTo {
+  background: var(--muted-text);
+}
+
+.edit-handle.is-spot {
+  background: var(--horizon-clay);
+}
+
+.edit-handle:focus-visible,
+.edit-handle.is-selected {
+  outline: calc(2px * var(--s)) solid var(--ui-text);
+  outline-offset: calc(2px * var(--s));
+}
+
+.edit-readout {
+  position: absolute;
+  margin: calc(14px * var(--s)) 0 0 calc(14px * var(--s));
+  font: 500 calc(13px * var(--s)) / 1 var(--font-ui);
+  color: var(--ui-text);
+  -webkit-text-stroke: calc(3px * var(--s)) var(--cast-shadow);
+  paint-order: stroke fill;
+  pointer-events: none;
+}
+
+.edit-toolbar {
+  position: absolute;
+  top: calc(var(--scene-height) * var(--s));
+  left: 0;
+  width: 100%;
+  height: calc(var(--ui-bar-height) * var(--s));
+  display: flex;
+  align-items: flex-start;
+  gap: calc(8px * var(--s));
+  padding: calc(16px * var(--s)) calc(32px * var(--s)) 0;
+  background: var(--ui-ground);
+  pointer-events: auto;
+}
+
+.edit-toolbar button {
+  padding: calc(8px * var(--s)) calc(14px * var(--s));
+  border: calc(1px * var(--s)) solid var(--slot-edge);
+  border-radius: calc(10px * var(--s));
+  background: var(--slot);
+  color: var(--ui-text);
+  font: 500 calc(13px * var(--s)) / 1 var(--font-ui);
+}
+
+.edit-toolbar button:hover:not(:disabled),
+.edit-toolbar button:focus-visible {
+  border-color: var(--sign-gold);
+}
+
+.edit-toolbar button:disabled {
   color: var(--label-text);
-  cursor: default;
+}
+
+.edit-status {
+  position: absolute;
+  top: calc((var(--scene-height) + 64px) * var(--s));
+  left: calc(32px * var(--s));
+  right: calc(32px * var(--s));
+  height: calc(88px * var(--s));
+  margin: 0;
+  overflow: auto;
+  font-size: calc(13px * var(--s));
+  line-height: 1.4;
+  color: var(--muted-text);
+  pointer-events: auto;
+}
+
+.edit-status a {
+  color: var(--sign-gold);
 }
 
 .goals-list input {
