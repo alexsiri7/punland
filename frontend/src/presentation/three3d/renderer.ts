@@ -52,6 +52,8 @@ export class Three3dRenderer implements Renderer {
     const gl = new WebGLRenderer({ canvas, context });
     gl.setPixelRatio(window.devicePixelRatio);
     gl.shadowMap.enabled = true;
+    // STYLE.md wants hard, flat shadows, and a filtered map costs much more to sample under a
+    // software WebGL renderer (headless Chromium in CI), so the hard-edged map stays.
     gl.shadowMap.type = BasicShadowMap;
     gl.autoClear = false;
     canvas.style.display = 'block';
