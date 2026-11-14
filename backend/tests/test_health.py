@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from punland_api.app import create_app
@@ -13,6 +14,7 @@ def test_health_ok(client: TestClient) -> None:
 def test_cors_allows_production_site(client: TestClient) -> None:
     res = client.get("/health", headers={"Origin": "https://punland.interstellarai.net"})
     assert res.headers["access-control-allow-origin"] == "https://punland.interstellarai.net"
+    assert "access-control-allow-credentials" not in res.headers
 
 
 def test_cors_allows_pages_previews(client: TestClient) -> None:
@@ -30,3 +32,18 @@ def test_production_hides_docs() -> None:
     prod = TestClient(create_app(Settings(environment="production")))
     assert prod.get("/docs").status_code == 404
     assert prod.get("/openapi.json").status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("GET", "/me"),
+        ("POST", "/auth/google"),
+        ("POST", "/auth/signout"),
+        ("GET", "/editor/ping"),
+        ("POST", "/editor/rooms/opening/publish"),
+    ],
+)
+def test_owner_sign_in_and_editor_are_gone(client: TestClient, method: str, path: str) -> None:
+    # Issue #131: the owner sign-in and the in-game editor moved out of the game.
+    assert client.request(method, path).status_code == 404

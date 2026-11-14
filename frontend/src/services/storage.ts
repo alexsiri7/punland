@@ -6,12 +6,3 @@ export function safeLocalStorage(): Storage | null {
     return null;
   }
 }
-
-/** The browser's sessionStorage, or null where it is blocked. */
-export function safeSessionStorage(): Storage | null {
-  try {
-    return globalThis.sessionStorage ?? null;
-  } catch {
-    return null;
-  }
-}

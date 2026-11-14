@@ -3,7 +3,6 @@ import type { Renderer } from '../renderer';
 import type { Session } from '../session';
 import { createDialoguePanel, type DialogueBackend } from './dialogue';
 import { createHotspotLayer } from './hotspots';
-import { createEditor, type EditorHost } from './edit';
 import { createInventoryBar } from './inventory';
 import { createOverlay } from './overlay';
 import { createProgress } from './progress';
@@ -12,7 +11,6 @@ import { createUiBar } from './uiBar';
 import { createWorldSwitcher, type WorldSwitcher } from './worlds';
 
 export type { DialogueBackend } from './dialogue';
-export type { EditIssue, EditorHost } from './edit';
 
 export interface Ui {
   /** The renderer has drawn the session's room and takes input there: lay the room's controls over it. */
@@ -30,16 +28,14 @@ export interface Ui {
  * controls (its hotspot buttons and the world switcher) while the room is drawn. A new part is
  * created here and appended to the overlay's root. The overlay lines up with the renderer's
  * canvas. The name of the hotspot under the pointer goes to `on.hover`, and the player leaving a
- * conversation (Leave or Escape) to `on.left`. The owner gets the Edit button and its edit mode,
- * which works through `editor`.
+ * conversation (Leave or Escape) to `on.left`.
  */
 export function mountUi(
   container: HTMLElement,
   session: Session,
-  renderer: Pick<Renderer, 'picksHotspots' | 'canvas' | 'onResize' | 'hotspotBounds' | 'anchor' | 'frame' | 'snapshot'>,
+  renderer: Pick<Renderer, 'picksHotspots' | 'canvas' | 'onResize' | 'hotspotBounds' | 'anchor' | 'frame'>,
   on: { hover(name: string): void; left(): void },
   dialogue: DialogueBackend,
-  editor: EditorHost | null = null,
 ): Ui {
   const doc = container.ownerDocument;
   const overlay = createOverlay(container);
@@ -58,18 +54,6 @@ export function mountUi(
   );
   /** The shown room's controls; none from a room change until the new room is shown. */
   let controls: RoomControls | null = null;
-  const layOut = (current: Room) => {
-    controls?.destroy();
-    controls = createRoomControls(doc, session, renderer, current, inventory.element, bar);
-  };
-  if (editor) {
-    // Edits move hotspots: their buttons go where they are now.
-    const left = () => {
-      const current = session.content.rooms[session.state.room];
-      if (controls && current) layOut(current);
-    };
-    overlay.root.append(createEditor(doc, session, renderer, editor, overlay.root, { left }));
-  }
   /** The hotspot the pointer is over on the canvas, while the renderer picks hotspots. */
   let pointedAt: string | null = null;
   session.subscribe((event) => {
@@ -86,7 +70,7 @@ export function mountUi(
       overlay.follow(renderer);
       speech.shown();
       bar.show(current);
-      layOut(current);
+      controls = createRoomControls(doc, session, renderer, current, inventory.element, bar);
     },
     walked() {
       pointedAt = null;

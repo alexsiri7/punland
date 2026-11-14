@@ -115,29 +115,6 @@ export class Three3dRenderer implements Renderer {
     return { kind: 'floor', at: { x: screen.x, y: screen.y } };
   }
 
-  place(hotspot: string, at: FloorPoint): void {
-    this.room?.place(hotspot, at);
-  }
-
-  onFloor(screen: ScenePoint): boolean {
-    return screen.y < SCENE_HEIGHT && (this.room?.isFloor(screen) ?? false);
-  }
-
-  /** Draws the room and copies the scene off the canvas at once: the drawing buffer isn't kept after a frame. */
-  snapshot(): HTMLCanvasElement | null {
-    if (!this.gl || !this.room) return null;
-    this.draw();
-    const source = this.gl.domElement;
-    const shot = source.ownerDocument.createElement('canvas');
-    shot.width = SCENE_WIDTH;
-    shot.height = SCENE_HEIGHT;
-    const context = shot.getContext('2d');
-    if (!context) return null;
-    const sceneHeight = (source.height * SCENE_HEIGHT) / HEIGHT;
-    context.drawImage(source, 0, 0, source.width, sceneHeight, 0, 0, SCENE_WIDTH, SCENE_HEIGHT);
-    return shot;
-  }
-
   /** The projected bounds of a placed entity's model, or of a part of the scene's `hit_*` node. */
   hotspotBounds(hotspot: string): Rect | null {
     return this.room?.hotspotBounds(hotspot) ?? null;

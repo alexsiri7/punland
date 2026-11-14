@@ -58,14 +58,13 @@ frontend/
   index.html            title screen markup (Tune Story, New game, Continue); loads src/app/main.ts
   src/domain/           pure model: floor geometry (FloorPoint, walking on a convex floor), content types (content.ts),
                         GameState and newGame (state.ts), Command and GameEvent (commands.ts), SaveGame with toSave/fromSave
-                        (save.ts), inventory/journey save state, DialogueTurn (dialogue.ts), RoomLayout (layout.ts: the
-                        points of a room the owner's editor moves); index.ts exports it all
+                        (save.ts), inventory/journey save state, DialogueTurn (dialogue.ts); index.ts exports it all
   src/rules/            pure rules: apply(content, state, command) -> {state, events}, running interactions; isPresent
   src/content/          content data: rooms/<room>.json, items.json, worlds.json, characters.json (with each
                         character's onGoal: what a conversation reaching its goal does), objects.json, stats.json
                         (career stats), acts.json (acts, their goals and which act comes next), protagonist.ts;
                         validate.ts checks the files ({file, field, message} problems, branded ids); index.ts
-                        loadContent() builds Content or throws, contentWithLayouts() checks edited room layouts
+                        loadContent() builds Content or throws
   src/content/rooms/<room>.json  room content: its scene model, floor, start point, hotspots: a target (a placed
                         character or object, or a scene node), interactions (verb, item, `when` conditions, effects such
                         as say, goTo, pickUp, talk, changeStat, reachGoal) and `presentWhen` conditions. No screen
@@ -79,15 +78,13 @@ frontend/
                         content and the model files, with each room's hit_<node> nodes and floor points,
                         run in unit tests)
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), dialogue.ts
-                        (BackendDialogue: POST /dialogue/turn), owner.ts (owner sign-in: /me, Google redirect,
-                        sign-out), editor.ts (the editor's drafts in localStorage, publishRoom), player.ts, storage.ts
+                        (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
   src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
                         theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
                         session.ts (the Session interface the UI sees)
   src/presentation/ui/  the DOM UI over the canvas: index.ts mountUi(container, session, renderer, on, dialogue), overlay.ts
                         (lines it up with the renderer's canvas), uiBar.ts (label, action line, hint), speech.ts, hotspots.ts,
-                        inventory.ts, worlds.ts, dialogue.ts (the conversation panel), progress.ts (career stats, the act's goals),
-                        edit.ts (the owner's Edit button and edit mode, over an EditorHost)
+                        inventory.ts, worlds.ts, dialogue.ts (the conversation panel), progress.ts (career stats, the act's goals)
   src/presentation/three3d/  the only folder that imports three, the game's renderer: renderer.ts (Three3dRenderer
                         implements Renderer; a WebGL canvas with the scene over the UI bar, the grain overlay, a message on #game
                         without WebGL), room.ts (one SceneView: the room's scene model seen from its cam_main, the models
@@ -98,8 +95,7 @@ frontend/
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
                         renderers.ts (loads the 3D renderer as its own chunk, after the title screen), title.ts (Continue only when a save exists),
                         animation.ts (animate: session events -> the clip each character plays, for renderer.play and the mirror),
-                        session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`, useContent),
-                        editor.ts (the EditorHost: drafts checked and played live, publishing),
+                        session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation on #game)
   scripts/make-placeholders.mjs  writes the placeholder models in public/models/, the room shells laid out in the
                         scene pixels of their reference art, docs/design/rooms/<room>.svg (tests/unit/placeholders.test.ts
@@ -118,8 +114,6 @@ frontend/
 backend/
   src/punland_api/app.py     FastAPI app factory, CORS, /health
   src/punland_api/config.py  settings from env vars
-  src/punland_api/owner.py   owner sign-in: Google ID token check, the session cookie, CSRF, /me
-  src/punland_api/editor.py  the editor's publish endpoint: a room's moved points as a pull request
   tests/                     pytest
 art/blender/            the Blender sources: <id>.py builds a model from scratch with bpy and exports its glb to
                         frontend/public/models/ (protagonist.py and opening.py so far), lib/ the helpers they share (rig.py: a

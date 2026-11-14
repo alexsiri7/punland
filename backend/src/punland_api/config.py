@@ -26,16 +26,6 @@ class Settings:
     # Postgres for saves, authenticating as the app's own role so unqualified table names
     # resolve to its schema (punland / punland_staging). Unset: /saves answers 503.
     database_url: str | None = None
-    # Owner sign-in (#122). Unset: no sign-in, the game is unchanged.
-    google_client_id: str | None = None
-    owner_email: str | None = None
-    session_secret: str | None = field(default=None, repr=False)
-    # Editor publishing (#123): a fine-grained token for the repo alone. Unset: publish answers 503.
-    editor_github_token: str | None = field(default=None, repr=False)
-
-    @property
-    def owner_sign_in(self) -> bool:
-        return bool(self.google_client_id and self.owner_email and self.session_secret)
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -49,8 +39,4 @@ class Settings:
             requesty_api_key=os.environ.get("REQUESTY_API_KEY") or None,
             dialogue_model=os.environ.get("PUNLAND_DIALOGUE_MODEL") or DEFAULT_DIALOGUE_MODEL,
             database_url=os.environ.get("DATABASE_URL") or None,
-            google_client_id=os.environ.get("GOOGLE_CLIENT_ID") or None,
-            owner_email=os.environ.get("OWNER_EMAIL") or None,
-            session_secret=os.environ.get("SESSION_SECRET") or None,
-            editor_github_token=os.environ.get("EDITOR_GITHUB_TOKEN") or None,
         )
