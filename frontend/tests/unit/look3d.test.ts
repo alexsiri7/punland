@@ -114,7 +114,17 @@ describe('the 3D look, the key light', () => {
 
   // Everything the camera sees, not just what the light's fitting rays meet: a surface between
   // two rays left out of the shadow map would be drawn lit, its shadow cut off at a straight line.
-  it.each(['dream', 'high-street', 'feed', 'opening'])('covers everything the camera sees in %s', async (id) => {
+  it.each([
+    'coach-station',
+    'dream',
+    'feed',
+    'flat',
+    'high-street',
+    'map',
+    'mayors-office',
+    'music-shop',
+    'opening',
+  ])('covers everything the camera sees in %s', async (id) => {
     const { scene, view } = await sceneModel(id);
     light(scene, view);
     const key = keyLight(scene);
