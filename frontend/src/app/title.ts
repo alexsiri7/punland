@@ -17,11 +17,6 @@ export async function initTitleScreen(root: ParentNode, deps: TitleScreenDeps): 
   const cont = root.querySelector<HTMLButtonElement>('#continue');
   if (!titleScreen || !newGame || !cont) throw new Error('title screen markup missing');
 
-  // Continue resumes the save that made it visible: a second read that failed would start a
-  // new game, and its first autosave would overwrite the backend's copy.
-  const save = await deps.store.load();
-  cont.hidden = save === null;
-
   const hideTitle = () => {
     titleScreen.hidden = true;
   };
@@ -31,6 +26,11 @@ export async function initTitleScreen(root: ParentNode, deps: TitleScreenDeps): 
     hideTitle();
     deps.start();
   });
+
+  // Continue resumes the save that made it visible: a second read that failed would start a
+  // new game, and its first autosave would overwrite the backend's copy.
+  const save = await deps.store.load();
+  cont.hidden = save === null;
 
   cont.addEventListener('click', () => {
     hideTitle();
