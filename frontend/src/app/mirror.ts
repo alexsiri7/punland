@@ -7,9 +7,10 @@ import type { GameSession } from './session';
  * What the canvas shows, mirrored on #game for tests and the DOM (tests/e2e/play.ts):
  * data-scene (room id), data-world (its world), data-player ("x,y" in scene pixels),
  * data-hover (the hotspot under the pointer), data-say (the line being said, by anyone, each
- * in turn as the speech line shows them; empty when silent), data-act (the act being played)
- * and data-player-animation (the clip the player plays). The player, speech and the act follow
- * the session's events, and the clip follows the app's animator (app/animation.ts). The room follows the
+ * in turn as the speech line shows them; empty when silent), data-act (the act being played),
+ * data-player-animation (the clip the player plays) and data-cue (on while a cutscene holds the
+ * player's input, off otherwise; first written once the room's cutscene, if any, has begun). The player, speech and the act follow
+ * the session's events, and the clip follows the app's animator (app/animation.ts) and the cue the app's frames. The room follows the
  * view, which says when it has drawn it and takes clicks there, and hover follows the UI
  * (presentation/ui), which reports it: it is the pointer's and not the session's.
  */
@@ -21,6 +22,8 @@ export interface ViewMirror {
   hover(name: string): void;
   /** The clip the player plays now. */
   playerAnimation(clip: AnimationName): void;
+  /** Whether a cutscene's wait holds the player's input now. */
+  cue(on: boolean): void;
 }
 
 export function createMirror(container: HTMLElement, session: GameSession): ViewMirror {
@@ -53,6 +56,10 @@ export function createMirror(container: HTMLElement, session: GameSession): View
     },
     playerAnimation(clip) {
       data.playerAnimation = clip;
+    },
+    cue(on) {
+      const cue = on ? 'on' : 'off';
+      if (data.cue !== cue) data.cue = cue;
     },
   };
 }

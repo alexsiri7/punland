@@ -200,7 +200,8 @@ function combine(content: Content, state: GameState, item: string, on: string, e
   return runEffects(content, hush(select(state, null, events), events), use.effects, null, events);
 }
 
-function allHold(state: GameState, conditions: Condition[] | undefined, world: string | null = null): boolean {
+/** Whether every condition holds, for `world` conditions in `world`. */
+export function allHold(state: GameState, conditions: Condition[] | undefined, world: string | null = null): boolean {
   return conditions?.every((condition) => holds(state, condition, world)) ?? true;
 }
 

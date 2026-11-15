@@ -16,6 +16,7 @@ import { expect } from './fixtures';
  *   data-say     the line being said, by the cat or anyone else, in turn; empty when silent
  *   data-world   the world that is showing: street, online or dream
  *   data-act     the act being played
+ *   data-cue     on while a cutscene holds the player's input, off otherwise
  *
  * Hotspots, inventory items, the world switcher, career stats, the act's goals and the
  * conversation panel are DOM with roles and names, so a player with a keyboard or a screen

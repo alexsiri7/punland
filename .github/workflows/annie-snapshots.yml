@@ -1,0 +1,109 @@
+name: Annie snapshots
+
+# After each deploy of main, screenshots every room that has an Annie location and posts it with
+# its hotspots to Annie (#130, frontend/scripts/annie-snapshots.mjs). Cloudflare Pages deploys on
+# its own, outside Actions, so this waits for the commit's Cloudflare Pages check run and captures
+# that deployment's own URL. It is not a gate: its failure fails only this workflow, never the
+# deploy. It does nothing while ANNIE_API_TOKEN or ANNIE_PROJECT_ID is unset, and nothing again for
+# a build it has already sent, marked by the commit status annie-snapshots.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+  statuses: write
+
+concurrency:
+  group: annie-snapshots
+  cancel-in-progress: false
+
+jobs:
+  snapshots:
+    name: snapshots
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANNIE_URL: https://annie.interstellarai.net
+      ANNIE_API_TOKEN: ${{ secrets.ANNIE_API_TOKEN }}
+      ANNIE_PROJECT_ID: ${{ secrets.ANNIE_PROJECT_ID }}
+      BUILD: ${{ github.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Is Annie set up?
+        id: annie
+        run: |
+          if [ -z "$ANNIE_API_TOKEN" ] || [ -z "$ANNIE_PROJECT_ID" ]; then
+            echo "::notice::ANNIE_API_TOKEN or ANNIE_PROJECT_ID is not set: nothing sent to Annie"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sent=$(gh api "repos/$GITHUB_REPOSITORY/commits/$BUILD/statuses" \
+            --jq '[.[] | select(.context == "annie-snapshots" and .state == "success")] | length')
+          if [ "$sent" != "0" ]; then
+            echo "::notice::Build $BUILD was already sent to Annie"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait for the Cloudflare Pages deploy
+        id: deploy
+        if: steps.annie.outputs.run == 'true'
+        run: |
+          for _ in $(seq 60); do
+            check=$(gh api "repos/$GITHUB_REPOSITORY/commits/$BUILD/check-runs?check_name=Cloudflare%20Pages" \
+              --jq '[.check_runs[] | select(.app.slug == "cloudflare-workers-and-pages")][0] // {}')
+            if [ "$(jq -r '.status' <<< "$check")" = "completed" ]; then
+              conclusion=$(jq -r '.conclusion' <<< "$check")
+              if [ "$conclusion" != "success" ]; then
+                echo "::notice::Cloudflare Pages did not deploy $BUILD ($conclusion): nothing sent to Annie"
+                echo "url=" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              url=$(jq -r '.output.summary' <<< "$check" | grep -oE 'https://[0-9a-f]+\.punland\.pages\.dev' | head -n 1)
+              if [ -z "$url" ]; then
+                echo "::error::The Cloudflare Pages check run of $BUILD names no deployment URL"
+                exit 1
+              fi
+              echo "url=$url" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::Cloudflare Pages did not finish deploying $BUILD in 20 minutes"
+          exit 1
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: steps.deploy.outputs.url != ''
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        if: steps.deploy.outputs.url != ''
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        if: steps.deploy.outputs.url != ''
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Capture the rooms and post them to Annie
+        if: steps.deploy.outputs.url != ''
+        working-directory: frontend
+        env:
+          SITE: ${{ steps.deploy.outputs.url }}
+        run: node scripts/annie-snapshots.mjs "$SITE"
+
+      - name: Mark the build sent
+        if: steps.deploy.outputs.url != ''
+        run: >-
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$BUILD"
+          -f state=success -f context=annie-snapshots -f description="Room snapshots sent to Annie"

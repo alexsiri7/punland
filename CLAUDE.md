@@ -45,7 +45,7 @@ pytest
 punland-api           # uvicorn on $PORT (default 8000)
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the backend with a `/health` probe, the unsafe-change checker's own tests, and `openspec validate --specs --strict` (`openspec.yml`). All must be green to merge.
+CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the backend with a `/health` probe, the unsafe-change checker's own tests, and `openspec validate --specs --strict` (`openspec.yml`). All must be green to merge. The Annie snapshots workflow (`annie-snapshots.yml`) runs after merge, on main, and is not a gate.
 
 ## Architecture: read docs/ARCHITECTURE.md before changing frontend/src
 
@@ -96,11 +96,14 @@ frontend/
                         renderers.ts (loads the 3D renderer as its own chunk, after the title screen), title.ts (Continue only when a save exists),
                         animation.ts (animate: session events -> the clip each character plays, for renderer.play and the mirror),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
-                        mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation on #game)
+                        mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation/-cue on #game)
   scripts/make-placeholders.mjs  writes the placeholder models in public/models/, the room shells laid out in the
                         scene pixels of their reference art, docs/design/rooms/<room>.svg (tests/unit/placeholders.test.ts
                         checks the committed files match it); scripts/glb-container.mjs is the one glb writer it and
                         the test fixtures share
+  scripts/annie-snapshots.mjs  after each main deploy, .github/workflows/annie-snapshots.yml runs it to screenshot every
+                        room of that deployment that scripts/annie-locations.json maps to an Annie location (the
+                        story/annie/location/<slug>.md names) and post it with its hotspots to Annie (#130)
   public/models/<kind>s/<id>.glb  3D models (placeholders, except those built in Blender, which the registry marks
                         "placeholder": false), drawn by three3d: the asset contract, ARCHITECTURE.md §8
   public/textures/grain.svg  the 3D renderer's grain overlay
@@ -141,7 +144,7 @@ Acceptance tests come from the specs (issue #2 and later spec changes): one test
 
 - **Story is content data.** Rooms, hotspots, items, characters, puzzles and acts are data files, not code (progress spec, "Story as content"). Adding a puzzle must not need a code change. Art is a swappable placeholder file per room, and replacing it must not touch game logic.
 - **The model key stays on the server.** The browser never calls Requesty or Supabase directly; everything goes through the backend. No secrets in the repo, in `frontend/`, or in `VITE_*` variables, because anything in the frontend build is public.
-- **Secrets** come from env vars on Railway, managed in Doppler. Doppler has no free project slot left, so punland's secrets go in configs inside the existing `shared` project (for example `shared/prd_punland`), synced to Railway. `.env` files are gitignored and never committed.
+- **Secrets** come from env vars on Railway, managed in Doppler. Doppler has no free project slot left, so punland's secrets go in configs inside the existing `shared` project (for example `shared/prd_punland`), synced to Railway. A GitHub Actions workflow's own secrets (`annie-snapshots.yml`'s `ANNIE_API_TOKEN` and `ANNIE_PROJECT_ID`) are GitHub repository secrets instead, since Railway's env vars never reach Actions. `.env` files are gitignored and never committed.
 - **AI failures never break the game.** If the AI is unavailable or the per-player turn limit is reached, the character gives a canned in-character line and the conversation ends (dialogue spec).
 - **CSP without `'unsafe-inline'`.** No inline `<script>`, `<style>`, `style="..."` or `on*=` handlers. Setting `element.style.x` from JS is fine. `connect-src` allows only `'self'` and the API origin. A new origin, or any other header change, needs a matching `frontend/public/_headers` edit, and that edit needs the owner's review.
 - **Only build output is served.** Cloudflare Pages serves `frontend/dist/`. Tests, docs and tooling never go into `frontend/public/`.
