@@ -32,7 +32,7 @@ type Json = Record<string, any>;
  * its own, so its floor and its hit_board node are real. `edit` changes its files before the
  * manifest lists them; `extra` adds fields to the manifest.
  */
-function lighthouse(edit?: (json: Json) => void, extra: Json = {}, version = '1.0'): Bundle {
+function lighthouse(edit?: (json: Json) => void, extra: Json = {}, version = `${SUPPORTED_SCHEMA.major}.${SUPPORTED_SCHEMA.minor}`): Bundle {
   const station = tuneStoryBundle().json['content/rooms/coach-station.json'] as Json;
   const board = station.hotspots.find((spot: Json) => spot.id === 'board');
   const json: Json = {
