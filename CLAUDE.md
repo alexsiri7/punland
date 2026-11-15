@@ -63,8 +63,8 @@ frontend/
   src/content/          content data: rooms/<room>.json, items.json, worlds.json, characters.json (with each
                         character's onGoal: what a conversation reaching its goal does), objects.json, stats.json
                         (career stats), acts.json (acts, their goals and which act comes next), protagonist.ts;
-                        validate.ts checks the files ({file, field, message} problems, branded ids); index.ts
-                        loadContent() builds Content or throws
+                        validate.ts checks the files ({file, field, message} problems, branded ids); manifest.ts
+                        reads a bundle's manifest.json and its schema version; index.ts loadContent() builds Content or throws
   src/content/rooms/<room>.json  room content: its scene model, floor, start point, hotspots: a target (a placed
                         character or object, or a scene node), interactions (verb, item, `when` conditions, effects such
                         as say, goTo, pickUp, talk, changeStat, reachGoal) and `presentWhen` conditions. No screen
@@ -76,9 +76,9 @@ frontend/
                         glb reader), contract.ts (checkModel: one glb against the asset contract; offFloor: floor points
                         raycast from cam_main onto a scene's floor), validate.ts (validateAssets: the registry against the
                         content and the model files, with each room's hit_<node> nodes and floor points,
-                        run in unit tests)
+                        run in unit tests and as a bundle loads)
   src/services/         api.ts (backend base URL + fetch helpers), save.ts (SaveStore: local + backend), dialogue.ts
-                        (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts
+                        (BackendDialogue: POST /dialogue/turn), player.ts, storage.ts, bundle.ts (fetches a bundle's files)
   src/presentation/     renderer.ts (the Renderer interface: SceneView, Pick, AnimationName; no engine imports),
                         theme.ts (design tokens from docs/design/STYLE.md), fonts.ts (self-hosted fonts), style.css,
                         session.ts (the Session interface the UI sees)
@@ -89,11 +89,13 @@ frontend/
                         implements Renderer; a WebGL canvas with the scene over the UI bar, the grain overlay, a message on #game
                         without WebGL), room.ts (one SceneView: the room's scene model seen from its cam_main, the models
                         on its floor, floor points <-> the floor mesh, hotspot bounds from models and hit_<node> nodes, picking hotspots then the floor by raycast), actor.ts (a placed model's clips: one AnimationMixer
-                        each, cross-faded, idle for a missing clip), models.ts (the registry's glb files, cached, in toon materials, with their clips),
+                        each, cross-faded, idle for a missing clip), models.ts (the game's registry's glb files, cached, in toon materials, with their clips),
                         look.ts (STYLE.md in 3D: the two-step toon ramp and the lights)
-  src/app/              main.ts (boot: title screen -> GameSession -> playGame()), game.ts (playGame: the SceneView from the
+  src/app/              main.ts (boot: the game -> title screen -> GameSession -> playGame()), games.ts (the game to
+                        play: the built-in one, or loadBundle: a bundle that ?bundle=<manifest path> names, fetched and
+                        checked; bundles live in public/bundles/<game>/, ARCHITECTURE.md section 3), game.ts (playGame: the SceneView from the
                         session, canvas clicks -> renderer.pick -> commands, frames -> tick, the UI and mirror),
-                        renderers.ts (loads the 3D renderer as its own chunk, after the title screen), title.ts (Continue only when a save exists),
+                        renderers.ts (loads the 3D renderer as its own chunk, after the title screen), title.ts (Continue only when a save of this game exists; why a bundle is refused),
                         animation.ts (animate: session events -> the clip each character plays, for renderer.play and the mirror),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
                         mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation/-cue on #game)

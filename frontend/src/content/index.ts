@@ -2,7 +2,8 @@ import type { Content } from '../domain/content';
 import { type ContentFiles, readContent } from './validate';
 
 export type { ContentFiles, ContentIssue } from './validate';
-export { validateContent } from './validate';
+export { readContent, validateContent } from './validate';
+export { type Manifest, readManifest, SUPPORTED_SCHEMA } from './manifest';
 
 /**
  * The content files here (worlds.json, items.json, characters.json, objects.json, stats.json,

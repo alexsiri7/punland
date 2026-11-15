@@ -1,12 +1,12 @@
 import { type Material, Mesh, MeshStandardMaterial, MeshToonMaterial, type Object3D } from 'three';
 import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { model3dFile } from '../../assets/registry';
+import { model3dFile, type Registry } from '../../assets/registry';
 import type { ModelId } from '../../domain';
 import { toonMaterial } from './look';
 
 /**
- * The registry's glb files (model3d.file), each loaded once and drawn with the toon look: every
+ * A registry's glb files (model3d.file), each loaded once and drawn with the toon look: every
  * material's base colour on a MeshToonMaterial (docs/ARCHITECTURE.md, section 7). Each copy
  * carries the file's clips as its `animations`.
  */
@@ -14,12 +14,14 @@ export class Models {
   private readonly loader = new GLTFLoader();
   private readonly loaded = new Map<ModelId, Promise<Object3D>>();
 
+  constructor(private readonly registry: Registry) {}
+
   /**
    * A new copy of the model to place, or null when it has no 3D variant or its file failed to
    * load: one missing model leaves the rest of the room standing, and the next room tries again.
    */
   async instance(model: ModelId): Promise<Object3D | null> {
-    const file = model3dFile(model);
+    const file = model3dFile(this.registry, model);
     if (file === null) return null;
     let template = this.loaded.get(model);
     if (!template) {

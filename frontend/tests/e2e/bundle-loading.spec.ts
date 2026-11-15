@@ -19,10 +19,9 @@ import {
   tuneStoryBundle,
 } from './play';
 
-// Acceptance tests for openspec/specs/bundle-loading/spec.md (spec change #141). Each scenario is
-// expected to fail until #143 builds bundle loading; the interface they assume is in play.ts.
-// The first test is not a scenario: it checks the bundles the scenarios serve, and is expected
-// to pass, so a broken fixture is not hidden behind an expected failure.
+// Acceptance tests for openspec/specs/bundle-loading/spec.md (spec change #141, built in #143);
+// the interface they play through is in play.ts. The first test is not a scenario: it checks the
+// bundles the scenarios serve.
 
 type Json = Record<string, any>;
 
@@ -93,10 +92,13 @@ test('The bundles the scenarios serve hold together', async ({ page }) => {
     expect(bundle.manifest.world, name).toBe(worlds[0]!.id);
 
     const served = await serveBundle(page, name, bundle);
+    const root = `/bundles/${name}/`;
     const paths = ['manifest.json', ...Object.keys(bundle.json), ...Object.keys(bundle.models)];
+    // Models sit at their registry path on the site, not in the bundle.
+    const urls = paths.map((path) => (Object.hasOwn(bundle.models, path) ? `/${path}` : root + path));
     const statuses = await page.evaluate(
-      ({ root, paths }) => Promise.all(paths.map((path) => fetch(root + path).then((r) => r.status))),
-      { root: `/bundles/${name}/`, paths },
+      (urls) => Promise.all(urls.map((url) => fetch(url).then((r) => r.status))),
+      urls,
     );
     expect(statuses, name).toEqual(paths.map(() => 200));
     expect(served.sort(), name).toEqual([...paths].sort());
@@ -104,7 +106,6 @@ test('The bundles the scenarios serve hold together', async ({ page }) => {
 });
 
 test('Playing an exported bundle', async ({ page }) => {
-  test.fail(true, 'needs #143');
   // Requirement: Loading a bundle. The game SHALL load its worlds, rooms, items, characters,
   // objects, stats, acts, model registry and character sheets from a bundle named by a
   // manifest, and play it.
@@ -119,7 +120,6 @@ test('Playing an exported bundle', async ({ page }) => {
 });
 
 test('An unsupported major version', async ({ page }) => {
-  test.fail(true, 'needs #143');
   // Requirement: Manifest and schema version. The game MUST refuse a bundle whose major schema
   // version it does not support, and say which version it needs.
   const unsupported = SUPPORTED_SCHEMA.major + 1;
@@ -132,7 +132,6 @@ test('An unsupported major version', async ({ page }) => {
 });
 
 test('A newer minor version', async ({ page }) => {
-  test.fail(true, 'needs #143');
   // Requirement: Manifest and schema version. The bundle's manifest SHALL name the game and the
   // schema version of its files.
   const newer = `${SUPPORTED_SCHEMA.major}.${SUPPORTED_SCHEMA.minor + 1}`;
@@ -152,7 +151,6 @@ test('A newer minor version', async ({ page }) => {
 });
 
 test('A broken bundle', async ({ page }) => {
-  test.fail(true, 'needs #143');
   // Requirement: Checked before playing. A bundle MUST be checked with the same validators as
   // content kept in the repository, and any problem MUST be listed with its file and field
   // before anything is played.
@@ -172,7 +170,6 @@ test('A broken bundle', async ({ page }) => {
 });
 
 test('A different game', async ({ page }) => {
-  test.fail(true, 'needs #143');
   // Requirement: No game content in the engine. The engine's code SHALL not depend on the
   // content of any one game, and a bundle for a different game MUST play with no code change.
   await serveBundle(page, 'lighthouse', lighthouse());
@@ -187,7 +184,6 @@ test('A different game', async ({ page }) => {
 });
 
 test('A save from another game', async ({ page }) => {
-  test.fail(true, 'needs #143');
   // Requirement: Saves belong to a game. A save SHALL record which game it was made for. The
   // game MUST NOT load a save made for a different game, and MUST say so instead of loading a
   // wrong state.
@@ -218,4 +214,13 @@ test('A save from another game', async ({ page }) => {
     await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
   }
   await expect(game(page)).not.toHaveAttribute('data-scene', content.highStreet);
+});
+
+test('A bundle path that is not an address', async ({ page }) => {
+  // Requirement: Checked before playing. A bundle the game can't load is refused with its
+  // problem listed, rather than nothing happening.
+  await page.goto('/?bundle=http://[x');
+  await expect(bundleProblem(page)).toContainText('is not a valid address');
+  await expect(offeredNewGame(page)).toBeHidden();
+  await expect(game(page)).not.toHaveAttribute('data-scene', /\S/);
 });

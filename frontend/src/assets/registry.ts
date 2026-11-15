@@ -57,12 +57,12 @@ export function readRegistry(json: unknown): { registry: Registry; issues: Asset
   return { registry, issues };
 }
 
-/** Every model, checked as it loads. */
+/** Every model of the game built in (src/assets/models.json), checked as it loads. */
 export const models: Registry = loadRegistry(file);
 
-/** The glb file of a model under public/, if the model is in the registry. */
-export function model3dFile(model: ModelId): string | null {
-  const entry = Object.hasOwn(models, model) ? models[model] : undefined;
+/** The glb file of a model under public/, if the model is in `registry`. */
+export function model3dFile(registry: Registry, model: ModelId): string | null {
+  const entry = Object.hasOwn(registry, model) ? registry[model] : undefined;
   return entry?.model3d.file ?? null;
 }
 
