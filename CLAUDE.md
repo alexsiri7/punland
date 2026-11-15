@@ -45,7 +45,7 @@ pytest
 punland-api           # uvicorn on $PORT (default 8000)
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the backend with a `/health` probe, the unsafe-change checker's own tests, and `openspec validate --specs --strict` (`openspec.yml`). All must be green to merge.
+CI (`.github/workflows/ci.yml`) runs all of the above plus a Docker build of the backend with a `/health` probe, the unsafe-change checker's own tests, and `openspec validate --specs --strict` (`openspec.yml`). All must be green to merge. The Annie snapshots workflow (`annie-snapshots.yml`) runs after merge, on main, and is not a gate.
 
 ## Architecture: read docs/ARCHITECTURE.md before changing frontend/src
 
@@ -96,11 +96,14 @@ frontend/
                         renderers.ts (loads the 3D renderer as its own chunk, after the title screen), title.ts (Continue only when a save exists),
                         animation.ts (animate: session events -> the clip each character plays, for renderer.play and the mirror),
                         session.ts (GameSession: the state, dispatch/subscribe, autosave on `saved`),
-                        mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation on #game)
+                        mirror.ts (data-scene/-world/-player/-hover/-say/-act/-player-animation/-cue on #game)
   scripts/make-placeholders.mjs  writes the placeholder models in public/models/, the room shells laid out in the
                         scene pixels of their reference art, docs/design/rooms/<room>.svg (tests/unit/placeholders.test.ts
                         checks the committed files match it); scripts/glb-container.mjs is the one glb writer it and
                         the test fixtures share
+  scripts/annie-snapshots.mjs  after each main deploy, .github/workflows/annie-snapshots.yml runs it to screenshot every
+                        room of that deployment that scripts/annie-locations.json maps to an Annie location (the
+                        story/annie/location/<slug>.md names) and post it with its hotspots to Annie (#130)
   public/models/<kind>s/<id>.glb  3D models (placeholders, except those built in Blender, which the registry marks
                         "placeholder": false), drawn by three3d: the asset contract, ARCHITECTURE.md §8
   public/textures/grain.svg  the 3D renderer's grain overlay

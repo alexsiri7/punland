@@ -252,7 +252,7 @@ This is what lets the renderer be swapped with the same public interface (archit
 
 ### The `#game` mirror (`app/mirror.ts`)
 
-`data-scene`, `data-world`, `data-player` ("x,y" in scene pixels, which is the floor point, so it is the same whatever the renderer), `data-hover`, `data-say`, `data-act` (#11) and, from B5, `data-player-animation` are written from session events in one place. `data-say` is the line up now, by anyone, in turn as the speech line shows them (#71). They are not written by renderers. Two of them are what only the view knows, which it reports to the mirror rather than writing them: `data-hover` (the pointer's hotspot, which the DOM UI reports) and when a room is drawn and takes input, which is when `data-scene` and `data-world` change.
+`data-scene`, `data-world`, `data-player` ("x,y" in scene pixels, which is the floor point, so it is the same whatever the renderer), `data-hover`, `data-say`, `data-act` (#11) and, from B5, `data-player-animation` are written from session events in one place. `data-say` is the line up now, by anyone, in turn as the speech line shows them (#71). They are not written by renderers. Two of them are what only the view knows, which it reports to the mirror rather than writing them: `data-hover` (the pointer's hotspot, which the DOM UI reports) and when a room is drawn and takes input, which is when `data-scene` and `data-world` change. `data-cue` (#130) is `on` while a cutscene holds the player's input and `off` otherwise; the app writes it from its frame loop and once the room's cutscene has begun, as the view's knowledge of the session's cue.
 
 ## 6. Assets: the model registry (`assets/`)
 
