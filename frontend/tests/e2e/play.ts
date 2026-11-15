@@ -384,11 +384,11 @@ export function manifest(
   game: string,
   name: string,
   version: string,
-  start: string,
+  world: string,
   json: Record<string, unknown>,
   extra: Record<string, unknown> = {},
 ): Record<string, unknown> {
-  return { game, name, schemaVersion: version, start, files: Object.keys(json).sort(), ...extra };
+  return { game, name, schemaVersion: version, world, files: Object.keys(json).sort(), ...extra };
 }
 
 /** The page that plays a bundle served by serveBundle under that name. */
