@@ -83,7 +83,9 @@ export function readContent(files: ContentFiles): ContentResult {
   const actsFile = file(ACTS_FILE);
   const itemsById = itemsFile.get('items').value;
   const ids = (list: Field) => new Set(list.elements.map((entry) => entry.get('id').value).filter(isString));
+  const protagonistFile = charactersFile.get('protagonist');
   const known: Known = {
+    protagonist: protagonistFile.get('name').optional((field) => field.text()) ?? PROTAGONIST.name,
     room: new Set(roomFiles.map((room) => room.id)),
     item: new Set(isObject(itemsById) ? Object.keys(itemsById) : []),
     world: ids(worldsFile.get('worlds')),
@@ -100,7 +102,7 @@ export function readContent(files: ContentFiles): ContentResult {
     const onGoal = entry.get('onGoal').optional((field) => field.list((reaction) => readReaction(reaction, known)));
     return onGoal !== undefined ? { onGoal } : {};
   });
-  const protagonist = { name: PROTAGONIST.name, model: charactersFile.get('protagonist').get('model').text() };
+  const protagonist = { name: known.protagonist, model: protagonistFile.get('model').text() };
   const objects = readEntities(objectsFile.get('objects'), 'object', () => ({}));
   const stats = readStats(statsFile);
   const acts = readActs(actsFile, known);
@@ -137,7 +139,8 @@ export function readContent(files: ContentFiles): ContentResult {
 /** What a field stands for when it is wrong: never part of a returned `Content`. */
 const NOWHERE: FloorPoint = { x: 0, y: 0 };
 
-type Known = Record<keyof Ids, ReadonlySet<string>>;
+/** The ids each kind of thing has, and the protagonist's name for `{protagonist}` in content text. */
+type Known = Record<keyof Ids, ReadonlySet<string>> & { protagonist: string };
 
 function readWorlds(file: Field, known: Known): World[] {
   const seen = new Set<string>();
@@ -275,7 +278,7 @@ function readRoom(room: Field, known: Known): Room {
   const place = room.get('place');
   const verb = place.get('verb').text();
   const name = place.get('name').text();
-  const hint = named(room.get('hint').string());
+  const hint = named(room.get('hint').string(), known);
   const floor = room.get('walkable').checked((field) => field.list((point) => point.point()));
   if (floor && !isConvex(floor)) room.get('walkable').problem('must be a convex polygon of at least 3 points');
   const walkable = floor && isConvex(floor) ? floor : undefined;
@@ -442,7 +445,7 @@ function readEffect(effect: Field, known: Known): Effect {
   switch (kindOf(effect, EFFECTS)) {
     case 'say': {
       const by = effect.get('by').optional((field) => field.id('character', known.character));
-      return { say: named(effect.get('say').text()), ...(by !== undefined && { by }) };
+      return { say: named(effect.get('say').text(), known), ...(by !== undefined && { by }) };
     }
     case 'goTo': {
       const at = effect.get('at').optional((field) => field.checked((f) => f.point()));
@@ -480,8 +483,11 @@ function readEffect(effect: Field, known: Known): Effect {
   }
 }
 
-/** Content text with `{protagonist}` for the protagonist's name (CLAUDE.md: the name lives only in protagonist.ts). */
-const named = (text: string): string => text.replaceAll('{protagonist}', PROTAGONIST.name);
+/**
+ * Content text with `{protagonist}` for the protagonist's name: the game's own, or with none
+ * given, Tune Story's (CLAUDE.md: that name lives only in protagonist.ts).
+ */
+const named = (text: string, known: Known): string => text.replaceAll('{protagonist}', known.protagonist);
 
 /** A `goTo` leads to a room in the same world (worlds are entered from the switcher), onto its floor. */
 function checkExits(field: Field, room: Room, rooms: Readonly<Record<string, Room>>, known: Known): void {

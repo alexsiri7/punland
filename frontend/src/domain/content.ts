@@ -38,7 +38,7 @@ export interface Content {
   characters: Readonly<Record<string, Character>>;
   /** By object id. */
   objects: Readonly<Record<string, Prop>>;
-  /** The protagonist's display data; the name comes from content/protagonist.ts. */
+  /** The protagonist's display data; the name is characters.json's, or else content/protagonist.ts's. */
   protagonist: Entity;
   /** Where a new game starts, and what it carries. */
   start: { room: RoomId; items: readonly ItemId[] };

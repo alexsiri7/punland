@@ -2,7 +2,7 @@ import { MODELS_FILE, models, readRegistry, type Registry } from '../assets/regi
 import { type ModelFiles, validateAssets } from '../assets/validate';
 import { type ContentIssue, loadContent, readContent, readManifest } from '../content';
 import type { Content } from '../domain';
-import { fetchBytes, fetchJson } from '../services/bundle';
+import { type Fetched, fetchBytes, fetchJson } from '../services/bundle';
 
 /** A game to play: its content and the models it is drawn with. */
 export interface Game {
@@ -41,7 +41,7 @@ export async function loadBundle(
 
   const wanted = manifest.files.filter((file) => file.startsWith('content/') || file === MODELS_FILE);
   const fetched = await Promise.all(
-    wanted.map(async (file) => [file, await fetchJson(new URL(file, manifestUrl), fetch)] as const),
+    wanted.map(async (file) => [file, await fetchOnSite(file, manifestUrl, site, fetchJson, fetch)] as const),
   );
   const files: Record<string, unknown> = {};
   const problems: string[] = [];
@@ -65,10 +65,25 @@ export async function loadBundle(
 /** The registry's model files that can be had; validateAssets reports the rest as missing. */
 async function modelFiles(registry: Registry, site: URL, fetch: typeof globalThis.fetch): Promise<ModelFiles> {
   const paths = [...new Set(Object.values(registry).map(({ model3d }) => model3d.file))];
+  const root = new URL('/', site);
   const fetched = await Promise.all(
-    paths.map(async (path) => [path, await fetchBytes(new URL(path, new URL('/', site)), fetch)] as const),
+    paths.map(async (path) => [path, await fetchOnSite(path, root, site, fetchBytes, fetch)] as const),
   );
   return Object.fromEntries(fetched.flatMap(([path, result]) => (result.ok ? [[path, result.value]] : [])));
+}
+
+/** The file a bundle names by `path` from `base`, fetched only when that is an address on this site. */
+async function fetchOnSite<T>(
+  path: string,
+  base: URL,
+  site: URL,
+  get: (url: URL, fetch: typeof globalThis.fetch) => Promise<Fetched<T>>,
+  fetch: typeof globalThis.fetch,
+): Promise<Fetched<T>> {
+  const url = URL.parse(path, base);
+  if (!url) return { ok: false, error: 'is not a valid address' };
+  if (url.origin !== site.origin) return { ok: false, error: 'is not on this site' };
+  return get(url, fetch);
 }
 
 function describe({ file, field, message }: ContentIssue): string {

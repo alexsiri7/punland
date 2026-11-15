@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { builtInGame, loadBundle } from '../../src/app/games';
 import { readManifest, SUPPORTED_SCHEMA } from '../../src/content';
+import type { RoomId } from '../../src/domain';
 import { fakeFetch, lighthouse, MANIFEST_URL, SITE } from './fixtures/bundle';
 
 // Bundle loading (openspec/specs/bundle-loading): a game from a bundle is checked like the
@@ -79,6 +80,46 @@ describe('loading a bundle', () => {
     const files = lighthouse();
     files.delete(new URL('content/items.json', MANIFEST_URL).href);
     expect(await load(files).loaded).toEqual({ problems: ['content/items.json: could not be loaded (404)'] });
+  });
+
+  it('lists a file that is not JSON rather than throwing', async () => {
+    const files = lighthouse();
+    const items = new URL('content/items.json', MANIFEST_URL).href;
+    const fetch = fakeFetch(files);
+    const notJson = async (input: RequestInfo | URL) =>
+      String(input) === items ? new Response('<html>') : fetch(input);
+    expect(await loadBundle(new URL(MANIFEST_URL), new URL(SITE), notJson)).toEqual({
+      problems: ['content/items.json: is not JSON'],
+    });
+  });
+
+  it('lists a model path that is not an address rather than throwing', async () => {
+    const result = await load(
+      lighthouse((json) => (json['assets/models.json'].models[0].model3d.file = 'http://[x.glb')),
+    ).loaded;
+    expect('problems' in result && result.problems.some((p) => p.includes('model3d.file'))).toBe(true);
+  });
+
+  it('fetches no model from another site', async () => {
+    const elsewhere = 'https://elsewhere.test/jetty.glb';
+    const { fetch, loaded } = load(
+      lighthouse((json) => (json['assets/models.json'].models[0].model3d.file = elsewhere)),
+    );
+    const result = await loaded;
+    expect('problems' in result && result.problems.some((p) => p.includes('model3d.file'))).toBe(true);
+    expect(fetch.asked).not.toContain(elsewhere);
+  });
+
+  it('names its protagonist with its own name', async () => {
+    const result = await load(
+      lighthouse((json) => {
+        json['content/characters.json'].protagonist.name = 'Gull';
+        json['content/rooms/jetty.json'].hint = "{protagonist}'s jetty.";
+      }),
+    ).loaded;
+    if (!('game' in result)) throw new Error(result.problems.join('\n'));
+    expect(result.game.content.protagonist.name).toBe('Gull');
+    expect(result.game.content.rooms['jetty' as RoomId]?.hint).toBe("Gull's jetty.");
   });
 });
 

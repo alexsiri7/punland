@@ -18,7 +18,10 @@ async function chooseGame(newGameButton: HTMLButtonElement): Promise<Game | null
   const bundle = new URLSearchParams(location.search).get('bundle');
   if (bundle === null) return builtInGame();
   newGameButton.disabled = true;
-  const loaded = await loadBundle(new URL(bundle, location.href), new URL(location.href));
+  const manifestUrl = URL.parse(bundle, location.href);
+  const loaded = manifestUrl
+    ? await loadBundle(manifestUrl, new URL(location.href))
+    : { problems: [`${bundle}: is not a valid address`] };
   if ('problems' in loaded) {
     newGameButton.hidden = true;
     refuseGame(document, loaded.problems);
