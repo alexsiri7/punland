@@ -215,3 +215,12 @@ test('A save from another game', async ({ page }) => {
   }
   await expect(game(page)).not.toHaveAttribute('data-scene', content.highStreet);
 });
+
+test('A bundle path that is not an address', async ({ page }) => {
+  // Requirement: Checked before playing. A bundle the game can't load is refused with its
+  // problem listed, rather than nothing happening.
+  await page.goto('/?bundle=http://[x');
+  await expect(bundleProblem(page)).toContainText('is not a valid address');
+  await expect(offeredNewGame(page)).toBeHidden();
+  await expect(game(page)).not.toHaveAttribute('data-scene', /\S/);
+});

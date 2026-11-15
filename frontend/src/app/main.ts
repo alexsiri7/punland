@@ -1,9 +1,8 @@
 import '../presentation/fonts';
 import '../presentation/style.css';
 import { fromSave, newGame } from '../domain';
-import { BackendDialogue } from '../services/dialogue';
 import { BackendSaveStore, LocalSaveStore, savesFor } from '../services/save';
-import { type Game, builtInGame, loadBundle } from './games';
+import { type Game, builtInGame, dialogueFor, loadBundle } from './games';
 import { playGame } from './game';
 import { createRenderer } from './renderers';
 import { GameSession } from './session';
@@ -46,7 +45,7 @@ async function boot(container: HTMLElement, newGameButton: HTMLButtonElement): P
       container.hidden = false;
       const session = new GameSession(content, save ? fromSave(save, content) : newGame(content), store);
       session.save();
-      await playGame(container, session, await createRenderer(registry), new BackendDialogue());
+      await playGame(container, session, await createRenderer(registry), dialogueFor(game.id));
     },
   });
 }

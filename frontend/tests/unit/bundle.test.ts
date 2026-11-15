@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { builtInGame, loadBundle } from '../../src/app/games';
+import { describe, expect, it, vi } from 'vitest';
+import { builtInGame, dialogueFor, loadBundle } from '../../src/app/games';
 import { readManifest, SUPPORTED_SCHEMA } from '../../src/content';
 import type { RoomId } from '../../src/domain';
 import { fakeFetch, lighthouse, MANIFEST_URL, SITE } from './fixtures/bundle';
@@ -126,5 +126,18 @@ describe('loading a bundle', () => {
 describe('the built-in game', () => {
   it('is Tune Story, whose saves a Tune Story bundle continues', () => {
     expect(builtInGame()).toMatchObject({ id: 'tune-story', name: 'Tune Story' });
+  });
+});
+
+describe('who answers a game\'s characters', () => {
+  const backend = { turn: vi.fn(async () => null) };
+
+  it('is the backend, whose character sheets are Tune Story\'s, for Tune Story', () => {
+    expect(dialogueFor(builtInGame().id, backend)).toBe(backend);
+  });
+
+  it('is no one for another game, so its characters never reach a Tune Story sheet', async () => {
+    expect(await dialogueFor('lighthouse', backend).turn('bartender', null, [])).toBeNull();
+    expect(backend.turn).not.toHaveBeenCalled();
   });
 });

@@ -2,7 +2,9 @@ import { MODELS_FILE, models, readRegistry, type Registry } from '../assets/regi
 import { type ModelFiles, validateAssets } from '../assets/validate';
 import { type ContentIssue, loadContent, readContent, readManifest } from '../content';
 import type { Content } from '../domain';
+import type { DialogueBackend } from '../presentation/ui';
 import { type Fetched, fetchBytes, fetchJson } from '../services/bundle';
+import { BackendDialogue } from '../services/dialogue';
 
 /** A game to play: its content and the models it is drawn with. */
 export interface Game {
@@ -13,9 +15,21 @@ export interface Game {
   registry: Registry;
 }
 
+const TUNE_STORY = 'tune-story';
+
 /** The game built into this engine: Tune Story's content in this repository, checked as it loads. */
 export function builtInGame(): Game {
-  return { id: 'tune-story', name: 'Tune Story', content: loadContent(), registry: models };
+  return { id: TUNE_STORY, name: 'Tune Story', content: loadContent(), registry: models };
+}
+
+/**
+ * Who answers the characters of the game `gameId`: the backend for Tune Story, built in or as a
+ * bundle, since the character sheets it holds are Tune Story's (backend/src/punland_api/content/
+ * characters/). Another game's characters don't answer, rather than speak as, and share the
+ * conversation history of, a Tune Story character with the same id.
+ */
+export function dialogueFor(gameId: string, backend: DialogueBackend = new BackendDialogue()): DialogueBackend {
+  return gameId === TUNE_STORY ? backend : { turn: async () => null };
 }
 
 export type Loaded = { game: Game } | { problems: string[] };
