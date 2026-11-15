@@ -5,7 +5,8 @@ import { type AssetIssue, MODELS_FILE, type Model, type ModelKind, readRegistry 
 
 /**
  * The registry checked against the content and the model files (docs/ARCHITECTURE.md, section 6).
- * It runs in the unit tests, not as the game loads: the browser can't see which files are under public/.
+ * The unit tests run it over the built-in game's models; a bundle's are checked as it loads
+ * (app/games.ts), which fetches its model files to do so.
  */
 
 /** The model files under public/ (models/<kind>/<id>.glb), by path. */

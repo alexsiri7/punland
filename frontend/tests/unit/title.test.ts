@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SaveGame } from '../../src/domain';
 import type { SaveStore } from '../../src/services/save';
-import { initTitleScreen } from '../../src/app/title';
+import { initTitleScreen, refuseGame } from '../../src/app/title';
 
 class MemoryStore implements SaveStore {
   constructor(public game: SaveGame | null = null) {}
@@ -21,6 +21,7 @@ function markup() {
     <section id="title-screen"><h1>Tune Story</h1>
       <button id="continue" hidden>Continue</button>
       <button id="new-game">New game</button>
+      <div id="title-problem" role="alert" hidden></div>
     </section>`;
 }
 
@@ -31,7 +32,7 @@ describe('title screen', () => {
   beforeEach(markup);
 
   it('hides Continue when there is no save', async () => {
-    await initTitleScreen(document, { store: new MemoryStore(), start: vi.fn() });
+    await initTitleScreen(document, { store: new MemoryStore(), game: 'tune-story', start: vi.fn() });
     expect(btn('continue').hidden).toBe(true);
     expect(btn('new-game').hidden).toBe(false);
   });
@@ -40,7 +41,7 @@ describe('title screen', () => {
     const start = vi.fn();
     const save: SaveGame = { version: 1, room: 'pub-interior', savedAt: 'x' };
     const store = new MemoryStore(save);
-    await initTitleScreen(document, { store, start });
+    await initTitleScreen(document, { store, game: 'tune-story', start });
     expect(btn('continue').hidden).toBe(false);
     btn('continue').click();
     await flush();
@@ -52,7 +53,7 @@ describe('title screen', () => {
     const start = vi.fn();
     const save: SaveGame = { version: 1, room: 'pub-interior', savedAt: 'x' };
     const store = new MemoryStore(save);
-    await initTitleScreen(document, { store, start });
+    await initTitleScreen(document, { store, game: 'tune-story', start });
     store.load = async () => null;
     btn('continue').click();
     await flush();
@@ -61,7 +62,7 @@ describe('title screen', () => {
 
   it('New game starts from the opening scene', async () => {
     const start = vi.fn();
-    await initTitleScreen(document, { store: new MemoryStore(), start });
+    await initTitleScreen(document, { store: new MemoryStore(), game: 'tune-story', start });
     btn('new-game').click();
     await flush();
     expect(start).toHaveBeenCalledWith();
@@ -71,11 +72,31 @@ describe('title screen', () => {
     const start = vi.fn();
     const store = new MemoryStore();
     store.load = () => new Promise(() => {});
-    void initTitleScreen(document, { store, start });
+    void initTitleScreen(document, { store, game: 'tune-story', start });
     btn('new-game').click();
     await flush();
     expect(start).toHaveBeenCalledWith();
     expect(document.querySelector<HTMLElement>('#title-screen')!.hidden).toBe(true);
     expect(btn('continue').hidden).toBe(true);
+  });
+
+  it('does not continue a save made for another game, and says so', async () => {
+    const start = vi.fn();
+    const save: SaveGame = { version: 1, room: 'high-street', savedAt: 'x', gameId: 'another-game' };
+    await initTitleScreen(document, { store: new MemoryStore(save), game: 'tune-story', start });
+    expect(btn('continue').hidden).toBe(true);
+    const problem = document.querySelector<HTMLElement>('#title-problem')!;
+    expect(problem.hidden).toBe(false);
+    expect(problem.textContent).toContain('another game (another-game)');
+  });
+
+  it('lists why a game is refused', () => {
+    refuseGame(document, ['manifest.json schemaVersion: is 2.0', '<b>not markup</b>']);
+    const problem = document.querySelector<HTMLElement>('#title-problem')!;
+    expect(problem.hidden).toBe(false);
+    expect([...problem.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      'manifest.json schemaVersion: is 2.0',
+      '<b>not markup</b>',
+    ]);
   });
 });

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { SaveGame } from '../../src/domain';
-import { BackendSaveStore, LocalSaveStore, SAVE_KEY } from '../../src/services/save';
+import { isSaveFor, isSaveGame, type SaveGame } from '../../src/domain';
+import { BackendSaveStore, LocalSaveStore, SAVE_KEY, savesFor } from '../../src/services/save';
 
 const game: SaveGame = { version: 1, room: 'opening', savedAt: '2026-10-24T12:00:00.000Z' };
 
@@ -122,5 +122,26 @@ describe('BackendSaveStore', () => {
     });
     await expect(s.save(newer)).resolves.toBeUndefined();
     expect(await s.load()).toEqual(newer);
+  });
+});
+
+describe('saves belong to a game', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('reads a save only when its game is a name', () => {
+    expect(isSaveGame({ ...game, gameId: 'tune-story' })).toBe(true);
+    expect(isSaveGame({ ...game, gameId: 7 })).toBe(false);
+  });
+
+  it('belongs to the game it names, and a save naming none to the game being played', () => {
+    expect(isSaveFor(game, 'tune-story')).toBe(true);
+    expect(isSaveFor({ ...game, gameId: 'tune-story' }, 'tune-story')).toBe(true);
+    expect(isSaveFor({ ...game, gameId: 'another-game' }, 'tune-story')).toBe(false);
+  });
+
+  it('stamps every save with the game it is made for', async () => {
+    const local = new LocalSaveStore();
+    await savesFor('lighthouse', local).save(game);
+    expect(await local.load()).toEqual({ ...game, gameId: 'lighthouse' });
   });
 });

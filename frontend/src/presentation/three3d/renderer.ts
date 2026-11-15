@@ -1,4 +1,5 @@
 import { BasicShadowMap, Color, WebGLRenderer } from 'three';
+import type { Registry } from '../../assets/registry';
 import type { FloorPoint, Rect } from '../../domain';
 import type { AnimationName, Pick, Renderer, ScenePoint, SceneView } from '../renderer';
 import { palette, SCENE_HEIGHT, SCENE_WIDTH, UI_BAR_HEIGHT } from '../theme';
@@ -10,7 +11,7 @@ const UI_GROUND = new Color(palette.uiGround);
 
 /**
  * The 3D renderer (docs/ARCHITECTURE.md, sections 5 and 7): each view is a Room of glb models
- * from the registry, drawn with Three.js in the 1280 x 640 scene at the top of the canvas, the
+ * from the game's registry, drawn with Three.js in the 1280 x 640 scene at the top of the canvas, the
  * 160 px UI bar's ground under it. The canvas fits its container and is
  * centred in it, with the grain overlay over the scene.
  */
@@ -19,7 +20,7 @@ export class Three3dRenderer implements Renderer {
   private container: HTMLElement | null = null;
   private grain: HTMLElement | null = null;
   private observer: ResizeObserver | null = null;
-  private readonly models = new Models();
+  private readonly models: Models;
   private view: SceneView | null = null;
   /** The room of `view`, once it is drawn. */
   private room: Room | null = null;
@@ -32,6 +33,10 @@ export class Three3dRenderer implements Renderer {
   private readonly frames = new Set<(dtMs: number) => void>();
   /** Hover and click hit what is drawn: the hotspot buttons are for the keyboard and screen readers. */
   readonly picksHotspots = true;
+
+  constructor(registry: Registry) {
+    this.models = new Models(registry);
+  }
 
   /**
    * Without WebGL the game can't be drawn: #game says so, and the promise never resolves, so

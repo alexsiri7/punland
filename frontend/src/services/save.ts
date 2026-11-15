@@ -18,6 +18,15 @@ export interface SaveStore {
 
 export const SAVE_KEY = 'punland.save.v1';
 
+/** `store`, stamping each save with the game it is made for. */
+export function savesFor(game: string, store: SaveStore): SaveStore {
+  return {
+    load: () => store.load(),
+    save: (saved) => store.save({ ...saved, gameId: game }),
+    clear: () => store.clear(),
+  };
+}
+
 /** Browser-local save. Unreadable or malformed data counts as "no save". */
 export class LocalSaveStore implements SaveStore {
   constructor(private readonly storage: Storage | null = safeLocalStorage()) {}

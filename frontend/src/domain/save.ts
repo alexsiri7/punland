@@ -29,6 +29,8 @@ export interface SaveGame {
   visited?: string[];
   /** Where a `goBack` returns to; absent in saves from before #116, and when there is nowhere: none. */
   back?: Place;
+  /** The game the save was made for; absent in saves from before #143: the game being played. */
+  gameId?: string;
 }
 
 /** A save without its timestamp, which the rules can't read: whoever writes the save stamps it. */
@@ -78,8 +80,14 @@ export function isSaveGame(value: unknown): value is SaveGame {
     (value.goals === undefined || isStrings(value.goals)) &&
     (value.stats === undefined || isStats(value.stats)) &&
     (value.visited === undefined || isStrings(value.visited)) &&
-    (value.back === undefined || isPlace(value.back))
+    (value.back === undefined || isPlace(value.back)) &&
+    (value.gameId === undefined || typeof value.gameId === 'string')
   );
+}
+
+/** Whether `save` belongs to `game`: a save that names no game belongs to the one being played. */
+export function isSaveFor(save: Pick<SaveGame, 'gameId'>, game: string): boolean {
+  return save.gameId === undefined || save.gameId === game;
 }
 
 export function toSave(state: GameState): UnstampedSave {

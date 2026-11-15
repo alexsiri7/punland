@@ -4,6 +4,7 @@ import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
 import type { Model } from '../../src/assets/registry';
 import type { DialogueTurn, SaveGame, World } from '../../src/domain';
+import { SUPPORTED_SCHEMA } from '../../src/content/manifest';
 import { PROTAGONIST } from '../../src/content/protagonist';
 import { SAVE_KEY } from '../../src/services/save';
 import { expect } from './fixtures';
@@ -31,12 +32,12 @@ import { expect } from './fixtures';
  * builds a piece may settle on a different selector or content name: change it here, in one
  * place, in the PR that removes the test's expected-to-fail marker.
  *
- * Spec change #141 (bundle loading) adds how a game is chosen: `?bundle=<manifest path>` plays
- * the bundle that manifest names, and with no parameter the build's own content plays as
- * before. A bundle the game refuses is explained in an alert as the page loads. The bundle's
- * layout, its manifest's fields and the supported schema version are below, with
- * serveBundle. All of it is provisional: #143 may settle on a different parameter, layout or
- * selector, and changes it here.
+ * Spec change #141 (bundle loading, built in #143) adds how a game is chosen:
+ * `?bundle=<manifest path>` plays the bundle that manifest names, same-origin, and with no
+ * parameter the build's own content plays as before. A published bundle lives in
+ * frontend/public/bundles/<game>/. A bundle the game refuses, or a save from another game, is
+ * explained in an alert on the title screen. The bundle's layout, its manifest's fields and the
+ * supported schema version are below, with serveBundle.
  */
 
 /** Content the tests rely on: the opening rooms and Act 1, the Three Crows' conditions (#4, #5, #11, #71, #116). */
@@ -325,10 +326,7 @@ export async function stubSaves(page: Page, store: Map<string, string>): Promise
 
 /** A saved game, as the title screen's Continue loads it, with the fields the tests set; seedSave stamps the rest. */
 export type Save = Required<Pick<SaveGame, 'room' | 'act' | 'goals' | 'stats'>> &
-  Pick<SaveGame, 'flags' | 'inventory'> & {
-    /** The game the save was made for (bundle-loading spec). SaveGame gets it in #143: Pick it from there then. */
-    gameId?: string;
-  };
+  Pick<SaveGame, 'flags' | 'inventory' | 'gameId'>;
 
 let seeds = 0;
 
@@ -363,21 +361,21 @@ export async function seedSave(page: Page, save: Save): Promise<void> {
   });
 }
 
-/** The schema version of bundle files the game supports (bundle-loading spec; provisional, #143). */
-export const SUPPORTED_SCHEMA = { major: 1, minor: 0 };
+export { SUPPORTED_SCHEMA };
 
 /**
  * A game bundle as Annie exports it, served by serveBundle. Content and registry files sit at
  * the paths the content and asset validators already name them by (`content/rooms/<room>.json`,
  * `assets/models.json`) and character sheets at `characters/<id>.json`; `manifest.json` lists
  * those files, since a static host cannot list a folder. Models are not listed: they sit at their
- * registry `model3d.file`.
+ * registry `model3d.file`, a path on this site, as the Punland repository holds them
+ * (interstellarai.net#322).
  */
 export interface Bundle {
   manifest: Record<string, unknown>;
   /** Bundle-relative path -> its JSON: content, the registry and character sheets. */
   json: Record<string, unknown>;
-  /** Bundle-relative glb path -> the file under frontend/public/ whose bytes it serves. */
+  /** Registry glb path, on this site -> the file under frontend/public/ whose bytes it serves. */
   models: Record<string, string>;
 }
 
@@ -396,18 +394,24 @@ export function manifest(
 /** The page that plays a bundle served by serveBundle under that name. */
 export const bundleUrl = (name: string): string => `/?bundle=/bundles/${name}/manifest.json`;
 
-/** Serves a bundle at /bundles/<name>/, same-origin. Returns the bundle paths the game asked for, as it asks. */
+/**
+ * Serves a bundle at /bundles/<name>/, same-origin, and its models at their paths on the site.
+ * Returns the paths the game asked for, as it asks: bundle-relative, and a model's registry path.
+ */
 export async function serveBundle(page: Page, name: string, bundle: Bundle): Promise<string[]> {
   const served: string[] = [];
   const root = `/bundles/${name}/`;
   await page.route((url) => url.pathname.startsWith(root), async (route: Route) => {
     const path = new URL(route.request().url()).pathname.slice(root.length);
     served.push(path);
-    const model = bundle.models[path];
     if (path === 'manifest.json') await route.fulfill({ json: bundle.manifest });
-    else if (path in bundle.json) await route.fulfill({ json: bundle.json[path] });
-    else if (model) await route.fulfill({ path: publicFile(model), contentType: 'model/gltf-binary' });
+    else if (Object.hasOwn(bundle.json, path)) await route.fulfill({ json: bundle.json[path] });
     else await route.fulfill({ status: 404, body: '' });
+  });
+  await page.route((url) => Object.hasOwn(bundle.models, url.pathname.slice(1)), async (route: Route) => {
+    const path = new URL(route.request().url()).pathname.slice(1);
+    served.push(path);
+    await route.fulfill({ path: publicFile(bundle.models[path]!), contentType: 'model/gltf-binary' });
   });
   return served;
 }

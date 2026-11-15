@@ -108,6 +108,31 @@ body {
   outline: none;
 }
 
+/* Why the game can't be played, or a save continued: muted UI text under the menu. */
+.title-problem {
+  margin-top: 1.5rem;
+  max-width: 24rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--muted-text);
+  overflow-wrap: anywhere;
+}
+
+.title-problem p {
+  margin: 0 0 0.5rem;
+  color: var(--ui-text);
+}
+
+.title-problem ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.menu button:disabled {
+  cursor: progress;
+  color: var(--label-text);
+}
+
 @media (max-width: 720px) {
   .title-screen {
     align-items: flex-end;
