@@ -95,9 +95,11 @@ export async function playGame(
   canvas.addEventListener('pointerleave', () => ui.pointed(null));
   renderer.frame((dtMs) => {
     if (session.state.walk || session.state.cue) session.dispatch({ type: 'tick', dtMs });
+    mirror.cue(session.state.cue !== null);
   });
 
   // Lines said before a room is drawn are dropped, so a cutscene can't start sooner.
   await show();
   session.dispatch({ type: 'begin' });
+  mirror.cue(session.state.cue !== null);
 }

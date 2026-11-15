@@ -81,6 +81,8 @@ describe('the game, drawn by a renderer', () => {
       '10%',
       '40%',
     ]);
+    expect(door.dataset.hotspot).toBe('door');
+    expect(container.dataset.cue).toBe('off');
     button('Sign').click();
     await walk();
     const speech = container.querySelector<HTMLElement>('.speech')!;
@@ -133,6 +135,7 @@ describe('the game, drawn by a renderer', () => {
     game = new GameSession(given, newGame(given), { save: async () => {} });
     await playGame(container, game, renderer, { turn: async () => null });
     expect(game.state.cue).not.toBeNull();
+    expect(container.dataset.cue).toBe('on');
 
     renderer.step(100);
     expect(container.dataset.say).toBe('');
@@ -141,6 +144,7 @@ describe('the game, drawn by a renderer', () => {
     expect(game.state.cue).not.toBeNull();
     renderer.step(speechMs('Here at last.'));
     expect(game.state.cue).toBeNull();
+    expect(container.dataset.cue).toBe('off');
   });
 
   it('takes input only once the latest room asked for is drawn', async () => {
