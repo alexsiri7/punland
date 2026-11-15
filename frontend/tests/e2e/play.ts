@@ -1,6 +1,9 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
-import type { DialogueTurn, SaveGame } from '../../src/domain';
+import type { Model } from '../../src/assets/registry';
+import type { DialogueTurn, SaveGame, World } from '../../src/domain';
 import { PROTAGONIST } from '../../src/content/protagonist';
 import { SAVE_KEY } from '../../src/services/save';
 import { expect } from './fixtures';
@@ -27,6 +30,13 @@ import { expect } from './fixtures';
  * conversation dialog (#8), and data-act, the Career stats and the Goals (#11). The issue that
  * builds a piece may settle on a different selector or content name: change it here, in one
  * place, in the PR that removes the test's expected-to-fail marker.
+ *
+ * Spec change #141 (bundle loading) adds how a game is chosen: `?bundle=<manifest path>` plays
+ * the bundle that manifest names, and with no parameter the build's own content plays as
+ * before. A bundle the game refuses is explained in an alert as the page loads. The bundle's
+ * layout, its manifest's fields and the supported schema version are below, with
+ * serveBundle. All of it is provisional: #143 may settle on a different parameter, layout or
+ * selector, and changes it here.
  */
 
 /** Content the tests rely on: the opening rooms and Act 1, the Three Crows' conditions (#4, #5, #11, #71, #116). */
@@ -149,13 +159,15 @@ export const ARRIVAL = [
  * Starts a new game, and waits in the coach station until the Arrival hands the player control.
  * The Arrival takes about half a minute: a test that calls this is `test.slow()`.
  */
-export async function newGame(page: Page): Promise<void> {
+export async function newGame(page: Page, url = '/'): Promise<void> {
   const requested: string[] = [];
   page.on('request', (request) => requested.push(new URL(request.url()).pathname));
-  await page.goto('/');
+  await page.goto(url);
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(game(page)).toHaveAttribute('data-scene', content.coachStation);
-  await expect.poll(() => requested, 'the renderer loads the player model').toContain(playerModel);
+  await expect
+    .poll(() => requested.some((path) => path.endsWith(playerModel)), 'the renderer loads the player model')
+    .toBe(true);
   await expect(game(page)).toHaveAttribute('data-say', ARRIVAL[6], { timeout: 40_000 });
   await expect(game(page)).toHaveAttribute('data-say', '', { timeout: 10_000 });
 }
@@ -312,7 +324,11 @@ export async function stubSaves(page: Page, store: Map<string, string>): Promise
 }
 
 /** A saved game, as the title screen's Continue loads it, with the fields the tests set; seedSave stamps the rest. */
-export type Save = Required<Pick<SaveGame, 'room' | 'act' | 'goals' | 'stats'>> & Pick<SaveGame, 'flags' | 'inventory'>;
+export type Save = Required<Pick<SaveGame, 'room' | 'act' | 'goals' | 'stats'>> &
+  Pick<SaveGame, 'flags' | 'inventory'> & {
+    /** The game the save was made for (bundle-loading spec). SaveGame gets it in #143: Pick it from there then. */
+    gameId?: string;
+  };
 
 let seeds = 0;
 
@@ -346,6 +362,87 @@ export async function seedSave(page: Page, save: Save): Promise<void> {
     await route.fulfill({ status: 204, body: '' });
   });
 }
+
+/** The schema version of bundle files the game supports (bundle-loading spec; provisional, #143). */
+export const SUPPORTED_SCHEMA = { major: 1, minor: 0 };
+
+/**
+ * A game bundle as Annie exports it, served by serveBundle. Content and registry files sit at
+ * the paths the content and asset validators already name them by (`content/rooms/<room>.json`,
+ * `assets/models.json`) and character sheets at `characters/<id>.json`; `manifest.json` lists
+ * those files, since a static host cannot list a folder. Models are not listed: they sit at their
+ * registry `model3d.file`.
+ */
+export interface Bundle {
+  manifest: Record<string, unknown>;
+  /** Bundle-relative path -> its JSON: content, the registry and character sheets. */
+  json: Record<string, unknown>;
+  /** Bundle-relative glb path -> the file under frontend/public/ whose bytes it serves. */
+  models: Record<string, string>;
+}
+
+/** A bundle's manifest: the game, its title, the schema version, its first world and its files. */
+export function manifest(
+  game: string,
+  name: string,
+  version: string,
+  world: string,
+  json: Record<string, unknown>,
+  extra: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return { game, name, schemaVersion: version, world, files: Object.keys(json).sort(), ...extra };
+}
+
+/** The page that plays a bundle served by serveBundle under that name. */
+export const bundleUrl = (name: string): string => `/?bundle=/bundles/${name}/manifest.json`;
+
+/** Serves a bundle at /bundles/<name>/, same-origin. Returns the bundle paths the game asked for, as it asks. */
+export async function serveBundle(page: Page, name: string, bundle: Bundle): Promise<string[]> {
+  const served: string[] = [];
+  const root = `/bundles/${name}/`;
+  await page.route((url) => url.pathname.startsWith(root), async (route: Route) => {
+    const path = new URL(route.request().url()).pathname.slice(root.length);
+    served.push(path);
+    const model = bundle.models[path];
+    if (path === 'manifest.json') await route.fulfill({ json: bundle.manifest });
+    else if (path in bundle.json) await route.fulfill({ json: bundle.json[path] });
+    else if (model) await route.fulfill({ path: publicFile(model), contentType: 'model/gltf-binary' });
+    else await route.fulfill({ status: 404, body: '' });
+  });
+  return served;
+}
+
+const publicFile = (file: string): string => fileURLToPath(new URL(`../../public/${file}`, import.meta.url));
+
+function readJson(url: URL): unknown {
+  return JSON.parse(readFileSync(url, 'utf8'));
+}
+
+/**
+ * Tune Story as a bundle, built from the content in this repository. It stands in for Annie's
+ * export of it until the content has moved to Annie.
+ */
+export function tuneStoryBundle(): Bundle {
+  const json: Record<string, unknown> = {};
+  const contentDir = new URL('../../src/content/', import.meta.url);
+  for (const file of readdirSync(contentDir, { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.json')))
+    json[`content/${file}`] = readJson(new URL(file, contentDir));
+  // Read, not imported: Playwright's loader cannot import JSON, so registry.ts cannot load here.
+  const registry = readJson(new URL('../../src/assets/models.json', import.meta.url)) as {
+    models: Pick<Model, 'model3d'>[];
+  };
+  json['assets/models.json'] = registry;
+  const sheets = new URL('../../../backend/src/punland_api/content/characters/', import.meta.url);
+  for (const file of readdirSync(sheets).filter((f) => f.endsWith('.json')))
+    json[`characters/${file}`] = readJson(new URL(file, sheets));
+  const models = Object.fromEntries(registry.models.map(({ model3d }) => [model3d.file, model3d.file]));
+  const worlds = json['content/worlds.json'] as { worlds: Pick<World, 'id'>[] };
+  const version = `${SUPPORTED_SCHEMA.major}.${SUPPORTED_SCHEMA.minor}`;
+  return { manifest: manifest('tune-story', 'Tune Story', version, worlds.worlds[0]!.id, json), json, models };
+}
+
+/** Where the game says why it will not play a bundle, or continue a save. */
+export const bundleProblem = (page: Page): Locator => page.getByRole('alert');
 
 export async function continueGame(page: Page): Promise<void> {
   await page.goto('/');
