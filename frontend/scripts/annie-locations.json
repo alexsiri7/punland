@@ -1,7 +1,12 @@
 {
-  "pub": "the-venue",
-  "high-street": "the-high-street",
-  "music-shop": "the-music-shop",
+  "coach-station": "the-coach-station",
   "dream": "dream-world-songwriting",
-  "feed": "online-world"
+  "feed": "online-world",
+  "flat": "the-song-master-s-flat",
+  "high-street": "the-high-street",
+  "map": "the-map",
+  "mayors-office": "the-mayor-s-office",
+  "music-shop": "the-music-shop",
+  "opening": "outside-the-three-crows",
+  "pub": "the-three-crows"
 }
