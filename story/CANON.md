@@ -7,7 +7,7 @@ The story the game implements. Only settled material from the Annie story bible
 tentative, and every place where the game decided something Annie leaves open, is in
 `story/PENDING.md`.
 
-Last sync: 2026-11-13. Act 1's outline scenes in `story/annie/outline/` are all `draft`,
+Last sync: 2026-11-15. Act 1's outline scenes in `story/annie/outline/` are all `draft`,
 and a draft is built: their lines are copied verbatim under "Act 1: the outline" below
 (without their `OPEN:` lines, which are in PENDING). They are the most exact spec the
 game has for Act 1; where the prose sections here summarise them, the outline lines win.
@@ -84,20 +84,24 @@ game has for Act 1; where the prose sections here summarise them, the outline li
 
 ## Places
 
-- **The coach station.** A walkable street room, where Paws arrives by coach: coach
-  bays, the beetroot cop outside, a map stand with free maps, a departures board, and the
-  way up the road to Outside The Three Crows.
-- **Outside The Three Crows** (the game labels it "PUNLAND · HIGH STREET"). The pub
-  door, a chalkboard ("Live music below"), the way down the High Street and the way back
-  to the coach station.
-- **The Three Crows.** The pub and venue, a big leaning Victorian corner pub. A very
-  famous place where great stars played. The bartender works here, the Three Crows sit
-  behind the bar, the bouncer guards it, and it has a stage where the rival performs.
+- **The coach station.** A walkable street room, where Paws arrives: a coach drops him
+  at a bay (think Victoria Coach Station). Coach bays, a departures board, a map stand
+  with free maps by the exit, the beetroot cop just outside, and the road up to Outside
+  The Three Crows.
+- **Outside The Three Crows** (the game labels it "PUNLAND · HIGH STREET"). The street
+  outside the pub: the pub door, a chalkboard ("Live music below") beside the stairs down
+  to The Holding Pen, the way along the High Street and the way back to the coach
+  station.
+- **The Three Crows.** The pub and venue where the cat plays, a big leaning Victorian
+  corner pub. The name is settled in Annie. A very famous place where great stars
+  played. The bartender works here, the Three Crows sit behind the bar, the bouncer
+  guards it, and it has a stage where the rival performs.
   - **The Wall of Fame.** A wall in the pub with photos of famous acts that played
     there, as visual puns: the Rolling Stones (a pile of rocks), the Beetles (beetles
     with 60s haircuts), Tuna and Pike Turner (two fish), Katty Purry (a cat).
-  - **The Holding Pen.** The game's name for the live-music room down the stairs beside
-    the pub ("Live music below"). Scenery only. Decided in the game; see PENDING.
+  - **The Holding Pen.** The live-music room downstairs, down the stairs beside the pub
+    ("Live music below"). Scenery only in Act 1. The name was decided in the game; see
+    PENDING.
 - **The High Street.** Shops, including the music shop; the Song Master's flyer and his
   intercom and door; a way to the Mayor's once the strings are sold out.
 - **The music shop.** On the High Street. Guitars on every wall, strings on the rack;
@@ -106,8 +110,9 @@ game has for Act 1; where the prose sections here summarise them, the outline li
   and a chair; where the lesson happens.
 - **The Mayor's office.** Reached from the High Street (and the map) once the strings
   are sold out. A portrait, a flag, and the Mayor.
-- **The Map.** Punland from above: a street-world room opened by using the map item.
-  Only the places Paws knows about are marked; clicking one travels there.
+- **The Map.** Punland from above: a view rather than a place, built as a street-world
+  room, opened by using the free map from the coach station. Only the places Paws has
+  heard of or been to are marked; clicking one travels there.
 - **Literal Village.** Where the cat went to school. Backstory only; not a room.
 - **The online world.** A visual version of running a band's Instagram: chat to people,
   send announcements, take pictures, talk to influencers who can repost you. Full of
