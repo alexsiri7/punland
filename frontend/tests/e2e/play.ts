@@ -2,7 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
 import type { Locator, Page, Route } from '@playwright/test';
-import type { DialogueTurn, SaveGame } from '../../src/domain';
+import type { Model } from '../../src/assets/registry';
+import type { DialogueTurn, SaveGame, World } from '../../src/domain';
 import { PROTAGONIST } from '../../src/content/protagonist';
 import { SAVE_KEY } from '../../src/services/save';
 import { expect } from './fixtures';
@@ -367,9 +368,9 @@ export const SUPPORTED_SCHEMA = { major: 1, minor: 0 };
 /**
  * A game bundle as Annie exports it, served by serveBundle. Content and registry files sit at
  * the paths the content and asset validators already name them by (`content/rooms/<room>.json`,
- * `assets/models.json`), models at their registry `model3d.file`, character sheets at
- * `characters/<id>.json`, and `manifest.json` lists them all, since a static host cannot list a
- * folder.
+ * `assets/models.json`) and character sheets at `characters/<id>.json`; `manifest.json` lists
+ * those files, since a static host cannot list a folder. Models are not listed: they sit at their
+ * registry `model3d.file`.
  */
 export interface Bundle {
   manifest: Record<string, unknown>;
@@ -425,15 +426,16 @@ export function tuneStoryBundle(): Bundle {
   const contentDir = new URL('../../src/content/', import.meta.url);
   for (const file of readdirSync(contentDir, { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.json')))
     json[`content/${file}`] = readJson(new URL(file, contentDir));
+  // Read, not imported: Playwright's loader cannot import JSON, so registry.ts cannot load here.
   const registry = readJson(new URL('../../src/assets/models.json', import.meta.url)) as {
-    models: { model3d: { file: string } }[];
+    models: Pick<Model, 'model3d'>[];
   };
   json['assets/models.json'] = registry;
   const sheets = new URL('../../../backend/src/punland_api/content/characters/', import.meta.url);
   for (const file of readdirSync(sheets).filter((f) => f.endsWith('.json')))
     json[`characters/${file}`] = readJson(new URL(file, sheets));
   const models = Object.fromEntries(registry.models.map(({ model3d }) => [model3d.file, model3d.file]));
-  const worlds = json['content/worlds.json'] as { worlds: { id: string }[] };
+  const worlds = json['content/worlds.json'] as { worlds: Pick<World, 'id'>[] };
   const version = `${SUPPORTED_SCHEMA.major}.${SUPPORTED_SCHEMA.minor}`;
   return { manifest: manifest('tune-story', 'Tune Story', version, worlds.worlds[0]!.id, json), json, models };
 }

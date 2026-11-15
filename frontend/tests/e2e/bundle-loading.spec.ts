@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { validateContent } from '../../src/content/validate';
 import { expect, test } from './fixtures';
 import {
   type Bundle,
@@ -18,8 +19,10 @@ import {
   tuneStoryBundle,
 } from './play';
 
-// Acceptance tests for openspec/specs/bundle-loading/spec.md (spec change #141). Each is
+// Acceptance tests for openspec/specs/bundle-loading/spec.md (spec change #141). Each scenario is
 // expected to fail until #143 builds bundle loading; the interface they assume is in play.ts.
+// The first test is not a scenario: it checks the bundles the scenarios serve, and is expected
+// to pass, so a broken fixture is not hidden behind an expected failure.
 
 type Json = Record<string, any>;
 
@@ -75,6 +78,30 @@ function lighthouse(edit?: (json: Json) => void, extra: Json = {}, version = '1.
 
 /** New game, offered as a button the player can press. */
 const offeredNewGame = (page: Page) => page.getByRole('button', { name: 'New game', disabled: false });
+
+test('The bundles the scenarios serve hold together', async ({ page }) => {
+  await page.goto('/');
+  for (const [name, bundle] of [
+    ['tune-story', tuneStoryBundle()],
+    ['lighthouse', lighthouse()],
+  ] as const) {
+    expect(validateContent(bundle.json), name).toEqual([]);
+    const registry = (bundle.json['assets/models.json'] as Json).models as Json[];
+    expect(Object.keys(bundle.models).sort(), name).toEqual(registry.map((m) => m.model3d.file).sort());
+    expect(bundle.manifest.files, name).toEqual(Object.keys(bundle.json).sort());
+    const worlds = (bundle.json['content/worlds.json'] as Json).worlds as Json[];
+    expect(bundle.manifest.world, name).toBe(worlds[0]!.id);
+
+    const served = await serveBundle(page, name, bundle);
+    const paths = ['manifest.json', ...Object.keys(bundle.json), ...Object.keys(bundle.models)];
+    const statuses = await page.evaluate(
+      ({ root, paths }) => Promise.all(paths.map((path) => fetch(root + path).then((r) => r.status))),
+      { root: `/bundles/${name}/`, paths },
+    );
+    expect(statuses, name).toEqual(paths.map(() => 200));
+    expect(served.sort(), name).toEqual([...paths].sort());
+  }
+});
 
 test('Playing an exported bundle', async ({ page }) => {
   test.fail(true, 'needs #143');
